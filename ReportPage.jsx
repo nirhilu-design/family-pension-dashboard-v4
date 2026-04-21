@@ -1,5 +1,3 @@
-// src/ReportPage.jsx
-
 import React, { useMemo, useState } from "react";
 
 export default function ReportPage({ reportData, onBack, onResetAll }) {
@@ -26,6 +24,19 @@ export default function ReportPage({ reportData, onBack, onResetAll }) {
 
   const handleExportPdf = () => {
     window.print();
+  };
+
+  const handleOpenClientView = () => {
+    try {
+      localStorage.setItem(
+        "clientReportData",
+        JSON.stringify(safeReportData)
+      );
+      window.location.href = "/client-view.html";
+    } catch (error) {
+      console.error("Failed to open client view:", error);
+      alert("לא ניתן לפתוח תצוגת לקוח כרגע");
+    }
   };
 
   const formatCurrency = (value) =>
@@ -1030,6 +1041,9 @@ export default function ReportPage({ reportData, onBack, onResetAll }) {
           <button onClick={handleExportPdf} className="action-button primary-outline">
             ייצוא ל־PDF
           </button>
+          <button onClick={handleOpenClientView} className="action-button primary-outline">
+            תצוגת לקוח
+          </button>
         </div>
 
         <div style={styles.container}>
@@ -1122,7 +1136,7 @@ export default function ReportPage({ reportData, onBack, onResetAll }) {
               </div>
 
               <PercentDonutCard
-                title={"חשיפה לחו\"ל"}
+                title={'חשיפה לחו"ל'}
                 subtitle={`חשיפה משוקללת לחו"ל: ${formatPercentLabel(
                   weightedForeignExposure
                 )}`}
