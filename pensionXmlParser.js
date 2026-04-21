@@ -1,452 +1,892 @@
-// src/UploadPage.jsx
+// src/utils/pensionXmlParser.js
 
-import React, { useRef, useState } from "react";
-import {
-  parseMultiplePensionXmlFiles,
-  buildLegacyReportData,
-} from "./utils/pensionXmlParser";
+function sanitizeXml(rawXml) {
+  let text = String(rawXml || "");
 
-export default function UploadPage({ setReportData }) {
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [selectedFiles, setSelectedFiles] = useState([]);
-  const [isDragging, setIsDragging] = useState(false);
+  text = text.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "");
+  text = text.replace(/&(?!amp;|lt;|gt;|quot;|apos;)/g, "&amp;");
 
-  const fileInputRef = useRef(null);
-  const dragCounterRef = useRef(0);
+  return text;
+}
 
-  const addFiles = (files) => {
-    const xmlFiles = Array.from(files || []).filter((file) =>
-      file.name.toLowerCase().endsWith(".xml")
+function parseXmlDocument(rawXml) {
+  const sanitized = sanitizeXml(rawXml);
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(sanitized, "application/xml");
+
+  const parserError = doc.querySelector("parsererror");
+  if (parserError) {
+    throw new Error("XML parse error: " + parserError.textContent);
+  }
+
+  return doc;
+}
+
+function getFirst(root, tag) {
+  return root?.querySelector?.(tag) || null;
+}
+
+function getText(root, tag) {
+  return getFirst(root, tag)?.textContent?.trim() || "";
+}
+
+function stripHtml(value) {
+  return String(value || "").replace(/<[^>]*>/g, "").trim();
+}
+
+function normalizeText(value) {
+  return stripHtml(value).replace(/\s+/g, " ").trim();
+}
+
+function parseNumber(value) {
+  if (value === null || value === undefined) return null;
+
+  const clean = normalizeText(value)
+    .replace(/₪/g, "")
+    .replace(/%/g, "")
+    .replace(/,/g, "")
+    .trim();
+
+  if (!clean || clean === "-" || clean === "לא פעילה") return null;
+
+  const num = Number(clean);
+  return Number.isFinite(num) ? num : null;
+}
+
+function parseIntSafe(value) {
+  const num = parseNumber(value);
+  return num === null ? null : Math.round(num);
+}
+
+function sumNullable(values) {
+  return values.reduce((acc, val) => acc + (val ?? 0), 0);
+}
+
+function formatDateForReport(date = new Date()) {
+  const d = date instanceof Date ? date : new Date(date);
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+function pickFirstText(sectionRoots, tag) {
+  for (const section of sectionRoots) {
+    if (!section) continue;
+    const value = getText(section, tag);
+    if (value) return value;
+  }
+  return "";
+}
+
+function parseInvestProperties(root, selector) {
+  if (!root) return [];
+
+  return Array.from(root.querySelectorAll(selector)).map((node) => ({
+    id: getText(node, "PropertyID"),
+    name: getText(node, "PropertyName"),
+    rate: parseNumber(getText(node, "rate")),
+  }));
+}
+
+function inferEquityFromTrackName(name = "") {
+  const text = String(name).toLowerCase();
+
+  if (
+    text.includes("מניות") ||
+    text.includes("s&p") ||
+    text.includes("מחקה") ||
+    text.includes("מניית")
+  ) {
+    return 90;
+  }
+
+  if (
+    text.includes("כללי") ||
+    text.includes("general") ||
+    text.includes('אג"ח + מניות') ||
+    text.includes("משולב")
+  ) {
+    return 45;
+  }
+
+  if (
+    text.includes('אג"ח') ||
+    text.includes("bond") ||
+    text.includes("שקלי") ||
+    text.includes("כספי")
+  ) {
+    return 10;
+  }
+
+  return 25;
+}
+
+function parseInvestPlans(policyNode) {
+  const plansRoot = policyNode.querySelector("InvestPlans");
+  if (!plansRoot) return [];
+
+  const planNodes = Array.from(plansRoot.querySelectorAll("InvestPlan"));
+
+  return planNodes.map((plan) => {
+    const exposures = parseInvestProperties(
+      plan,
+      "Properties > Exposures > Property"
+    );
+    const mainGroups = parseInvestProperties(
+      plan,
+      "Properties > MainGroups > Property"
     );
 
-    if (!xmlFiles.length) {
-      setError("יש לבחור קבצי XML בלבד");
+    const equityExposure =
+      exposures.find(
+        (p) => p.id === "4751" || (p.name || "").includes("מניות")
+      )?.rate ??
+      mainGroups.find((p) => (p.name || "").includes("מניות"))?.rate ??
+      inferEquityFromTrackName(getText(plan, "PlanNameAfik"));
+
+    const foreignExposure =
+      exposures.find(
+        (p) => p.id === "4752" || (p.name || "").includes('חו"ל')
+      )?.rate ?? 0;
+
+    return {
+      mofid: getText(plan, "MOFID"),
+      proposeType: getText(plan, "ProposeType"),
+      planName: getText(plan, "PlanName"),
+      trackName: getText(plan, "PlanNameAfik"),
+      avgRate12: parseNumber(getText(plan, "AvgRate12")),
+      avgRate36: parseNumber(getText(plan, "AvgRate36")),
+      avgRate60: parseNumber(getText(plan, "AvgRate60")),
+      totalRate12: parseNumber(getText(plan, "RateTotal12Months")),
+      totalRate36: parseNumber(getText(plan, "RateTotal36Months")),
+      totalRate60: parseNumber(getText(plan, "RateTotal60Months")),
+      standardDeviation36: parseNumber(getText(plan, "ST36Months")),
+      sharp: parseNumber(getText(plan, "SharpAnaf")),
+      directExpenses: parseNumber(getText(plan, "DirectExpences")),
+      totalExpenses: parseNumber(getText(plan, "TotalExpenses")),
+      mainGroups,
+      exposures,
+      equityExposure,
+      foreignExposure,
+    };
+  });
+}
+
+function parseLoans(policyNode) {
+  const loansRoot = policyNode.querySelector("Loans");
+  if (!loansRoot) return [];
+
+  const loanNodes = Array.from(loansRoot.querySelectorAll("Loan"));
+
+  return loanNodes
+    .map((loanNode, index) => ({
+      rowNum: index + 1,
+      amount: parseNumber(getText(loanNode, "SCHUM-HALVAA")),
+      repaymentFrequency: normalizeText(
+        getText(loanNode, "TADIRUT-HECHZER-HALVAA")
+      ),
+      balance: parseNumber(getText(loanNode, "YITRAT-HALVAA")),
+      endDate: normalizeText(getText(loanNode, "TAARICH-SIYUM-HALVAA")),
+    }))
+    .filter(
+      (loan) =>
+        loan.amount !== null ||
+        loan.balance !== null ||
+        !!loan.repaymentFrequency ||
+        !!loan.endDate
+    );
+}
+
+function parsePolicy(policyNode) {
+  const budgets = policyNode.querySelector("Budgets");
+  const covers = policyNode.querySelector("Covers");
+  const save = policyNode.querySelector("Save");
+  const details = policyNode.querySelector("PolicyDetails");
+
+  const sectionRoots = [budgets, covers, save, details];
+
+  const productType = pickFirstText(sectionRoots, "ProposeName2");
+  const planName = pickFirstText(sectionRoots, "PlanName");
+
+  // חשוב:
+  // שם גוף מנהל צריך להיות מבוסס קודם על שדות מנהל אמיתיים,
+  // ואם הם לא קיימים - לקחת את PlanName
+  // ולא ליפול ל-ProductType, כי זה יוצר בלבול בין מוצר לגוף מנהל.
+  const managerName =
+    pickFirstText(sectionRoots, "CompanyName") ||
+    pickFirstText(sectionRoots, "YeshutName") ||
+    pickFirstText(sectionRoots, "ProducerName") ||
+    pickFirstText(sectionRoots, "MenahelName") ||
+    pickFirstText(sectionRoots, "FundName") ||
+    planName ||
+    "לא ידוע";
+
+  return {
+    rowNum: Number(policyNode.getAttribute("RowNum") || 0),
+    policyNo: pickFirstText(sectionRoots, "PolicyNo"),
+    productType,
+    planName,
+    managerName,
+    memberType: pickFirstText([budgets, save], "MemberTypeName"),
+    joinDate: pickFirstText(sectionRoots, "JoinDate") || null,
+    dateOfRights: pickFirstText(sectionRoots, "DateOfRights") || null,
+    salary: parseNumber(getText(budgets || policyNode, "Salary")),
+
+    monthlyDeposits: {
+      worker: parseNumber(getText(budgets || policyNode, "TotalTagWorker")),
+      employer: parseNumber(getText(budgets || policyNode, "TotalTagEmployer")),
+      compensation: parseNumber(
+        getText(budgets || policyNode, "TotalCompensetion")
+      ),
+      sumCost: parseNumber(getText(budgets || policyNode, "SumCost")),
+      disabilityWorkerCost: parseNumber(
+        getText(budgets || policyNode, "DisCost1")
+      ),
+      disabilityEmployerCost: parseNumber(
+        getText(budgets || policyNode, "DisCostEmployer1")
+      ),
+      rateWorker: parseNumber(getText(budgets || policyNode, "RateTagWorker")),
+      rateEmployer: parseNumber(
+        getText(budgets || policyNode, "RateTagEmployer")
+      ),
+      rateCompensation: parseNumber(
+        getText(budgets || policyNode, "RateCompensetion")
+      ),
+    },
+
+    coverage: {
+      totalInsurance: parseNumber(getText(covers || policyNode, "TotalBituah")),
+      totalRisk: parseNumber(getText(covers || policyNode, "TotalRisk")),
+      disabilityPension: parseNumber(
+        getText(covers || policyNode, "PensionDisability")
+      ),
+      disabilityCost: parseNumber(
+        getText(covers || policyNode, "CostForDisability")
+      ),
+      orphanPension: parseNumber(getText(covers || policyNode, "PensionOrphan")),
+      widowPension: parseNumber(getText(covers || policyNode, "PensionAlmana")),
+      relativesPension: parseNumber(
+        getText(covers || policyNode, "PensionRelatives")
+      ),
+      totalMonthlyCoverCost: parseNumber(getText(covers || policyNode, "TotalSum")),
+    },
+
+    savings: {
+      before2000: parseNumber(
+        getText(save || policyNode, "ItraZvuraTotalTagBefore2000")
+      ),
+      after2000: parseNumber(
+        getText(save || policyNode, "ItraZvuraTotalTagAfter2000")
+      ),
+      compensation: parseNumber(
+        getText(save || policyNode, "ItraZvuraCompensetion")
+      ),
+      totalAccumulated: parseNumber(getText(save || policyNode, "TotalItraZvura")),
+      retireCurrBalance: parseNumber(
+        getText(save || policyNode, "RetireCurrBalance")
+      ),
+      totalPidions: parseNumber(
+        getText(save || policyNode, "TotalPidions")
+      ),
+      retireCurrBalancePension: parseNumber(
+        getText(save || policyNode, "RetireCurrBalancePension")
+      ),
+      pensionRetire: parseNumber(
+        getText(save || policyNode, "PensionRetire")
+      ),
+      projectedRetirementBalance: parseNumber(
+        getText(save || policyNode, "RetireCurrBalance")
+      ),
+      projectedMonthlyPension: parseNumber(
+        getText(save || policyNode, "PensionRetire")
+      ),
+      totalRedemptions: parseNumber(getText(save || policyNode, "TotalPidions")),
+      hCoeff: parseNumber(getText(save || policyNode, "HCoff")),
+    },
+
+    details: {
+      proposeName: getText(details || policyNode, "ProposeName"),
+      targetPlan: getText(details || policyNode, "TargetPlan"),
+      annuityType: getText(details || policyNode, "AnnuityType"),
+      retireAge: parseIntSafe(getText(details || policyNode, "RetireAge")),
+      agePremiaYear: parseIntSafe(getText(details || policyNode, "AgePremiaYear")),
+      managementFeeFromDeposit: parseNumber(
+        getText(details || policyNode, "DNihulPremia")
+      ),
+      managementFeeFromBalance: parseNumber(
+        getText(details || policyNode, "DNFromHon")
+      ),
+      expectedReturn: parseNumber(getText(details || policyNode, "GetYield")),
+    },
+
+    investPlans: parseInvestPlans(policyNode),
+    loans: parseLoans(policyNode),
+  };
+}
+
+function parseSummary(doc) {
+  const budget = doc.querySelector("Summary > Budget");
+  const cover = doc.querySelector("Summary > Cover");
+  const brutoSave = doc.querySelector("Summary > Save > Bruto");
+  const netoSave = doc.querySelector("Summary > Save > Neto");
+
+  return {
+    budget: {
+      worker: parseNumber(getText(budget || doc, "TotalTagWorker")),
+      employer: parseNumber(getText(budget || doc, "TotalTagEmployer")),
+      compensation: parseNumber(getText(budget || doc, "TotalCompensetion")),
+      sumCost: parseNumber(getText(budget || doc, "SumCost")),
+      disabilityWorkerCost: parseNumber(getText(budget || doc, "DisCost1")),
+      disabilityEmployerCost: parseNumber(
+        getText(budget || doc, "DisCostEmployer1")
+      ),
+    },
+    cover: {
+      totalInsurance: parseNumber(getText(cover || doc, "TotalBituah")),
+      totalRisk: parseNumber(getText(cover || doc, "TotalRisk")),
+      disabilityPension: parseNumber(getText(cover || doc, "PensionDisability")),
+      disabilityCost: parseNumber(getText(cover || doc, "CostForDisability")),
+      orphanPension: parseNumber(getText(cover || doc, "PensionOrphan")),
+      widowPension: parseNumber(getText(cover || doc, "PensionAlmana")),
+      relativesPension: parseNumber(getText(cover || doc, "PensionRelatives")),
+      totalMonthlyCoverCost: parseNumber(getText(cover || doc, "TotalSum")),
+    },
+    save: {
+      totalAccumulated: parseNumber(getText(brutoSave || doc, "TotalItraZvura")),
+      withDepositsLumpSumField: parseNumber(
+        getText(brutoSave || doc, "TotalPidions")
+      ),
+      withoutDepositsLumpSumField: parseNumber(
+        getText(netoSave || brutoSave || doc, "RetireCurrBalance")
+      ),
+      withDepositsMonthlyPensionField: parseNumber(
+        getText(brutoSave || doc, "PensionRetire")
+      ),
+      withoutDepositsMonthlyPensionField: parseNumber(
+        getText(netoSave || brutoSave || doc, "RetireCurrBalancePension")
+      ),
+      projectedRetirementBalance: parseNumber(
+        getText(brutoSave || doc, "RetireCurrBalance")
+      ),
+      projectedMonthlyPension: parseNumber(
+        getText(brutoSave || doc, "PensionRetire")
+      ),
+      totalRedemptions: parseNumber(getText(brutoSave || doc, "TotalPidions")),
+      retireCurrBalancePension: parseNumber(
+        getText(netoSave || brutoSave || doc, "RetireCurrBalancePension")
+      ),
+      before2000: parseNumber(
+        getText(brutoSave || doc, "ItraZvuraTotalTagBefore2000")
+      ),
+      after2000: parseNumber(
+        getText(brutoSave || doc, "ItraZvuraTotalTagAfter2000")
+      ),
+      compensation: parseNumber(
+        getText(brutoSave || doc, "ItraZvuraCompensetion")
+      ),
+    },
+  };
+}
+
+export function parsePensionXml(rawXml, fileName = "") {
+  const doc = parseXmlDocument(rawXml);
+
+  const memberNode = doc.querySelector("MemberDetails");
+  if (!memberNode) {
+    throw new Error("MemberDetails not found in XML");
+  }
+
+  const firstName = normalizeText(getText(memberNode, "FirstName"));
+  const lastName = normalizeText(getText(memberNode, "FamilyName"));
+
+  const member = {
+    id: normalizeText(getText(memberNode, "ID")),
+    firstName,
+    lastName,
+    fullName: [firstName, lastName].filter(Boolean).join(" "),
+    companyName: normalizeText(getText(memberNode, "CompanyName")),
+    income: parseNumber(getText(memberNode, "Income")),
+  };
+
+  const policyNodes = Array.from(doc.querySelectorAll("Policies > Policy"));
+  const policies = policyNodes
+    .map(parsePolicy)
+    .sort((a, b) => a.rowNum - b.rowNum);
+  const summary = parseSummary(doc);
+
+  return {
+    fileName,
+    rawXmlPreview: sanitizeXml(rawXml).slice(0, 3000),
+    member,
+    policies,
+    summary,
+  };
+}
+
+export async function parsePensionXmlFile(file) {
+  const rawXml = await file.text();
+  return parsePensionXml(rawXml, file.name);
+}
+
+export async function parseMultiplePensionXmlFiles(files) {
+  return Promise.all(files.map(parsePensionXmlFile));
+}
+
+function groupBySum(items, getKey, getValue) {
+  const map = new Map();
+
+  items.forEach((item) => {
+    const key = getKey(item) || "לא ידוע";
+    const value = getValue(item) || 0;
+    map.set(key, (map.get(key) || 0) + value);
+  });
+
+  return Array.from(map.entries())
+    .map(([name, value]) => ({ name, value }))
+    .filter((item) => item.value > 0)
+    .sort((a, b) => b.value - a.value);
+}
+
+function uniquePolicies(policies) {
+  const seen = new Set();
+
+  return policies.filter((policy) => {
+    const key = [
+      policy.ownerId || "",
+      policy.rowNum || "",
+      policy.policyNo || "",
+      policy.productType || "",
+      policy.planName || "",
+    ].join("|");
+
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function isLifeInsurancePolicy(policy) {
+  const text = [
+    policy.productType,
+    policy.planName,
+    policy.details?.proposeName,
+    policy.details?.targetPlan,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  return (
+    text.includes("ביטוח חיים") ||
+    text.includes("חיים") ||
+    text.includes("ריסק")
+  );
+}
+
+function isNoCoeffPolicy(policy) {
+  const coeff = policy?.savings?.hCoeff;
+  return coeff === null || coeff === undefined || coeff === 0;
+}
+
+function buildTracks(flatPolicies) {
+  const tracksRaw = [];
+
+  flatPolicies.forEach((policy) => {
+    const plans = policy.investPlans || [];
+    const policyValue = policy.savings.totalAccumulated || 0;
+
+    if (!plans.length && policyValue > 0) {
+      tracksRaw.push({
+        name: policy.planName || policy.productType || "מסלול לא ידוע",
+        value: policyValue,
+        equityPercent: inferEquityFromTrackName(
+          policy.planName || policy.productType || ""
+        ),
+      });
       return;
     }
 
-    setError("");
+    const divisor = plans.length || 1;
 
-    setSelectedFiles((prev) => {
-      const existingKeys = new Set(
-        prev.map((file) => `${file.name}_${file.size}_${file.lastModified}`)
-      );
-
-      const newFiles = xmlFiles.filter((file) => {
-        const key = `${file.name}_${file.size}_${file.lastModified}`;
-        return !existingKeys.has(key);
+    plans.forEach((plan) => {
+      tracksRaw.push({
+        name:
+          plan.trackName ||
+          plan.planName ||
+          policy.planName ||
+          "מסלול לא ידוע",
+        value: policyValue / divisor,
+        equityPercent:
+          plan.equityExposure ??
+          inferEquityFromTrackName(plan.trackName || plan.planName || ""),
       });
-
-      return [...prev, ...newFiles];
     });
-  };
+  });
 
-  const handleFileSelection = (event) => {
-    addFiles(event.target.files);
-    event.target.value = "";
-  };
+  const grouped = new Map();
 
-  const handleDrop = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
+  tracksRaw.forEach((track) => {
+    const current = grouped.get(track.name) || {
+      name: track.name,
+      value: 0,
+      weightedEquity: 0,
+    };
 
-    dragCounterRef.current = 0;
-    setIsDragging(false);
+    current.value += track.value || 0;
+    current.weightedEquity +=
+      (track.value || 0) * (track.equityPercent || 0);
 
-    addFiles(event.dataTransfer.files);
-  };
+    grouped.set(track.name, current);
+  });
 
-  const handleDragOver = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    event.dataTransfer.dropEffect = "copy";
+  return Array.from(grouped.values())
+    .map((track) => ({
+      name: track.name,
+      value: track.value,
+      equityPercent:
+        track.value > 0
+          ? Math.round(track.weightedEquity / track.value)
+          : 0,
+    }))
+    .filter((track) => track.value > 0)
+    .sort((a, b) => b.value - a.value);
+}
 
-    if (!isDragging) {
-      setIsDragging(true);
+function buildMainGroupAllocation(flatPolicies) {
+  const grouped = new Map();
+
+  flatPolicies.forEach((policy) => {
+    const policyValue = Number(policy?.savings?.totalAccumulated || 0);
+    if (policyValue <= 0) return;
+
+    const plans = Array.isArray(policy.investPlans) ? policy.investPlans : [];
+    if (!plans.length) return;
+
+    const divisor = plans.length || 1;
+    const planWeight = policyValue / divisor;
+
+    plans.forEach((plan) => {
+      const mainGroups = Array.isArray(plan.mainGroups) ? plan.mainGroups : [];
+      mainGroups.forEach((group) => {
+        const rate = Number(group?.rate || 0);
+        if (!group?.name || rate <= 0) return;
+
+        const weightedValue = planWeight * (rate / 100);
+        const key = `${group.id || ""}|${group.name}`;
+
+        const current = grouped.get(key) || {
+          id: group.id || "",
+          name: group.name,
+          value: 0,
+        };
+
+        current.value += weightedValue;
+        grouped.set(key, current);
+      });
+    });
+  });
+
+  const items = Array.from(grouped.values())
+    .filter((item) => item.value > 0)
+    .sort((a, b) => b.value - a.value);
+
+  const total = items.reduce((sum, item) => sum + item.value, 0);
+
+  return items.map((item) => ({
+    ...item,
+    percent: total > 0 ? (item.value / total) * 100 : 0,
+  }));
+}
+
+function buildForeignExposureAllocation(flatPolicies) {
+  let totalTrackedValue = 0;
+  let abroadWeightedValue = 0;
+
+  flatPolicies.forEach((policy) => {
+    const policyValue = Number(policy?.savings?.totalAccumulated || 0);
+    if (policyValue <= 0) return;
+
+    const plans = Array.isArray(policy.investPlans) ? policy.investPlans : [];
+
+    if (!plans.length) {
+      totalTrackedValue += policyValue;
+      return;
     }
+
+    const divisor = plans.length || 1;
+    const planWeight = policyValue / divisor;
+
+    plans.forEach((plan) => {
+      const rate = Math.max(0, Math.min(100, Number(plan?.foreignExposure || 0)));
+      totalTrackedValue += planWeight;
+      abroadWeightedValue += planWeight * (rate / 100);
+    });
+  });
+
+  if (totalTrackedValue <= 0) {
+    return {
+      weightedForeignExposure: 0,
+      items: [
+        { name: 'חו"ל', value: 0, percent: 0 },
+        { name: "ישראל", value: 100, percent: 100 },
+      ],
+    };
+  }
+
+  const abroadPercent = (abroadWeightedValue / totalTrackedValue) * 100;
+  const israelPercent = Math.max(0, 100 - abroadPercent);
+
+  return {
+    weightedForeignExposure: abroadPercent,
+    items: [
+      { name: 'חו"ל', value: abroadPercent, percent: abroadPercent },
+      { name: "ישראל", value: israelPercent, percent: israelPercent },
+    ],
   };
+}
 
-  const handleDragEnter = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
+export function buildLegacyReportData(parsedFiles) {
+  const files = Array.isArray(parsedFiles) ? parsedFiles : [];
 
-    dragCounterRef.current += 1;
-    if (!isDragging) {
-      setIsDragging(true);
-    }
-  };
+  const flatPolicies = files.flatMap((file) =>
+    (file.policies || []).map((policy) => ({
+      ...policy,
+      ownerName: file.member.fullName,
+      ownerId: file.member.id,
+      ownerFile: file.fileName,
+      ownerFirstName: file.member.firstName,
+      ownerLastName: file.member.lastName,
+    }))
+  );
 
-  const handleDragLeave = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
+  const noCoeffPolicies = flatPolicies.filter(isNoCoeffPolicy);
+  const lifeInsurancePolicies = flatPolicies.filter(isLifeInsurancePolicy);
 
-    dragCounterRef.current -= 1;
+  const insurancePolicies = uniquePolicies([
+    ...noCoeffPolicies,
+    ...lifeInsurancePolicies,
+  ]);
 
-    if (dragCounterRef.current <= 0) {
-      dragCounterRef.current = 0;
-      setIsDragging(false);
-    }
-  };
+  const totalAssets = sumNullable(
+    files.map((f) => f.summary?.save?.totalAccumulated)
+  );
 
-  const handleDragEnd = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
+  const monthlyDeposits = sumNullable(
+    files.map((f) => f.summary?.budget?.sumCost)
+  );
 
-    dragCounterRef.current = 0;
-    setIsDragging(false);
-  };
+  const monthlyPensionWithDeposits = sumNullable(
+    files.map((f) => f.summary?.save?.withDepositsMonthlyPensionField)
+  );
 
-  const removeFile = (fileToRemove) => {
-    setSelectedFiles((prev) =>
-      prev.filter(
-        (file) =>
-          !(
-            file.name === fileToRemove.name &&
-            file.size === fileToRemove.size &&
-            file.lastModified === fileToRemove.lastModified
-          )
+  const monthlyPensionWithoutDeposits = sumNullable(
+    files.map((f) => f.summary?.save?.withoutDepositsMonthlyPensionField)
+  );
+
+  const projectedLumpSumWithoutDeposits = sumNullable(
+    noCoeffPolicies.map((p) => p.savings?.retireCurrBalance)
+  );
+
+  const projectedLumpSumWithDeposits = sumNullable(
+    noCoeffPolicies.map((p) => p.savings?.totalPidions)
+  );
+
+  const totalInsurance = sumNullable(
+    insurancePolicies.map((p) => p.savings?.totalAccumulated)
+  );
+
+  const retirementAges = Array.from(
+    new Set(
+      flatPolicies
+        .map((p) => p.details?.retireAge)
+        .filter((v) => Number.isFinite(v) && v > 0)
+    )
+  ).sort((a, b) => a - b);
+
+  const retirementAgeLabel = retirementAges.length
+    ? `התחזית מבוססת על גילי הפרישה שהוגדרו בדוחות (${retirementAges.join(
+        ", "
+      )}).`
+    : "התחזית מבוססת על גילי הפרישה שהוגדרו בדוחות.";
+
+  const members = files.map((file) => {
+    const memberPolicies = flatPolicies.filter(
+      (policy) => policy.ownerId === file.member.id
+    );
+
+    const memberNoCoeff = memberPolicies.filter(isNoCoeffPolicy);
+    const memberLife = memberPolicies.filter(isLifeInsurancePolicy);
+    const memberInsurancePolicies = uniquePolicies([
+      ...memberNoCoeff,
+      ...memberLife,
+    ]);
+
+    const assets = file.summary?.save?.totalAccumulated || 0;
+    const monthlyDepositsMember = file.summary?.budget?.sumCost || 0;
+
+    const deathCoverage = sumNullable(
+      memberInsurancePolicies.map((p) => p.savings?.totalAccumulated)
+    );
+
+    const disabilityValue = sumNullable(
+      memberPolicies.map(
+        (p) => p.coverage?.disabilityPension ?? p.coverage?.totalRisk ?? 0
       )
     );
-  };
 
-  const clearAllFiles = () => {
-    setSelectedFiles([]);
-    setError("");
-    dragCounterRef.current = 0;
-    setIsDragging(false);
-  };
+    const salaryBase = Math.max(
+      0,
+      ...memberPolicies.map((p) => p.salary || 0),
+      file.member.income || 0
+    );
 
-  const openFilePicker = () => {
-    fileInputRef.current?.click();
-  };
+    const disabilityPercent =
+      salaryBase > 0
+        ? Math.round((disabilityValue / salaryBase) * 100)
+        : 0;
 
-  const handleAnalyzeFiles = async () => {
-    try {
-      setError("");
+    return {
+      name: file.member.fullName || "ללא שם",
+      shareOfFamilyAssets:
+        totalAssets > 0 ? Math.round((assets / totalAssets) * 100) : 0,
+      monthlyDeposits: monthlyDepositsMember,
+      assets,
+      monthlyPensionWithDeposits:
+        file.summary?.save?.withDepositsMonthlyPensionField || 0,
+      monthlyPensionWithoutDeposits:
+        file.summary?.save?.withoutDepositsMonthlyPensionField || 0,
+      lumpSumWithDeposits: sumNullable(
+        memberNoCoeff.map((p) => p.savings?.totalPidions)
+      ),
+      lumpSumWithoutDeposits: sumNullable(
+        memberNoCoeff.map((p) => p.savings?.retireCurrBalance)
+      ),
+      deathCoverage,
+      disabilityValue,
+      disabilityPercent,
+    };
+  });
 
-      if (!selectedFiles.length) {
-        setError("יש לבחור לפחות קובץ XML אחד");
-        return;
-      }
-
-      setLoading(true);
-
-      const parsedFiles = await parseMultiplePensionXmlFiles(selectedFiles);
-      const reportData = buildLegacyReportData(parsedFiles);
-
-      setReportData(reportData);
-    } catch (err) {
-      console.error(err);
-      setError(`שגיאה בקריאת קבצי XML: ${err?.message || err}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div
-      style={{
-        minHeight: "100vh",
-        direction: "rtl",
-        background: "#f7f8fc",
-        padding: "40px 20px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 980,
-          margin: "0 auto",
-          background: "#ffffff",
-          borderRadius: 28,
-          padding: 32,
-          boxShadow: "0 12px 36px rgba(0,0,0,0.08)",
-          border: "1px solid #e7ebf3",
-        }}
-      >
-        <div style={{ marginBottom: 24 }}>
-          <h1
-            style={{
-              margin: 0,
-              color: "#0d2c6c",
-              fontSize: 36,
-              fontWeight: 900,
-            }}
-          >
-            העלאת קבצי XML
-          </h1>
-
-          <p
-            style={{
-              marginTop: 12,
-              marginBottom: 0,
-              color: "#5f6b85",
-              fontSize: 16,
-              lineHeight: 1.8,
-            }}
-          >
-            אפשר להעלות קבצים אחד-אחד, לבחור כמה יחד, או פשוט לגרור לכאן. המערכת
-            תשמור את כל הקבצים שנבחרו עד שתלחץ על “הפק דוח”.
-          </p>
-        </div>
-
-        <div
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragEnter={handleDragEnter}
-          onDragLeave={handleDragLeave}
-          onDragEnd={handleDragEnd}
-          style={{
-            border: isDragging ? "2px solid #0d2c6c" : "2px dashed #cbd4e6",
-            background: isDragging ? "#eef4ff" : "#f9fbff",
-            borderRadius: 24,
-            padding: "34px 24px",
-            textAlign: "center",
-            transition: "all 0.2s ease",
-            marginBottom: 20,
-          }}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept=".xml"
-            onChange={handleFileSelection}
-            style={{ display: "none" }}
-          />
-
-          <div style={{ fontSize: 42, marginBottom: 10 }}>📂</div>
-
-          <div
-            style={{
-              fontSize: 22,
-              fontWeight: 800,
-              color: "#0d2c6c",
-              marginBottom: 10,
-            }}
-          >
-            גרור קבצי XML לכאן
-          </div>
-
-          <div
-            style={{
-              color: "#69758e",
-              fontSize: 15,
-              marginBottom: 18,
-            }}
-          >
-            או בחר קבצים ידנית מהמחשב
-          </div>
-
-          <button
-            type="button"
-            onClick={openFilePicker}
-            style={{
-              background: "#0d2c6c",
-              color: "#fff",
-              border: "none",
-              borderRadius: 14,
-              padding: "12px 20px",
-              fontSize: 15,
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
-          >
-            בחירת קבצים
-          </button>
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: 12,
-            flexWrap: "wrap",
-            marginBottom: 14,
-          }}
-        >
-          <div
-            style={{
-              color: "#0d2c6c",
-              fontWeight: 800,
-              fontSize: 16,
-            }}
-          >
-            {selectedFiles.length
-              ? `נבחרו ${selectedFiles.length} קבצים`
-              : "עדיין לא נבחרו קבצים"}
-          </div>
-
-          {selectedFiles.length > 0 && (
-            <button
-              type="button"
-              onClick={clearAllFiles}
-              style={{
-                background: "#fff",
-                color: "#b42318",
-                border: "1px solid #f0c7c2",
-                borderRadius: 12,
-                padding: "10px 14px",
-                fontSize: 14,
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              נקה הכל
-            </button>
-          )}
-        </div>
-
-        {selectedFiles.length > 0 && (
-          <div
-            style={{
-              background: "#fff",
-              border: "1px solid #e4e9f5",
-              borderRadius: 20,
-              overflow: "hidden",
-              marginBottom: 20,
-            }}
-          >
-            {selectedFiles.map((file, index) => (
-              <div
-                key={`${file.name}_${file.size}_${file.lastModified}`}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "14px 16px",
-                  borderBottom:
-                    index !== selectedFiles.length - 1
-                      ? "1px solid #eef2fa"
-                      : "none",
-                }}
-              >
-                <div style={{ minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontWeight: 700,
-                      color: "#0d2c6c",
-                      marginBottom: 4,
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    {file.name}
-                  </div>
-
-                  <div
-                    style={{
-                      color: "#6b7280",
-                      fontSize: 13,
-                    }}
-                  >
-                    {(file.size / 1024).toFixed(1)} KB
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => removeFile(file)}
-                  style={{
-                    background: "#fff5f5",
-                    color: "#c81e1e",
-                    border: "1px solid #f3c2c2",
-                    borderRadius: 10,
-                    padding: "8px 12px",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    flexShrink: 0,
-                  }}
-                >
-                  הסר
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <button
-          type="button"
-          onClick={handleAnalyzeFiles}
-          disabled={loading || selectedFiles.length === 0}
-          style={{
-            width: "100%",
-            padding: "16px 20px",
-            background:
-              loading || selectedFiles.length === 0 ? "#c3cbdd" : "#0d2c6c",
-            color: "#fff",
-            border: "none",
-            borderRadius: 16,
-            fontSize: 17,
-            fontWeight: 800,
-            cursor:
-              loading || selectedFiles.length === 0 ? "not-allowed" : "pointer",
-            transition: "all 0.2s ease",
-          }}
-        >
-          {loading ? "מנתח קבצים..." : "הפק דוח"}
-        </button>
-
-        {loading && (
-          <div
-            style={{
-              marginTop: 16,
-              background: "#eef4ff",
-              border: "1px solid #d7e3ff",
-              borderRadius: 14,
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                height: 10,
-                width: "100%",
-                background:
-                  "linear-gradient(90deg, #0d2c6c 0%, #3f67c6 50%, #0d2c6c 100%)",
-                backgroundSize: "200% 100%",
-                animation: "loadingBar 1.4s linear infinite",
-              }}
-            />
-            <div
-              style={{
-                padding: 12,
-                color: "#0d2c6c",
-                fontWeight: 700,
-                fontSize: 14,
-              }}
-            >
-              הקבצים נטענים ומנותחים...
-            </div>
-          </div>
-        )}
-
-        {error && (
-          <div
-            style={{
-              marginTop: 16,
-              background: "#fff5f5",
-              color: "#b42318",
-              border: "1px solid #f3c2c2",
-              borderRadius: 14,
-              padding: 14,
-              fontWeight: 700,
-            }}
-          >
-            {error}
-          </div>
-        )}
-      </div>
-
-      <style>
-        {`
-          @keyframes loadingBar {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-          }
-        `}
-      </style>
-    </div>
+  const products = groupBySum(
+    flatPolicies,
+    (p) => p.productType || "ללא סוג",
+    (p) => p.savings?.totalAccumulated || 0
   );
+
+  const managers = groupBySum(
+    flatPolicies,
+    (p) => p.managerName || "לא ידוע",
+    (p) => p.savings?.totalAccumulated || 0
+  );
+
+  const tracks = buildTracks(flatPolicies);
+  const mainGroupAllocation = buildMainGroupAllocation(flatPolicies);
+  const foreignExposureResult = buildForeignExposureAllocation(flatPolicies);
+
+  const totalProducts = sumNullable(products.map((p) => p.value));
+  const totalManagers = sumNullable(managers.map((p) => p.value));
+  const totalTracks = sumNullable(tracks.map((t) => t.value));
+
+  const weightedEquityExposure =
+    totalTracks > 0
+      ? Math.round(
+          tracks.reduce(
+            (acc, track) =>
+              acc + (track.value || 0) * (track.equityPercent || 0),
+            0
+          ) / totalTracks
+        )
+      : 0;
+
+  const loanDetails = flatPolicies.flatMap((policy) =>
+    (policy.loans || []).map((loan, index) => ({
+      id: [
+        policy.ownerId || "",
+        policy.policyNo || "",
+        policy.rowNum || "",
+        index,
+        loan.amount ?? "",
+        loan.balance ?? "",
+        loan.endDate || "",
+      ].join("|"),
+      firstName: policy.ownerFirstName || "",
+      familyName: policy.ownerLastName || "",
+      amount: loan.amount ?? 0,
+      repaymentFrequency: loan.repaymentFrequency || "",
+      balance: loan.balance ?? 0,
+      endDate: loan.endDate || "",
+      policyNo: policy.policyNo || "",
+      productType: policy.productType || "",
+      planName: policy.planName || "",
+    }))
+  );
+
+  const uniqueLoanMap = new Map();
+  loanDetails.forEach((loan) => {
+    const key = [
+      loan.firstName,
+      loan.familyName,
+      loan.amount,
+      loan.balance,
+      loan.repaymentFrequency,
+      loan.endDate,
+      loan.policyNo,
+    ].join("|");
+
+    if (!uniqueLoanMap.has(key)) {
+      uniqueLoanMap.set(key, loan);
+    }
+  });
+
+  const uniqueLoanDetails = Array.from(uniqueLoanMap.values());
+
+  const reportData = {
+    family: {
+      lastUpdated: formatDateForReport(new Date()),
+      totalAssets,
+      monthlyDeposits,
+      monthlyPensionWithDeposits,
+      projectedLumpSumWithDeposits,
+      monthlyPensionWithoutDeposits,
+      projectedLumpSumWithoutDeposits,
+      retirementAgeLabel,
+      totalInsurance,
+    },
+    members,
+    products,
+    managers,
+    tracks,
+    mainGroupAllocation,
+    foreignExposureAllocation: foreignExposureResult.items,
+    weightedForeignExposure: foreignExposureResult.weightedForeignExposure,
+    loans: {
+      hasData: uniqueLoanDetails.length > 0,
+      details: uniqueLoanDetails,
+    },
+    beneficiaries: {
+      hasData: false,
+      coverageAmount: totalInsurance,
+      summary:
+        totalInsurance > 0
+          ? "זוהה כיסוי / סכום ביטוח במוצרים הרלוונטיים"
+          : "לא התקבל מידע",
+    },
+    weightedEquityExposure,
+    totalProducts,
+    totalManagers,
+    totalTracks,
+    rawParsedFiles: files.map((file) => ({
+      fileName: file.fileName,
+      memberName: file.member.fullName,
+      parsedData: {
+        member: file.member,
+        summary: file.summary,
+        policies: file.policies,
+        rawTextPreview: file.rawXmlPreview,
+      },
+    })),
+  };
+
+  return reportData;
 }
