@@ -1,8 +1,11 @@
-// src/ReportPage.jsx
-
 import React, { useMemo, useState } from "react";
 
-export default function ReportPage({ reportData, onBack, onResetAll }) {
+export default function ReportPage({
+  reportData,
+  onBack,
+  onResetAll = () => {},
+  onOpenClientDashboard = () => {},
+}) {
   const [recommendations, setRecommendations] = useState(
     `1. מומלץ לבחון את הפער בין הקצבה הצפויה עם המשך הפקדות לבין ללא המשך הפקדות.
 2. מומלץ לבדוק האם יש ריכוז יתר במוצרים או בגופים מנהלים מסוימים.
@@ -1024,9 +1027,18 @@ export default function ReportPage({ reportData, onBack, onResetAll }) {
           <button onClick={onBack} className="action-button primary-outline">
             חזרה למסך העלאה
           </button>
+
+          <button
+            onClick={onOpenClientDashboard}
+            className="action-button primary-outline"
+          >
+            פתח תצוגת לקוח
+          </button>
+
           <button onClick={onResetAll} className="action-button danger">
             איפוס מלא
           </button>
+
           <button onClick={handleExportPdf} className="action-button primary-outline">
             ייצוא ל־PDF
           </button>
@@ -1122,7 +1134,7 @@ export default function ReportPage({ reportData, onBack, onResetAll }) {
               </div>
 
               <PercentDonutCard
-                title={"חשיפה לחו\"ל"}
+                title={'חשיפה לחו"ל'}
                 subtitle={`חשיפה משוקללת לחו"ל: ${formatPercentLabel(
                   weightedForeignExposure
                 )}`}
