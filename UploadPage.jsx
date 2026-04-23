@@ -4,7 +4,7 @@ import React, { useRef, useState } from "react";
 import {
   parseMultiplePensionXmlFiles,
   buildLegacyReportData,
-} from "./utils/pensionXmlParser";
+} from "./pensionXmlParser";
 
 export default function UploadPage({ setReportData }) {
   const [error, setError] = useState("");
