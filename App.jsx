@@ -7,15 +7,13 @@ function App() {
   const [currentPage, setCurrentPage] = useState("upload");
   const [reportData, setReportData] = useState(null);
 
+  const handleSetReportData = (data) => {
+    setReportData(data);
+    setCurrentPage("report");
+  };
+
   if (currentPage === "upload") {
-    return (
-      <UploadPage
-        onDataReady={(data) => {
-          setReportData(data);
-          setCurrentPage("report");
-        }}
-      />
-    );
+    return <UploadPage setReportData={handleSetReportData} />;
   }
 
   if (currentPage === "report") {
@@ -23,6 +21,10 @@ function App() {
       <ReportPage
         reportData={reportData}
         onBack={() => setCurrentPage("upload")}
+        onResetAll={() => {
+          setReportData(null);
+          setCurrentPage("upload");
+        }}
         onOpenClientDashboard={() => setCurrentPage("client")}
       />
     );
