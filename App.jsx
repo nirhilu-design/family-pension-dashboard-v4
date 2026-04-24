@@ -14,6 +14,7 @@ function App() {
   const [reportData, setReportData] = useState(null);
   const [shareError, setShareError] = useState("");
   const [isSharedMode, setIsSharedMode] = useState(false);
+  const [sharePayload, setSharePayload] = useState(null);
 
   useEffect(() => {
     const shareToken = getShareModeFromUrl();
@@ -26,11 +27,13 @@ function App() {
 
     if (!result.success) {
       setShareError(result.error);
+      setSharePayload(result.payload || null);
       setCurrentPage("share-error");
       return;
     }
 
     setReportData(result.reportData);
+    setSharePayload(result.payload || null);
     setCurrentPage("client");
   }, []);
 
@@ -40,16 +43,27 @@ function App() {
   };
 
   const handleCreateShareLink = () => {
-    if (!reportData) return "";
+    if (!reportData) return null;
 
     const result = createClientShare(reportData);
 
     if (!result.success) {
       console.error(result.error);
-      return "";
+      return {
+        success: false,
+        error: result.error,
+      };
     }
 
-    return buildShareUrl(result.token);
+    return {
+      success: true,
+      url: buildShareUrl(result.token),
+      token: result.token,
+      clientName: result.clientName,
+      createdAt: result.createdAt,
+      expiresAt: result.expiresAt,
+      payload: result.payload,
+    };
   };
 
   if (currentPage === "share-error") {
@@ -78,9 +92,7 @@ function App() {
         >
           <h1 style={{ color: "#00215D", marginTop: 0 }}>הקישור לא זמין</h1>
 
-          <p style={{ color: "#627D98", lineHeight: 1.8 }}>
-            {shareError}
-          </p>
+          <p style={{ color: "#627D98", lineHeight: 1.8 }}>{shareError}</p>
 
           <p style={{ color: "#627D98", lineHeight: 1.8, fontSize: 13 }}>
             בשלב הנוכחי הקישור נשמר מקומית בדפדפן שבו הוא נוצר. זהו שלב בדיקות
@@ -102,6 +114,8 @@ function App() {
         onBack={() => setCurrentPage("upload")}
         onResetAll={() => {
           setReportData(null);
+          setSharePayload(null);
+          setIsSharedMode(false);
           setCurrentPage("upload");
         }}
         onOpenClientDashboard={() => setCurrentPage("client")}
@@ -116,6 +130,7 @@ function App() {
         onBack={() => setCurrentPage("report")}
         onCreateShareLink={handleCreateShareLink}
         isSharedMode={isSharedMode}
+        sharePayload={sharePayload}
       />
     );
   }
