@@ -9,7 +9,7 @@ export function buildClientFamilyDataModel(reportData) {
   const weightedEquityExposure = Number(safe.weightedEquityExposure || 0);
   const weightedForeignExposure = Number(safe.weightedForeignExposure || 0);
 
-  const familyModel = {
+  return {
     id: "family",
     type: "family",
     title: "תמונה משפחתית מאוחדת",
@@ -48,12 +48,13 @@ export function buildClientFamilyDataModel(reportData) {
     loans: safe.loans || { hasData: false, details: [] },
     rawReportData: safe,
   };
-
-  return familyModel;
 }
 
 function buildClientMemberModel(member, index, reportData) {
   const memberName = member?.name || `לקוח ${index + 1}`;
+
+  const products = extractMemberProducts(memberName, reportData);
+  const managers = buildManagersFromProducts(products);
 
   return {
     id: createStableMemberId(memberName, index),
@@ -83,8 +84,8 @@ function buildClientMemberModel(member, index, reportData) {
       equity: Number(member?.weightedEquityExposure || 0),
       foreign: Number(member?.weightedForeignExposure || 0),
     },
-    products: extractMemberProducts(memberName, reportData),
-    managers: extractMemberManagers(memberName, reportData),
+    products,
+    managers,
     rawMember: member,
   };
 }
@@ -110,71 +111,152 @@ function normalizeDistribution(items) {
 }
 
 function extractMemberProducts(memberName, reportData) {
-  const allPlans =
-    reportData?.plans ||
-    reportData?.allPlans ||
-    reportData?.policies ||
-    reportData?.productsDetailed ||
-    [];
+  const rawFiles = Array.isArray(reportData?.rawParsedFiles)
+    ? reportData.rawParsedFiles
+    : [];
 
-  if (!Array.isArray(allPlans)) return [];
+  const allPolicies = rawFiles.flatMap((file) => {
+    const fileMemberName = file?.memberName || "";
+    const fileMemberId = file?.parsedData?.member?.id || "";
 
-  return allPlans
-    .filter((plan) => {
-      const owner =
-        plan.memberName ||
-        plan.ownerName ||
-        plan.name ||
-        plan.fullName ||
-        "";
-      return String(owner).trim() === String(memberName).trim();
-    })
-    .map((plan, index) => ({
-      id: plan.id || `${memberName}_plan_${index}`,
-      planName: plan.planName || plan.PlanName || plan.name || "מוצר פנסיוני",
-      managerName:
-        plan.managerName ||
-        plan.ManufacturerName ||
-        plan.companyName ||
-        plan.manager ||
-        "—",
-      productType: plan.productType || plan.type || "—",
-      currentValue: Number(plan.currentValue || plan.assets || plan.value || 0),
-      monthlyDeposit: Number(
-        plan.monthlyDeposit || plan.monthlyDeposits || plan.deposit || 0
-      ),
-      raw: plan,
+    const policies = Array.isArray(file?.parsedData?.policies)
+      ? file.parsedData.policies
+      : [];
+
+    return policies.map((policy, index) => ({
+      ...policy,
+      ownerName: fileMemberName,
+      ownerId: fileMemberId,
+      internalIndex: index,
     }));
+  });
+
+  const memberPolicies = allPolicies.filter(
+    (policy) =>
+      String(policy.ownerName || "").trim() === String(memberName || "").trim()
+  );
+
+  return memberPolicies.map((policy, index) => {
+    const currentValue = Number(policy?.savings?.totalAccumulated || 0);
+
+    const monthlyDeposit = Number(
+      policy?.monthlyDeposits?.sumCost ||
+        policy?.monthlyDeposits?.worker ||
+        0
+    );
+
+    return {
+      id:
+        policy.policyNo ||
+        `${createStableMemberId(memberName, index)}_${policy.rowNum || index}`,
+
+      planName:
+        policy.planName ||
+        policy.productType ||
+        policy.details?.proposeName ||
+        "מוצר פנסיוני",
+
+      managerName: policy.managerName || "—",
+
+      productType: policy.productType || policy.details?.proposeName || "—",
+
+      policyNo: policy.policyNo || "—",
+
+      currentValue,
+
+      monthlyDeposit,
+
+      projectedLumpSumWithDeposits: Number(
+        policy?.savings?.totalPidions || 0
+      ),
+
+      projectedLumpSumWithoutDeposits: Number(
+        policy?.savings?.retireCurrBalance || 0
+      ),
+
+      projectedMonthlyPension: Number(
+        policy?.savings?.pensionRetire ||
+          policy?.savings?.projectedMonthlyPension ||
+          0
+      ),
+
+      joinDate: policy.joinDate || null,
+
+      retireAge: policy?.details?.retireAge || null,
+
+      managementFeeFromDeposit: Number(
+        policy?.details?.managementFeeFromDeposit || 0
+      ),
+
+      managementFeeFromBalance: Number(
+        policy?.details?.managementFeeFromBalance || 0
+      ),
+
+      equityExposure: getPolicyEquityExposure(policy),
+
+      foreignExposure: getPolicyForeignExposure(policy),
+
+      raw: policy,
+    };
+  });
 }
 
-function extractMemberManagers(memberName, reportData) {
-  const memberProducts = extractMemberProducts(memberName, reportData);
-
+function buildManagersFromProducts(products) {
+  const safeProducts = Array.isArray(products) ? products : [];
   const map = new Map();
 
-  memberProducts.forEach((product) => {
-    const managerName = product.managerName || "—";
-    const currentValue = Number(product.currentValue || 0);
+  safeProducts.forEach((product) => {
+    const name = product.managerName || "—";
+    const value = Number(product.currentValue || 0);
 
-    if (!map.has(managerName)) {
-      map.set(managerName, {
-        id: managerName,
-        name: managerName,
+    if (!map.has(name)) {
+      map.set(name, {
+        id: name,
+        name,
         value: 0,
-        percent: 0,
       });
     }
 
-    map.get(managerName).value += currentValue;
+    map.get(name).value += value;
   });
 
   const managers = Array.from(map.values());
-  const total = managers.reduce((sum, item) => sum + item.value, 0);
+  const total = managers.reduce((sum, manager) => sum + manager.value, 0);
 
-  return managers.map((item) => ({
-    ...item,
-    percent: total > 0 ? (item.value / total) * 100 : 0,
+  return managers.map((manager) => ({
+    ...manager,
+    percent: total > 0 ? (manager.value / total) * 100 : 0,
   }));
+}
+
+function getPolicyEquityExposure(policy) {
+  const investPlans = Array.isArray(policy?.investPlans)
+    ? policy.investPlans
+    : [];
+
+  if (!investPlans.length) return 0;
+
+  const total = investPlans.reduce(
+    (sum, plan) => sum + Number(plan?.equityExposure || 0),
+    0
+  );
+
+  return total / investPlans.length;
+}
+
+function getPolicyForeignExposure(policy) {
+  const investPlans = Array.isArray(policy?.investPlans)
+    ? policy.investPlans
+    : [];
+
+  if (!investPlans.length) return 0;
+
+  const total = investPlans.reduce(
+    (sum, plan) => sum + Number(plan?.foreignExposure || 0),
+    0
+  );
+
+  return total / investPlans.length;
 }
 
 function createStableMemberId(name, index) {
