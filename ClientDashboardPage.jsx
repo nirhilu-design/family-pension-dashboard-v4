@@ -40,7 +40,7 @@ function ClientDashboardPage({
 
   const activeLabel =
     activeView === "family"
-      ? "מבט משפחתי"
+      ? "משפחתי"
       : selectedMember?.name || "מבט אישי";
 
   const handleChangeView = (viewId) => {
@@ -106,30 +106,30 @@ function ClientDashboardPage({
           }
 
           @media (max-width: 900px) {
-            .client-desktop-tabs {
+            .desktop-tabs {
               display: none !important;
             }
 
-            .client-mobile-menu {
+            .mobile-view-select {
               display: block !important;
             }
 
-            .client-top-layout {
+            .thin-bar-inner {
+              flex-direction: column !important;
               align-items: stretch !important;
             }
 
-            .client-actions {
-              width: 100% !important;
+            .thin-actions {
               justify-content: stretch !important;
             }
 
-            .client-actions button {
+            .thin-actions button {
               flex: 1 !important;
             }
           }
 
           @media (min-width: 901px) {
-            .client-mobile-menu {
+            .mobile-view-select {
               display: none !important;
             }
           }
@@ -146,42 +146,15 @@ function ClientDashboardPage({
           color: "#102A43",
         }}
       >
-        <div className="client-no-print" style={topShell}>
-          <div className="client-top-layout" style={topBar}>
-            <div>
-              <div style={eyebrow}>
-                {isSharedMode ? "תצוגת לקוח משותפת" : "תצוגת לקוח פנימית"}
-              </div>
-
-              <h1 style={topTitle}>דשבורד פנסיוני משפחתי</h1>
-
-              <div style={topSubtitle}>
-                מעבר בין תמונה משפחתית מאוחדת לבין פירוט אישי לפי לקוח.
-              </div>
-            </div>
-
-            <div className="client-actions" style={actions}>
-              <button onClick={handleExportPdf} style={pdfButtonStyle}>
-                הורד PDF
-              </button>
-
-              {!isSharedMode && (
-                <button onClick={onBack} style={secondaryButtonStyle}>
-                  חזרה לדוח
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div style={navArea}>
-            <div className="client-desktop-tabs" style={tabs}>
+        <div className="client-no-print" style={thinStickyBar}>
+          <div className="thin-bar-inner" style={thinBarInner}>
+            <div className="desktop-tabs" style={tabs}>
               <button
                 onClick={() => handleChangeView("family")}
                 style={tabButtonStyle(activeView === "family")}
                 title="מבט משפחתי"
               >
-                <span style={tabIcon}>👨‍👩‍👧‍👦</span>
-                <span>משפחתי</span>
+                👨‍👩‍👧‍👦 משפחתי
               </button>
 
               {members.map((member, index) => (
@@ -191,13 +164,12 @@ function ClientDashboardPage({
                   style={tabButtonStyle(activeView === member.id)}
                   title={member.name}
                 >
-                  <span style={tabIcon}>👤</span>
-                  <span>{member.name || `לקוח ${index + 1}`}</span>
+                  👤 {member.name || `לקוח ${index + 1}`}
                 </button>
               ))}
             </div>
 
-            <div className="client-mobile-menu" style={mobileMenuWrap}>
+            <div className="mobile-view-select" style={mobileMenuWrap}>
               <button
                 onClick={() => setMenuOpen((prev) => !prev)}
                 style={mobileMenuButton}
@@ -228,69 +200,69 @@ function ClientDashboardPage({
                 </div>
               )}
             </div>
-          </div>
 
-          {!isSharedMode && (
-            <div style={sharePanel}>
-              <div style={{ flex: 1, minWidth: 260 }}>
-                <div style={sharePanelTitle}>יצירת קישור ללקוח</div>
-                <div style={sharePanelText}>
-                  הקישור הנוכחי נשמר מקומית בדפדפן לצורך בדיקות. במחשב או נייד
-                  אחר הוא לא יעבוד עד שנחבר אחסון ענן מאובטח.
-                </div>
-              </div>
+            <div className="thin-actions" style={thinActions}>
+              <button onClick={handleExportPdf} style={pdfButtonStyle}>
+                הורד PDF
+              </button>
 
-              <div style={shareActions}>
+              {!isSharedMode && (
                 <button onClick={handleCreateLink} style={shareButtonStyle}>
-                  צור קישור זמני
+                  צור קישור
                 </button>
+              )}
 
-                {copyStatus && (
-                  <div
-                    style={{
-                      color: copyStatus.includes("לא") ? "#B42318" : "#2F7D46",
-                      fontWeight: 800,
-                      fontSize: 13,
-                    }}
-                  >
-                    {copyStatus}
-                  </div>
-                )}
-              </div>
-
-              {shareLink && (
-                <textarea
-                  readOnly
-                  value={shareLink}
-                  style={shareTextArea}
-                />
+              {!isSharedMode && (
+                <button onClick={onBack} style={secondaryButtonStyle}>
+                  חזרה לדוח
+                </button>
               )}
             </div>
-          )}
+          </div>
 
-          {activeShareDetails && (
-            <div style={shareInfoBar}>
-              <InfoPill
-                label="שם"
-                value={activeShareDetails.clientName || "לקוח ללא שם"}
-              />
-              <InfoPill
-                label="נוצר"
-                value={formatShareDate(activeShareDetails.createdAt)}
-              />
-              <InfoPill
-                label="תוקף עד"
-                value={formatShareDate(activeShareDetails.expiresAt)}
-              />
-              <div
-                style={{
-                  ...statusPill,
-                  background: expired ? "#FFF5F5" : "#EEF8F0",
-                  color: expired ? "#B42318" : "#2F7D46",
-                }}
-              >
-                {expired ? "פג תוקף" : "קישור פעיל"}
-              </div>
+          {(copyStatus || shareLink || activeShareDetails) && (
+            <div style={thinInfoRow}>
+              {copyStatus && (
+                <span
+                  style={{
+                    color: copyStatus.includes("לא") ? "#B42318" : "#2F7D46",
+                    fontWeight: 800,
+                  }}
+                >
+                  {copyStatus}
+                </span>
+              )}
+
+              {activeShareDetails && (
+                <>
+                  <InfoMini
+                    label="שם"
+                    value={activeShareDetails.clientName || "לקוח ללא שם"}
+                  />
+                  <InfoMini
+                    label="תוקף"
+                    value={formatShareDate(activeShareDetails.expiresAt)}
+                  />
+                  <span
+                    style={{
+                      ...miniStatus,
+                      background: expired ? "#FFF5F5" : "#EEF8F0",
+                      color: expired ? "#B42318" : "#2F7D46",
+                    }}
+                  >
+                    {expired ? "פג תוקף" : "פעיל"}
+                  </span>
+                </>
+              )}
+
+              {shareLink && (
+                <input
+                  readOnly
+                  value={shareLink}
+                  style={shareInput}
+                  onFocus={(e) => e.target.select()}
+                />
+              )}
             </div>
           )}
         </div>
@@ -298,8 +270,6 @@ function ClientDashboardPage({
         <main
           className="client-print-main"
           style={{
-            height: "calc(100vh - 0px)",
-            overflowY: "auto",
             overflowX: "hidden",
             padding: "24px",
             boxSizing: "border-box",
@@ -342,78 +312,49 @@ function ClientDashboardPage({
   );
 }
 
-function InfoPill({ label, value }) {
+function InfoMini({ label, value }) {
   return (
-    <div style={infoPill}>
-      <span style={{ color: "#627D98" }}>{label}</span>
+    <span style={infoMini}>
+      <span style={{ color: "#627D98" }}>{label}:</span>
       <span style={{ color: "#00215D", fontWeight: 800 }}>{value}</span>
-    </div>
+    </span>
   );
 }
 
-const topShell = {
-  background: "#ffffff",
-  borderBottom: "1px solid #DCCDBA",
-  padding: "18px 24px",
+const thinStickyBar = {
   position: "sticky",
   top: 0,
-  zIndex: 20,
-  boxShadow: "0 8px 24px rgba(16,42,67,0.06)",
+  zIndex: 50,
+  background: "rgba(255,255,255,0.96)",
+  backdropFilter: "blur(10px)",
+  borderBottom: "1px solid #DCCDBA",
+  boxShadow: "0 4px 16px rgba(16,42,67,0.06)",
+  padding: "10px 18px",
 };
 
-const topBar = {
+const thinBarInner = {
   maxWidth: "1240px",
   margin: "0 auto",
   display: "flex",
   justifyContent: "space-between",
-  gap: 16,
-  flexWrap: "wrap",
-};
-
-const eyebrow = {
-  color: "#627D98",
-  fontSize: 12,
-  fontWeight: 800,
-  marginBottom: 6,
-};
-
-const topTitle = {
-  margin: 0,
-  color: "#00215D",
-  fontSize: 26,
-  lineHeight: 1.2,
-};
-
-const topSubtitle = {
-  marginTop: 8,
-  color: "#627D98",
-  fontSize: 14,
-  lineHeight: 1.6,
-};
-
-const actions = {
-  display: "flex",
-  gap: 10,
   alignItems: "center",
-  flexWrap: "wrap",
-};
-
-const navArea = {
-  maxWidth: "1240px",
-  margin: "16px auto 0",
+  gap: 14,
 };
 
 const tabs = {
   display: "flex",
-  gap: 10,
+  gap: 8,
   flexWrap: "wrap",
+  alignItems: "center",
 };
 
 const tabButtonStyle = (active) => ({
   display: "inline-flex",
   alignItems: "center",
-  gap: 8,
-  padding: "12px 16px",
+  justifyContent: "center",
+  gap: 7,
+  padding: "10px 14px",
+  minHeight: 42,
   borderRadius: 999,
   border: active ? "1px solid #4F66E8" : "1px solid #D9DDE8",
   background: active ? "#4F66E8" : "#ffffff",
@@ -421,16 +362,96 @@ const tabButtonStyle = (active) => ({
   fontWeight: 800,
   fontSize: 14,
   cursor: "pointer",
-  boxShadow: active ? "0 8px 18px rgba(79,102,232,0.18)" : "none",
+  boxShadow: active ? "0 6px 14px rgba(79,102,232,0.16)" : "none",
+  whiteSpace: "nowrap",
 });
 
-const tabIcon = {
-  fontSize: 16,
-  lineHeight: 1,
+const thinActions = {
+  display: "flex",
+  gap: 8,
+  flexWrap: "wrap",
+  alignItems: "center",
+};
+
+const pdfButtonStyle = {
+  padding: "10px 14px",
+  minHeight: 42,
+  borderRadius: "12px",
+  border: "1px solid #00215D",
+  background: "#00215D",
+  color: "#ffffff",
+  fontWeight: 800,
+  fontSize: "14px",
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+};
+
+const shareButtonStyle = {
+  padding: "10px 14px",
+  minHeight: 42,
+  borderRadius: "12px",
+  border: "1px solid #4F66E8",
+  background: "#4F66E8",
+  color: "#ffffff",
+  fontWeight: 900,
+  fontSize: "14px",
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+};
+
+const secondaryButtonStyle = {
+  padding: "10px 14px",
+  minHeight: 42,
+  borderRadius: "12px",
+  border: "1px solid #D9DDE8",
+  background: "#ffffff",
+  color: "#102A43",
+  fontWeight: 800,
+  fontSize: "14px",
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+};
+
+const thinInfoRow = {
+  maxWidth: "1240px",
+  margin: "8px auto 0",
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  flexWrap: "wrap",
+  fontSize: 12,
+};
+
+const infoMini = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 5,
+  padding: "6px 10px",
+  borderRadius: 999,
+  background: "#FCFBF8",
+  border: "1px solid #EEE4D8",
+};
+
+const miniStatus = {
+  padding: "6px 10px",
+  borderRadius: 999,
+  fontWeight: 900,
+};
+
+const shareInput = {
+  flex: "1 1 320px",
+  minWidth: 260,
+  borderRadius: 10,
+  border: "1px solid #D9DDE8",
+  padding: "8px 10px",
+  fontSize: 12,
+  direction: "ltr",
+  boxSizing: "border-box",
 };
 
 const mobileMenuWrap = {
   position: "relative",
+  width: "100%",
 };
 
 const mobileMenuButton = {
@@ -439,8 +460,8 @@ const mobileMenuButton = {
   justifyContent: "space-between",
   alignItems: "center",
   gap: 10,
-  padding: "13px 16px",
-  borderRadius: 14,
+  padding: "11px 14px",
+  borderRadius: 12,
   border: "1px solid #D9DDE8",
   background: "#ffffff",
   color: "#00215D",
@@ -459,7 +480,7 @@ const dropdown = {
   borderRadius: 14,
   boxShadow: "0 14px 34px rgba(16,42,67,0.14)",
   padding: 8,
-  zIndex: 30,
+  zIndex: 100,
 };
 
 const dropdownItem = (active) => ({
@@ -475,121 +496,6 @@ const dropdownItem = (active) => ({
   textAlign: "right",
 });
 
-const pdfButtonStyle = {
-  padding: "12px 16px",
-  borderRadius: "12px",
-  border: "1px solid #00215D",
-  background: "#00215D",
-  color: "#ffffff",
-  fontWeight: 800,
-  fontSize: "14px",
-  cursor: "pointer",
-};
-
-const topPdfButtonStyle = {
-  padding: "11px 16px",
-  borderRadius: "12px",
-  border: "1px solid #00215D",
-  background: "#00215D",
-  color: "#ffffff",
-  fontWeight: 800,
-  fontSize: "13px",
-  cursor: "pointer",
-};
-
-const secondaryButtonStyle = {
-  padding: "12px 16px",
-  borderRadius: "12px",
-  border: "1px solid #D9DDE8",
-  background: "#ffffff",
-  color: "#102A43",
-  fontWeight: 800,
-  fontSize: "14px",
-  cursor: "pointer",
-};
-
-const sharePanel = {
-  maxWidth: "1240px",
-  margin: "16px auto 0",
-  padding: 14,
-  borderRadius: 16,
-  background: "#F7F8FC",
-  border: "1px solid #D9DDE8",
-  display: "flex",
-  gap: 14,
-  alignItems: "center",
-  flexWrap: "wrap",
-};
-
-const sharePanelTitle = {
-  color: "#00215D",
-  fontWeight: 900,
-  fontSize: 14,
-  marginBottom: 4,
-};
-
-const sharePanelText = {
-  color: "#627D98",
-  fontSize: 12,
-  lineHeight: 1.6,
-};
-
-const shareActions = {
-  display: "flex",
-  alignItems: "center",
-  gap: 12,
-  flexWrap: "wrap",
-};
-
-const shareButtonStyle = {
-  padding: "13px 16px",
-  borderRadius: "12px",
-  border: "1px solid #4F66E8",
-  background: "#4F66E8",
-  color: "#ffffff",
-  fontWeight: 900,
-  fontSize: "14px",
-  cursor: "pointer",
-};
-
-const shareTextArea = {
-  width: "100%",
-  minHeight: 74,
-  borderRadius: 12,
-  border: "1px solid #D9DDE8",
-  padding: 10,
-  fontSize: 12,
-  direction: "ltr",
-  resize: "vertical",
-  boxSizing: "border-box",
-};
-
-const shareInfoBar = {
-  maxWidth: "1240px",
-  margin: "12px auto 0",
-  display: "flex",
-  gap: 10,
-  flexWrap: "wrap",
-};
-
-const infoPill = {
-  display: "flex",
-  alignItems: "center",
-  gap: 8,
-  padding: "8px 12px",
-  background: "#FCFBF8",
-  border: "1px solid #EEE4D8",
-  borderRadius: 999,
-  fontSize: 12,
-};
-
-const statusPill = {
-  padding: "8px 12px",
-  borderRadius: 999,
-  fontWeight: 900,
-  fontSize: 12,
-};
-
 const sharedNotice = {
   background: "#ffffff",
   border: "1px solid #DCCDBA",
@@ -601,6 +507,17 @@ const sharedNotice = {
   alignItems: "center",
   gap: 12,
   flexWrap: "wrap",
+};
+
+const topPdfButtonStyle = {
+  padding: "11px 16px",
+  borderRadius: "12px",
+  border: "1px solid #00215D",
+  background: "#00215D",
+  color: "#ffffff",
+  fontWeight: 800,
+  fontSize: "13px",
+  cursor: "pointer",
 };
 
 export default ClientDashboardPage;
