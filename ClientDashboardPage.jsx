@@ -1,24 +1,26 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import ClientFamilyView from "./ClientFamilyView";
 import ClientMemberView from "./ClientMemberView";
+import { buildClientFamilyDataModel } from "./clientDataModel";
 
 function ClientDashboardPage({ reportData, onBack }) {
+  const clientModel = useMemo(
+    () => buildClientFamilyDataModel(reportData),
+    [reportData]
+  );
+
   const [activeView, setActiveView] = useState("family");
 
   if (!reportData) {
     return <div style={{ padding: "40px", direction: "rtl" }}>אין נתונים</div>;
   }
 
-  const members = reportData.members || [];
+  const members = clientModel.members || [];
 
-  let content;
-
-  if (activeView === "family") {
-    content = <ClientFamilyView reportData={reportData} />;
-  } else {
-    const selectedMember = members.find((member) => member.name === activeView);
-    content = <ClientMemberView member={selectedMember} />;
-  }
+  const selectedMember =
+    activeView === "family"
+      ? null
+      : members.find((member) => member.id === activeView);
 
   return (
     <div
@@ -28,18 +30,35 @@ function ClientDashboardPage({ reportData, onBack }) {
         direction: "rtl",
         fontFamily: 'Calibri, "Arial", sans-serif',
         background: "#F7F5F1",
+        color: "#102A43",
       }}
     >
       <aside
         style={{
-          width: "260px",
+          width: "280px",
           background: "#ffffff",
           borderLeft: "1px solid #DCCDBA",
           padding: "24px 18px",
           boxSizing: "border-box",
+          position: "sticky",
+          top: 0,
+          height: "100vh",
         }}
       >
-        <h2 style={{ marginTop: 0, color: "#00215D" }}>ניווט</h2>
+        <h2 style={{ marginTop: 0, color: "#00215D", fontSize: 22 }}>
+          תצוגת לקוח
+        </h2>
+
+        <div
+          style={{
+            fontSize: 13,
+            color: "#627D98",
+            lineHeight: 1.6,
+            marginBottom: 18,
+          }}
+        >
+          מעבר בין מבט משפחתי לבין נתונים אישיים לכל אחד מבני המשפחה.
+        </div>
 
         <button
           onClick={() => setActiveView("family")}
@@ -50,23 +69,27 @@ function ClientDashboardPage({ reportData, onBack }) {
 
         {members.map((member) => (
           <button
-            key={member.name}
-            onClick={() => setActiveView(member.name)}
-            style={navButtonStyle(activeView === member.name)}
+            key={member.id}
+            onClick={() => setActiveView(member.id)}
+            style={navButtonStyle(activeView === member.id)}
           >
             {member.name}
           </button>
         ))}
 
-        <div style={{ marginTop: "24px" }}>
+        <div style={{ marginTop: 24 }}>
           <button onClick={onBack} style={backButtonStyle}>
             חזרה לדוח
           </button>
         </div>
       </aside>
 
-      <main style={{ flex: 1, padding: "24px" }}>
-        {content}
+      <main style={{ flex: 1, padding: 24 }}>
+        {activeView === "family" ? (
+          <ClientFamilyView clientModel={clientModel} />
+        ) : (
+          <ClientMemberView member={selectedMember} />
+        )}
       </main>
     </div>
   );
