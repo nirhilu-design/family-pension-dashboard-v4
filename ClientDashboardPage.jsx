@@ -52,23 +52,29 @@ function ClientDashboardPage({
       style={{
         minHeight: "100vh",
         display: "flex",
+        flexDirection: "row",
         direction: "rtl",
         fontFamily: 'Calibri, "Arial", sans-serif',
         background: "#F7F5F1",
         color: "#102A43",
+        overflow: "hidden",
       }}
     >
       <aside
         style={{
           width: "300px",
+          minWidth: "300px",
+          maxWidth: "300px",
+          flexShrink: 0,
           background: "#ffffff",
           borderLeft: "1px solid #DCCDBA",
           padding: "24px 18px",
           boxSizing: "border-box",
-          position: "sticky",
-          top: 0,
           height: "100vh",
           overflowY: "auto",
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
         }}
       >
         <h2 style={{ marginTop: 0, color: "#00215D", fontSize: 22 }}>
@@ -157,12 +163,30 @@ function ClientDashboardPage({
         )}
       </aside>
 
-      <main style={{ flex: 1, padding: 24 }}>
-        {activeView === "family" ? (
-          <ClientFamilyView clientModel={clientModel} />
-        ) : (
-          <ClientMemberView member={selectedMember} />
-        )}
+      <main
+        style={{
+          flex: 1,
+          minWidth: 0,
+          height: "100vh",
+          overflowY: "auto",
+          overflowX: "hidden",
+          padding: 24,
+          boxSizing: "border-box",
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            maxWidth: "100%",
+            minWidth: 0,
+          }}
+        >
+          {activeView === "family" ? (
+            <ClientFamilyView clientModel={clientModel} />
+          ) : (
+            <ClientMemberView member={selectedMember} />
+          )}
+        </div>
       </main>
     </div>
   );
