@@ -2,6 +2,12 @@ import { useEffect, useState } from "react";
 import UploadPage from "./UploadPage";
 import ReportPage from "./ReportPage";
 import ClientDashboardPage from "./ClientDashboardPage";
+import {
+  buildShareUrl,
+  createClientShare,
+  getShareModeFromUrl,
+  loadClientShare,
+} from "./shareStorage";
 
 function App() {
   const [currentPage, setCurrentPage] = useState("upload");
@@ -10,30 +16,22 @@ function App() {
   const [isSharedMode, setIsSharedMode] = useState(false);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const shareToken = params.get("share");
+    const shareToken = getShareModeFromUrl();
 
     if (!shareToken) return;
 
-    const saved = localStorage.getItem(`clientShare_${shareToken}`);
+    const result = loadClientShare(shareToken);
 
-    if (!saved) {
-      setShareError("הקישור לא נמצא בדפדפן זה או שפג תוקפו.");
+    setIsSharedMode(true);
+
+    if (!result.success) {
+      setShareError(result.error);
       setCurrentPage("share-error");
-      setIsSharedMode(true);
       return;
     }
 
-    try {
-      const parsed = JSON.parse(saved);
-      setReportData(parsed.reportData);
-      setCurrentPage("client");
-      setIsSharedMode(true);
-    } catch (err) {
-      setShareError("הקישור קיים אך הנתונים אינם תקינים.");
-      setCurrentPage("share-error");
-      setIsSharedMode(true);
-    }
+    setReportData(result.reportData);
+    setCurrentPage("client");
   }, []);
 
   const handleSetReportData = (data) => {
@@ -41,25 +39,17 @@ function App() {
     setCurrentPage("report");
   };
 
-  const createClientShareLink = () => {
+  const handleCreateShareLink = () => {
     if (!reportData) return "";
 
-    const token =
-      "share_" +
-      Date.now().toString(36) +
-      "_" +
-      Math.random().toString(36).slice(2, 10);
+    const result = createClientShare(reportData);
 
-    localStorage.setItem(
-      `clientShare_${token}`,
-      JSON.stringify({
-        createdAt: new Date().toISOString(),
-        reportData,
-      })
-    );
+    if (!result.success) {
+      console.error(result.error);
+      return "";
+    }
 
-    const url = `${window.location.origin}${window.location.pathname}?share=${token}`;
-    return url;
+    return buildShareUrl(result.token);
   };
 
   if (currentPage === "share-error") {
@@ -82,12 +72,20 @@ function App() {
             border: "1px solid #DCCDBA",
             borderRadius: 22,
             padding: 28,
-            maxWidth: 520,
+            maxWidth: 560,
             textAlign: "center",
           }}
         >
           <h1 style={{ color: "#00215D", marginTop: 0 }}>הקישור לא זמין</h1>
-          <p style={{ color: "#627D98", lineHeight: 1.8 }}>{shareError}</p>
+
+          <p style={{ color: "#627D98", lineHeight: 1.8 }}>
+            {shareError}
+          </p>
+
+          <p style={{ color: "#627D98", lineHeight: 1.8, fontSize: 13 }}>
+            בשלב הנוכחי הקישור נשמר מקומית בדפדפן שבו הוא נוצר. זהו שלב בדיקות
+            בלבד לפני מעבר לאחסון ענן מאובטח.
+          </p>
         </div>
       </div>
     );
@@ -116,7 +114,7 @@ function App() {
       <ClientDashboardPage
         reportData={reportData}
         onBack={() => setCurrentPage("report")}
-        onCreateShareLink={createClientShareLink}
+        onCreateShareLink={handleCreateShareLink}
         isSharedMode={isSharedMode}
       />
     );
