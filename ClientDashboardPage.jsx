@@ -2,10 +2,7 @@ import { useMemo, useState } from "react";
 import ClientFamilyView from "./ClientFamilyView";
 import ClientMemberView from "./ClientMemberView";
 import { buildClientFamilyDataModel } from "./clientDataModel";
-import {
-  formatShareDate,
-  isShareExpired,
-} from "./shareStorage";
+import { formatShareDate, isShareExpired } from "./shareStorage";
 
 function ClientDashboardPage({
   reportData,
@@ -23,6 +20,7 @@ function ClientDashboardPage({
   const [shareLink, setShareLink] = useState("");
   const [copyStatus, setCopyStatus] = useState("");
   const [localShareDetails, setLocalShareDetails] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   if (!reportData) {
     return <div style={{ padding: "40px", direction: "rtl" }}>אין נתונים</div>;
@@ -39,6 +37,16 @@ function ClientDashboardPage({
   const expired = activeShareDetails?.expiresAt
     ? isShareExpired(activeShareDetails.expiresAt)
     : false;
+
+  const activeLabel =
+    activeView === "family"
+      ? "מבט משפחתי"
+      : selectedMember?.name || "מבט אישי";
+
+  const handleChangeView = (viewId) => {
+    setActiveView(viewId);
+    setMenuOpen(false);
+  };
 
   const handleCreateLink = async () => {
     const result = onCreateShareLink?.();
@@ -96,6 +104,35 @@ function ClientDashboardPage({
               margin: 10mm;
             }
           }
+
+          @media (max-width: 900px) {
+            .client-desktop-tabs {
+              display: none !important;
+            }
+
+            .client-mobile-menu {
+              display: block !important;
+            }
+
+            .client-top-layout {
+              align-items: stretch !important;
+            }
+
+            .client-actions {
+              width: 100% !important;
+              justify-content: stretch !important;
+            }
+
+            .client-actions button {
+              flex: 1 !important;
+            }
+          }
+
+          @media (min-width: 901px) {
+            .client-mobile-menu {
+              display: none !important;
+            }
+          }
         `}
       </style>
 
@@ -103,224 +140,187 @@ function ClientDashboardPage({
         className="client-print-page"
         style={{
           minHeight: "100vh",
-          display: "flex",
-          flexDirection: "row",
           direction: "rtl",
           fontFamily: 'Calibri, "Arial", sans-serif',
           background: "#F7F5F1",
           color: "#102A43",
-          overflow: "hidden",
         }}
       >
-        <aside
-          className="client-no-print"
-          style={{
-            width: "300px",
-            minWidth: "300px",
-            maxWidth: "300px",
-            flexShrink: 0,
-            background: "#ffffff",
-            borderLeft: "1px solid #DCCDBA",
-            padding: "24px 18px",
-            boxSizing: "border-box",
-            height: "100vh",
-            overflowY: "auto",
-            position: "sticky",
-            top: 0,
-            zIndex: 10,
-          }}
-        >
-          <h2 style={{ marginTop: 0, color: "#00215D", fontSize: 22 }}>
-            תצוגת לקוח
-          </h2>
+        <div className="client-no-print" style={topShell}>
+          <div className="client-top-layout" style={topBar}>
+            <div>
+              <div style={eyebrow}>
+                {isSharedMode ? "תצוגת לקוח משותפת" : "תצוגת לקוח פנימית"}
+              </div>
 
-          <div
-            style={{
-              fontSize: 13,
-              color: "#627D98",
-              lineHeight: 1.6,
-              marginBottom: 18,
-            }}
-          >
-            מעבר בין מבט משפחתי לבין נתונים אישיים לכל אחד מבני המשפחה.
-          </div>
+              <h1 style={topTitle}>דשבורד פנסיוני משפחתי</h1>
 
-          <button
-            onClick={() => setActiveView("family")}
-            style={navButtonStyle(activeView === "family")}
-          >
-            משפחתי
-          </button>
+              <div style={topSubtitle}>
+                מעבר בין תמונה משפחתית מאוחדת לבין פירוט אישי לפי לקוח.
+              </div>
+            </div>
 
-          {members.map((member) => (
-            <button
-              key={member.id}
-              onClick={() => setActiveView(member.id)}
-              style={navButtonStyle(activeView === member.id)}
-            >
-              {member.name}
-            </button>
-          ))}
+            <div className="client-actions" style={actions}>
+              <button onClick={handleExportPdf} style={pdfButtonStyle}>
+                הורד PDF
+              </button>
 
-          <div style={pdfBox}>
-            <button onClick={handleExportPdf} style={pdfButtonStyle}>
-              הורד / שמור כ־PDF
-            </button>
-
-            <div
-              style={{
-                marginTop: 10,
-                color: "#627D98",
-                fontSize: 12,
-                lineHeight: 1.6,
-              }}
-            >
-              הלחיצה תפתח חלון הדפסה. כדי לשמור קובץ, בחר “Save as PDF”.
+              {!isSharedMode && (
+                <button onClick={onBack} style={secondaryButtonStyle}>
+                  חזרה לדוח
+                </button>
+              )}
             </div>
           </div>
 
-          {activeShareDetails && (
-            <div style={shareInfoBox}>
-              <div style={shareInfoTitle}>פרטי קישור</div>
+          <div style={navArea}>
+            <div className="client-desktop-tabs" style={tabs}>
+              <button
+                onClick={() => handleChangeView("family")}
+                style={tabButtonStyle(activeView === "family")}
+                title="מבט משפחתי"
+              >
+                <span style={tabIcon}>👨‍👩‍👧‍👦</span>
+                <span>משפחתי</span>
+              </button>
 
-              <InfoLine
+              {members.map((member, index) => (
+                <button
+                  key={member.id}
+                  onClick={() => handleChangeView(member.id)}
+                  style={tabButtonStyle(activeView === member.id)}
+                  title={member.name}
+                >
+                  <span style={tabIcon}>👤</span>
+                  <span>{member.name || `לקוח ${index + 1}`}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="client-mobile-menu" style={mobileMenuWrap}>
+              <button
+                onClick={() => setMenuOpen((prev) => !prev)}
+                style={mobileMenuButton}
+              >
+                <span>☰</span>
+                <span>{activeLabel}</span>
+                <span>{menuOpen ? "▲" : "▼"}</span>
+              </button>
+
+              {menuOpen && (
+                <div style={dropdown}>
+                  <button
+                    onClick={() => handleChangeView("family")}
+                    style={dropdownItem(activeView === "family")}
+                  >
+                    👨‍👩‍👧‍👦 משפחתי
+                  </button>
+
+                  {members.map((member, index) => (
+                    <button
+                      key={member.id}
+                      onClick={() => handleChangeView(member.id)}
+                      style={dropdownItem(activeView === member.id)}
+                    >
+                      👤 {member.name || `לקוח ${index + 1}`}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {!isSharedMode && (
+            <div style={sharePanel}>
+              <div style={{ flex: 1, minWidth: 260 }}>
+                <div style={sharePanelTitle}>יצירת קישור ללקוח</div>
+                <div style={sharePanelText}>
+                  הקישור הנוכחי נשמר מקומית בדפדפן לצורך בדיקות. במחשב או נייד
+                  אחר הוא לא יעבוד עד שנחבר אחסון ענן מאובטח.
+                </div>
+              </div>
+
+              <div style={shareActions}>
+                <button onClick={handleCreateLink} style={shareButtonStyle}>
+                  צור קישור זמני
+                </button>
+
+                {copyStatus && (
+                  <div
+                    style={{
+                      color: copyStatus.includes("לא") ? "#B42318" : "#2F7D46",
+                      fontWeight: 800,
+                      fontSize: 13,
+                    }}
+                  >
+                    {copyStatus}
+                  </div>
+                )}
+              </div>
+
+              {shareLink && (
+                <textarea
+                  readOnly
+                  value={shareLink}
+                  style={shareTextArea}
+                />
+              )}
+            </div>
+          )}
+
+          {activeShareDetails && (
+            <div style={shareInfoBar}>
+              <InfoPill
                 label="שם"
                 value={activeShareDetails.clientName || "לקוח ללא שם"}
               />
-
-              <InfoLine
+              <InfoPill
                 label="נוצר"
                 value={formatShareDate(activeShareDetails.createdAt)}
               />
-
-              <InfoLine
+              <InfoPill
                 label="תוקף עד"
                 value={formatShareDate(activeShareDetails.expiresAt)}
               />
-
               <div
                 style={{
-                  marginTop: 10,
-                  padding: "8px 10px",
-                  borderRadius: 10,
+                  ...statusPill,
                   background: expired ? "#FFF5F5" : "#EEF8F0",
                   color: expired ? "#B42318" : "#2F7D46",
-                  fontWeight: 800,
-                  fontSize: 12,
                 }}
               >
                 {expired ? "פג תוקף" : "קישור פעיל"}
               </div>
             </div>
           )}
-
-          {!isSharedMode && (
-            <div style={shareBox}>
-              <button onClick={handleCreateLink} style={shareButtonStyle}>
-                צור קישור זמני ללקוח
-              </button>
-
-              {copyStatus && (
-                <div
-                  style={{
-                    marginTop: 10,
-                    color: copyStatus.includes("לא") ? "#B42318" : "#3EAF63",
-                    fontWeight: 700,
-                  }}
-                >
-                  {copyStatus}
-                </div>
-              )}
-
-              {shareLink && (
-                <textarea
-                  readOnly
-                  value={shareLink}
-                  style={{
-                    width: "100%",
-                    minHeight: 82,
-                    marginTop: 10,
-                    borderRadius: 12,
-                    border: "1px solid #D9DDE8",
-                    padding: 10,
-                    fontSize: 12,
-                    direction: "ltr",
-                    resize: "vertical",
-                    boxSizing: "border-box",
-                  }}
-                />
-              )}
-
-              <div
-                style={{
-                  marginTop: 10,
-                  color: "#627D98",
-                  fontSize: 12,
-                  lineHeight: 1.6,
-                }}
-              >
-                בשלב זה הקישור נשמר מקומית בדפדפן לצורך בדיקות. במחשב או נייד
-                אחר הוא לא יעבוד עד שנחבר אחסון ענן מאובטח.
-              </div>
-            </div>
-          )}
-
-          {!isSharedMode && (
-            <div style={{ marginTop: 24 }}>
-              <button onClick={onBack} style={backButtonStyle}>
-                חזרה לדוח
-              </button>
-            </div>
-          )}
-        </aside>
+        </div>
 
         <main
           className="client-print-main"
           style={{
-            flex: 1,
-            minWidth: 0,
-            height: "100vh",
+            height: "calc(100vh - 0px)",
             overflowY: "auto",
             overflowX: "hidden",
-            padding: 24,
+            padding: "24px",
             boxSizing: "border-box",
           }}
         >
           <div
             style={{
               width: "100%",
-              maxWidth: "100%",
+              maxWidth: "1240px",
               minWidth: 0,
+              margin: "0 auto",
             }}
           >
             {isSharedMode && (
-              <div
-                className="client-no-print"
-                style={{
-                  background: "#ffffff",
-                  border: "1px solid #DCCDBA",
-                  borderRadius: 18,
-                  padding: "14px 18px",
-                  marginBottom: 18,
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: 12,
-                  flexWrap: "wrap",
-                }}
-              >
+              <div className="client-no-print" style={sharedNotice}>
                 <div>
-                  <div
-                    style={{
-                      color: "#00215D",
-                      fontWeight: 800,
-                      fontSize: 16,
-                    }}
-                  >
+                  <div style={{ color: "#00215D", fontWeight: 800, fontSize: 16 }}>
                     {activeShareDetails?.clientName || "תצוגת לקוח"}
                   </div>
                   <div style={{ color: "#627D98", fontSize: 13, marginTop: 4 }}>
-                    ניתן לשמור את המסך כ־PDF דרך הכפתור בצד.
+                    ניתן לשמור את המסך כ־PDF דרך הכפתור העליון.
                   </div>
                 </div>
 
@@ -342,67 +342,141 @@ function ClientDashboardPage({
   );
 }
 
-function InfoLine({ label, value }) {
+function InfoPill({ label, value }) {
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        gap: 10,
-        padding: "7px 0",
-        borderBottom: "1px solid #EEE4D8",
-        fontSize: 12,
-      }}
-    >
+    <div style={infoPill}>
       <span style={{ color: "#627D98" }}>{label}</span>
-      <span style={{ color: "#00215D", fontWeight: 700, textAlign: "left" }}>
-        {value}
-      </span>
+      <span style={{ color: "#00215D", fontWeight: 800 }}>{value}</span>
     </div>
   );
 }
 
-const navButtonStyle = (active) => ({
-  width: "100%",
-  padding: "12px 14px",
-  marginBottom: "10px",
-  borderRadius: "12px",
+const topShell = {
+  background: "#ffffff",
+  borderBottom: "1px solid #DCCDBA",
+  padding: "18px 24px",
+  position: "sticky",
+  top: 0,
+  zIndex: 20,
+  boxShadow: "0 8px 24px rgba(16,42,67,0.06)",
+};
+
+const topBar = {
+  maxWidth: "1240px",
+  margin: "0 auto",
+  display: "flex",
+  justifyContent: "space-between",
+  gap: 16,
+  flexWrap: "wrap",
+};
+
+const eyebrow = {
+  color: "#627D98",
+  fontSize: 12,
+  fontWeight: 800,
+  marginBottom: 6,
+};
+
+const topTitle = {
+  margin: 0,
+  color: "#00215D",
+  fontSize: 26,
+  lineHeight: 1.2,
+};
+
+const topSubtitle = {
+  marginTop: 8,
+  color: "#627D98",
+  fontSize: 14,
+  lineHeight: 1.6,
+};
+
+const actions = {
+  display: "flex",
+  gap: 10,
+  alignItems: "center",
+  flexWrap: "wrap",
+};
+
+const navArea = {
+  maxWidth: "1240px",
+  margin: "16px auto 0",
+};
+
+const tabs = {
+  display: "flex",
+  gap: 10,
+  flexWrap: "wrap",
+};
+
+const tabButtonStyle = (active) => ({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  padding: "12px 16px",
+  borderRadius: 999,
   border: active ? "1px solid #4F66E8" : "1px solid #D9DDE8",
   background: active ? "#4F66E8" : "#ffffff",
   color: active ? "#ffffff" : "#102A43",
-  fontWeight: 700,
-  fontSize: "14px",
+  fontWeight: 800,
+  fontSize: 14,
+  cursor: "pointer",
+  boxShadow: active ? "0 8px 18px rgba(79,102,232,0.18)" : "none",
+});
+
+const tabIcon = {
+  fontSize: 16,
+  lineHeight: 1,
+};
+
+const mobileMenuWrap = {
+  position: "relative",
+};
+
+const mobileMenuButton = {
+  width: "100%",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: 10,
+  padding: "13px 16px",
+  borderRadius: 14,
+  border: "1px solid #D9DDE8",
+  background: "#ffffff",
+  color: "#00215D",
+  fontWeight: 800,
+  fontSize: 14,
+  cursor: "pointer",
+};
+
+const dropdown = {
+  position: "absolute",
+  top: "calc(100% + 8px)",
+  right: 0,
+  left: 0,
+  background: "#ffffff",
+  border: "1px solid #D9DDE8",
+  borderRadius: 14,
+  boxShadow: "0 14px 34px rgba(16,42,67,0.14)",
+  padding: 8,
+  zIndex: 30,
+};
+
+const dropdownItem = (active) => ({
+  width: "100%",
+  padding: "12px 14px",
+  borderRadius: 10,
+  border: "none",
+  background: active ? "#EEF1FF" : "#ffffff",
+  color: active ? "#4F66E8" : "#102A43",
+  fontWeight: 800,
+  fontSize: 14,
   cursor: "pointer",
   textAlign: "right",
 });
 
-const backButtonStyle = {
-  width: "100%",
-  padding: "12px 14px",
-  borderRadius: "12px",
-  border: "1px solid #D9DDE8",
-  background: "#ffffff",
-  color: "#102A43",
-  fontWeight: 700,
-  fontSize: "14px",
-  cursor: "pointer",
-};
-
-const shareButtonStyle = {
-  width: "100%",
-  padding: "13px 14px",
-  borderRadius: "12px",
-  border: "1px solid #4F66E8",
-  background: "#4F66E8",
-  color: "#ffffff",
-  fontWeight: 800,
-  fontSize: "14px",
-  cursor: "pointer",
-};
-
 const pdfButtonStyle = {
-  width: "100%",
-  padding: "13px 14px",
+  padding: "12px 16px",
   borderRadius: "12px",
   border: "1px solid #00215D",
   background: "#00215D",
@@ -423,35 +497,110 @@ const topPdfButtonStyle = {
   cursor: "pointer",
 };
 
-const shareBox = {
-  marginTop: 18,
+const secondaryButtonStyle = {
+  padding: "12px 16px",
+  borderRadius: "12px",
+  border: "1px solid #D9DDE8",
+  background: "#ffffff",
+  color: "#102A43",
+  fontWeight: 800,
+  fontSize: "14px",
+  cursor: "pointer",
+};
+
+const sharePanel = {
+  maxWidth: "1240px",
+  margin: "16px auto 0",
   padding: 14,
   borderRadius: 16,
   background: "#F7F8FC",
   border: "1px solid #D9DDE8",
+  display: "flex",
+  gap: 14,
+  alignItems: "center",
+  flexWrap: "wrap",
 };
 
-const pdfBox = {
-  marginTop: 22,
-  padding: 14,
-  borderRadius: 16,
-  background: "#F7F8FC",
+const sharePanelTitle = {
+  color: "#00215D",
+  fontWeight: 900,
+  fontSize: 14,
+  marginBottom: 4,
+};
+
+const sharePanelText = {
+  color: "#627D98",
+  fontSize: 12,
+  lineHeight: 1.6,
+};
+
+const shareActions = {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+  flexWrap: "wrap",
+};
+
+const shareButtonStyle = {
+  padding: "13px 16px",
+  borderRadius: "12px",
+  border: "1px solid #4F66E8",
+  background: "#4F66E8",
+  color: "#ffffff",
+  fontWeight: 900,
+  fontSize: "14px",
+  cursor: "pointer",
+};
+
+const shareTextArea = {
+  width: "100%",
+  minHeight: 74,
+  borderRadius: 12,
   border: "1px solid #D9DDE8",
+  padding: 10,
+  fontSize: 12,
+  direction: "ltr",
+  resize: "vertical",
+  boxSizing: "border-box",
 };
 
-const shareInfoBox = {
-  marginTop: 18,
-  padding: 14,
-  borderRadius: 16,
+const shareInfoBar = {
+  maxWidth: "1240px",
+  margin: "12px auto 0",
+  display: "flex",
+  gap: 10,
+  flexWrap: "wrap",
+};
+
+const infoPill = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  padding: "8px 12px",
   background: "#FCFBF8",
   border: "1px solid #EEE4D8",
+  borderRadius: 999,
+  fontSize: 12,
 };
 
-const shareInfoTitle = {
-  color: "#00215D",
-  fontWeight: 800,
-  marginBottom: 8,
-  fontSize: 14,
+const statusPill = {
+  padding: "8px 12px",
+  borderRadius: 999,
+  fontWeight: 900,
+  fontSize: 12,
+};
+
+const sharedNotice = {
+  background: "#ffffff",
+  border: "1px solid #DCCDBA",
+  borderRadius: 18,
+  padding: "14px 18px",
+  marginBottom: 18,
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: 12,
+  flexWrap: "wrap",
 };
 
 export default ClientDashboardPage;
