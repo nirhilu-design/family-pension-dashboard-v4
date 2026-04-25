@@ -42,10 +42,12 @@ function App() {
     setCurrentPage("report");
   };
 
-  const handleCreateShareLink = () => {
+  const handleCreateShareLink = (options = {}) => {
     if (!reportData) return null;
 
-    const result = createClientShare(reportData);
+    const result = createClientShare(reportData, {
+      expirationHours: options.expirationHours || 24,
+    });
 
     if (!result.success) {
       console.error(result.error);
