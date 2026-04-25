@@ -4,6 +4,13 @@ import ClientMemberView from "./ClientMemberView";
 import { buildClientFamilyDataModel } from "./clientDataModel";
 import { formatShareDate, isShareExpired } from "./shareStorage";
 
+const EXPIRATION_OPTIONS = [
+  { label: "יום", hours: 24 },
+  { label: "3 ימים", hours: 72 },
+  { label: "שבוע", hours: 168 },
+  { label: "חודש", hours: 720 },
+];
+
 function ClientDashboardPage({
   reportData,
   onBack,
@@ -21,6 +28,7 @@ function ClientDashboardPage({
   const [copyStatus, setCopyStatus] = useState("");
   const [localShareDetails, setLocalShareDetails] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [expirationHours, setExpirationHours] = useState(24);
 
   if (!reportData) {
     return <div style={{ padding: "40px", direction: "rtl" }}>אין נתונים</div>;
@@ -43,13 +51,19 @@ function ClientDashboardPage({
       ? "משפחתי"
       : selectedMember?.name || "מבט אישי";
 
+  const selectedExpirationLabel =
+    EXPIRATION_OPTIONS.find((item) => item.hours === Number(expirationHours))
+      ?.label || "יום";
+
   const handleChangeView = (viewId) => {
     setActiveView(viewId);
     setMenuOpen(false);
   };
 
   const handleCreateLink = async () => {
-    const result = onCreateShareLink?.();
+    const result = onCreateShareLink?.({
+      expirationHours: Number(expirationHours),
+    });
 
     if (!result?.success) {
       setCopyStatus(result?.error || "לא ניתן ליצור קישור כרגע");
@@ -61,9 +75,9 @@ function ClientDashboardPage({
 
     try {
       await navigator.clipboard.writeText(result.url);
-      setCopyStatus("הקישור נוצר והועתק");
+      setCopyStatus(`הקישור נוצר והועתק · תוקף: ${selectedExpirationLabel}`);
     } catch {
-      setCopyStatus("הקישור נוצר, ניתן להעתיק ידנית");
+      setCopyStatus(`הקישור נוצר · תוקף: ${selectedExpirationLabel}`);
     }
   };
 
@@ -123,7 +137,8 @@ function ClientDashboardPage({
               justify-content: stretch !important;
             }
 
-            .thin-actions button {
+            .thin-actions button,
+            .thin-actions select {
               flex: 1 !important;
             }
           }
@@ -132,6 +147,86 @@ function ClientDashboardPage({
             .mobile-view-select {
               display: none !important;
             }
+          }
+
+          .client-action-button {
+            padding: 10px 14px;
+            min-height: 42px;
+            border-radius: 12px;
+            border: 1px solid #D9DDE8;
+            background: #ffffff;
+            color: #102A43;
+            font-weight: 800;
+            font-family: Calibri, Arial, sans-serif;
+            font-size: 14px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.18s ease;
+          }
+
+          .client-action-button:hover {
+            border-color: #4F66E8;
+            color: #4F66E8;
+          }
+
+          .client-action-button:active {
+            background: #4F66E8;
+            border-color: #4F66E8;
+            color: #ffffff;
+          }
+
+          .client-action-button.primary {
+            border-color: #00215D;
+            background: #00215D;
+            color: #ffffff;
+          }
+
+          .client-action-button.primary:hover {
+            border-color: #4F66E8;
+            background: #4F66E8;
+            color: #ffffff;
+          }
+
+          .client-action-button.primary:active {
+            background: #4F66E8;
+            border-color: #4F66E8;
+            color: #ffffff;
+          }
+
+          .client-action-button.accent {
+            border-color: #4F66E8;
+            background: #4F66E8;
+            color: #ffffff;
+          }
+
+          .client-action-button.accent:hover {
+            border-color: #00215D;
+            background: #00215D;
+            color: #ffffff;
+          }
+
+          .client-select {
+            padding: 10px 14px;
+            min-height: 42px;
+            border-radius: 12px;
+            border: 1px solid #D9DDE8;
+            background: #ffffff;
+            color: #102A43;
+            font-weight: 800;
+            font-family: Calibri, Arial, sans-serif;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.18s ease;
+          }
+
+          .client-select:hover {
+            border-color: #4F66E8;
+            color: #4F66E8;
+          }
+
+          .client-select:focus {
+            outline: 2px solid rgba(79, 102, 232, 0.18);
+            border-color: #4F66E8;
           }
         `}
       </style>
@@ -202,18 +297,41 @@ function ClientDashboardPage({
             </div>
 
             <div className="thin-actions" style={thinActions}>
-              <button onClick={handleExportPdf} style={pdfButtonStyle}>
+              <button
+                onClick={handleExportPdf}
+                className="client-action-button primary"
+              >
                 הורד PDF
               </button>
 
               {!isSharedMode && (
-                <button onClick={handleCreateLink} style={shareButtonStyle}>
+                <select
+                  className="client-select"
+                  value={expirationHours}
+                  onChange={(event) =>
+                    setExpirationHours(Number(event.target.value))
+                  }
+                  title="משך תוקף הקישור"
+                >
+                  {EXPIRATION_OPTIONS.map((option) => (
+                    <option key={option.hours} value={option.hours}>
+                      תוקף: {option.label}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {!isSharedMode && (
+                <button
+                  onClick={handleCreateLink}
+                  className="client-action-button accent"
+                >
                   צור קישור
                 </button>
               )}
 
               {!isSharedMode && (
-                <button onClick={onBack} style={secondaryButtonStyle}>
+                <button onClick={onBack} className="client-action-button">
                   חזרה לדוח
                 </button>
               )}
@@ -240,6 +358,10 @@ function ClientDashboardPage({
                     value={activeShareDetails.clientName || "לקוח ללא שם"}
                   />
                   <InfoMini
+                    label="נוצר"
+                    value={formatShareDate(activeShareDetails.createdAt)}
+                  />
+                  <InfoMini
                     label="תוקף"
                     value={formatShareDate(activeShareDetails.expiresAt)}
                   />
@@ -260,7 +382,7 @@ function ClientDashboardPage({
                   readOnly
                   value={shareLink}
                   style={shareInput}
-                  onFocus={(e) => e.target.select()}
+                  onFocus={(event) => event.target.select()}
                 />
               )}
             </div>
@@ -294,7 +416,10 @@ function ClientDashboardPage({
                   </div>
                 </div>
 
-                <button onClick={handleExportPdf} style={topPdfButtonStyle}>
+                <button
+                  onClick={handleExportPdf}
+                  className="client-action-button primary"
+                >
                   הורד PDF
                 </button>
               </div>
@@ -355,7 +480,7 @@ const tabButtonStyle = (active) => ({
   gap: 7,
   padding: "10px 14px",
   minHeight: 42,
-  borderRadius: 999,
+  borderRadius: 12,
   border: active ? "1px solid #4F66E8" : "1px solid #D9DDE8",
   background: active ? "#4F66E8" : "#ffffff",
   color: active ? "#ffffff" : "#102A43",
@@ -364,6 +489,7 @@ const tabButtonStyle = (active) => ({
   cursor: "pointer",
   boxShadow: active ? "0 6px 14px rgba(79,102,232,0.16)" : "none",
   whiteSpace: "nowrap",
+  transition: "all 0.18s ease",
 });
 
 const thinActions = {
@@ -371,45 +497,6 @@ const thinActions = {
   gap: 8,
   flexWrap: "wrap",
   alignItems: "center",
-};
-
-const pdfButtonStyle = {
-  padding: "10px 14px",
-  minHeight: 42,
-  borderRadius: "12px",
-  border: "1px solid #00215D",
-  background: "#00215D",
-  color: "#ffffff",
-  fontWeight: 800,
-  fontSize: "14px",
-  cursor: "pointer",
-  whiteSpace: "nowrap",
-};
-
-const shareButtonStyle = {
-  padding: "10px 14px",
-  minHeight: 42,
-  borderRadius: "12px",
-  border: "1px solid #4F66E8",
-  background: "#4F66E8",
-  color: "#ffffff",
-  fontWeight: 900,
-  fontSize: "14px",
-  cursor: "pointer",
-  whiteSpace: "nowrap",
-};
-
-const secondaryButtonStyle = {
-  padding: "10px 14px",
-  minHeight: 42,
-  borderRadius: "12px",
-  border: "1px solid #D9DDE8",
-  background: "#ffffff",
-  color: "#102A43",
-  fontWeight: 800,
-  fontSize: "14px",
-  cursor: "pointer",
-  whiteSpace: "nowrap",
 };
 
 const thinInfoRow = {
@@ -507,17 +594,6 @@ const sharedNotice = {
   alignItems: "center",
   gap: 12,
   flexWrap: "wrap",
-};
-
-const topPdfButtonStyle = {
-  padding: "11px 16px",
-  borderRadius: "12px",
-  border: "1px solid #00215D",
-  background: "#00215D",
-  color: "#ffffff",
-  fontWeight: 800,
-  fontSize: "13px",
-  cursor: "pointer",
 };
 
 export default ClientDashboardPage;
