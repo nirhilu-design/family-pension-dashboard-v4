@@ -264,7 +264,9 @@ function parsePolicy(policyNode) {
       relativesPension: parseNumber(
         getText(covers || policyNode, "PensionRelatives")
       ),
-      totalMonthlyCoverCost: parseNumber(getText(covers || policyNode, "TotalSum")),
+      totalMonthlyCoverCost: parseNumber(
+        getText(covers || policyNode, "TotalSum")
+      ),
     },
 
     savings: {
@@ -277,7 +279,9 @@ function parsePolicy(policyNode) {
       compensation: parseNumber(
         getText(save || policyNode, "ItraZvuraCompensetion")
       ),
-      totalAccumulated: parseNumber(getText(save || policyNode, "TotalItraZvura")),
+      totalAccumulated: parseNumber(
+        getText(save || policyNode, "TotalItraZvura")
+      ),
       retireCurrBalance: parseNumber(
         getText(save || policyNode, "RetireCurrBalance")
       ),
@@ -404,6 +408,7 @@ export function parsePensionXml(rawXml, fileName = "") {
   const policies = policyNodes
     .map(parsePolicy)
     .sort((a, b) => a.rowNum - b.rowNum);
+
   const summary = parseSummary(doc);
 
   return {
@@ -485,16 +490,20 @@ function isPensionFundPolicy(policy) {
 }
 
 function isLifeInsurancePolicy(policy) {
-  const text = getPolicyText(policy);
+  const text = getPolicyText(policy).toLowerCase();
 
   if (isPensionFundPolicy(policy)) return false;
 
   return (
     text.includes("ביטוח חיים") ||
     text.includes("ריסק") ||
-    text.includes("risk") ||
-    text.includes("Risk")
+    text.includes("risk")
   );
+}
+
+function isNoCoeffPolicy(policy) {
+  const coeff = policy?.savings?.hCoeff;
+  return coeff === null || coeff === undefined || coeff === 0;
 }
 
 function getLifeInsuranceAmount(policy) {
@@ -502,27 +511,24 @@ function getLifeInsuranceAmount(policy) {
   return Number(policy?.coverage?.totalInsurance || 0);
 }
 
-function getNonPensionAccumulatedAmount(policy) {
-  if (isPensionFundPolicy(policy)) return 0;
-  return Number(policy?.savings?.totalAccumulated || 0);
+function getNoCoeffPidionsAmount(policy) {
+  if (!isNoCoeffPolicy(policy)) return 0;
+  return Number(policy?.savings?.totalPidions || 0);
 }
 
+/**
+ * כלל ביטוח חיים להצגה:
+ * 1. TotalPidions לכל מוצר שאין לו HCoff
+ * 2. ועוד TotalBituah למוצר שנקרא ביטוח חיים / ריסק
+ */
 function buildLifeCoverageDisplayAmount(policies) {
   const safePolicies = Array.isArray(policies) ? policies : [];
   const unique = uniquePolicies(safePolicies);
 
+  const noCoeffPidions = sumNullable(unique.map(getNoCoeffPidionsAmount));
   const actualLifeInsurance = sumNullable(unique.map(getLifeInsuranceAmount));
 
-  const nonPensionAssets = sumNullable(
-    unique.map(getNonPensionAccumulatedAmount)
-  );
-
-  return actualLifeInsurance + nonPensionAssets;
-}
-
-function isNoCoeffPolicy(policy) {
-  const coeff = policy?.savings?.hCoeff;
-  return coeff === null || coeff === undefined || coeff === 0;
+  return noCoeffPidions + actualLifeInsurance;
 }
 
 function buildTracks(flatPolicies) {
@@ -841,6 +847,7 @@ export function buildLegacyReportData(parsedFiles) {
   );
 
   const uniqueLoanMap = new Map();
+
   loanDetails.forEach((loan) => {
     const key = [
       loan.firstName,
@@ -887,7 +894,7 @@ export function buildLegacyReportData(parsedFiles) {
       coverageAmount: totalInsurance,
       summary:
         totalInsurance > 0
-          ? "סכום ביטוח חיים כולל ביטוח חיים אמיתי וצבירות במוצרים שאינם קרנות פנסיה"
+          ? "סכום ביטוח חיים כולל TotalPidions במוצרים ללא HCoff ובנוסף TotalBituah במוצרי ביטוח חיים / ריסק"
           : "לא התקבל מידע",
     },
     weightedEquityExposure,
