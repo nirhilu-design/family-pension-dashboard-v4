@@ -2,10 +2,8 @@
 
 function sanitizeXml(rawXml) {
   let text = String(rawXml || "");
-
   text = text.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "");
   text = text.replace(/&(?!amp;|lt;|gt;|quot;|apos;)/g, "&amp;");
-
   return text;
 }
 
@@ -133,6 +131,7 @@ function parseInvestPlans(policyNode) {
       plan,
       "Properties > Exposures > Property"
     );
+
     const mainGroups = parseInvestProperties(
       plan,
       "Properties > MainGroups > Property"
@@ -458,41 +457,48 @@ function uniquePolicies(policies) {
   });
 }
 
-function isLifeInsurancePolicy(policy) {
-  const text = [
-    policy.productType,
-    policy.planName,
-    policy.details?.proposeName,
-    policy.details?.targetPlan,
+function getPolicyText(policy) {
+  return [
+    policy?.productType,
+    policy?.planName,
+    policy?.details?.proposeName,
+    policy?.details?.targetPlan,
+    policy?.details?.annuityType,
   ]
     .filter(Boolean)
     .join(" ")
     .trim();
-
-  return text.includes("ביטוח חיים") || text.includes("ריסק");
 }
 
 function isPensionFundPolicy(policy) {
-  const text = [
-    policy.productType,
-    policy.planName,
-    policy.details?.proposeName,
-    policy.details?.targetPlan,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
+  const text = getPolicyText(policy);
 
   return (
     text.includes("קרן פנסיה") ||
     text.includes("פנסיה מקיפה") ||
     text.includes("פנסיה כללית") ||
     text.includes("פנסיה חדשה") ||
-    text.includes("פנסיה ותיקה")
+    text.includes("פנסיה ותיקה") ||
+    text.includes("פנסיה מקיפה חדשה") ||
+    text.includes("פנסיה כללית משלימה")
+  );
+}
+
+function isLifeInsurancePolicy(policy) {
+  const text = getPolicyText(policy);
+
+  if (isPensionFundPolicy(policy)) return false;
+
+  return (
+    text.includes("ביטוח חיים") ||
+    text.includes("ריסק") ||
+    text.includes("risk") ||
+    text.includes("Risk")
   );
 }
 
 function getLifeInsuranceAmount(policy) {
+  if (!isLifeInsurancePolicy(policy)) return 0;
   return Number(policy?.coverage?.totalInsurance || 0);
 }
 
@@ -505,15 +511,13 @@ function buildLifeCoverageDisplayAmount(policies) {
   const safePolicies = Array.isArray(policies) ? policies : [];
   const unique = uniquePolicies(safePolicies);
 
-  const lifeInsuranceAmount = sumNullable(
-    unique.filter(isLifeInsurancePolicy).map(getLifeInsuranceAmount)
-  );
+  const actualLifeInsurance = sumNullable(unique.map(getLifeInsuranceAmount));
 
-  const nonPensionAssetsAmount = sumNullable(
+  const nonPensionAssets = sumNullable(
     unique.map(getNonPensionAccumulatedAmount)
   );
 
-  return lifeInsuranceAmount + nonPensionAssetsAmount;
+  return actualLifeInsurance + nonPensionAssets;
 }
 
 function isNoCoeffPolicy(policy) {
@@ -855,7 +859,7 @@ export function buildLegacyReportData(parsedFiles) {
 
   const uniqueLoanDetails = Array.from(uniqueLoanMap.values());
 
-  const reportData = {
+  return {
     family: {
       lastUpdated: formatDateForReport(new Date()),
       totalAssets,
@@ -883,7 +887,7 @@ export function buildLegacyReportData(parsedFiles) {
       coverageAmount: totalInsurance,
       summary:
         totalInsurance > 0
-          ? "סכום ביטוח חיים כולל צבירות במוצרים שאינם קרנות פנסיה"
+          ? "סכום ביטוח חיים כולל ביטוח חיים אמיתי וצבירות במוצרים שאינם קרנות פנסיה"
           : "לא התקבל מידע",
     },
     weightedEquityExposure,
@@ -901,6 +905,4 @@ export function buildLegacyReportData(parsedFiles) {
       },
     })),
   };
-
-  return reportData;
 }
