@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 
 function ClientMemberView({ member }) {
   const [productFilter, setProductFilter] = useState("all");
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const formatCurrency = (value) =>
     `₪${Number(value || 0).toLocaleString("en-US")}`;
@@ -24,33 +25,58 @@ function ClientMemberView({ member }) {
     value: p.currentValue,
   }));
 
-  const productFilterOptions = useMemo(() => {
-    const unique = new Map();
+  const filterOptions = useMemo(() => {
+    const options = [{ id: "all", label: "כל המוצרים" }];
+
+    const productTypes = new Set();
+    const managerNames = new Set();
 
     products.forEach((product) => {
-      const name = product.productType || product.planName || "ללא סוג מוצר";
-      if (!unique.has(name)) {
-        unique.set(name, name);
-      }
+      if (product.productType) productTypes.add(product.productType);
+      if (product.managerName) managerNames.add(product.managerName);
     });
 
-    return Array.from(unique.values());
+    Array.from(productTypes).forEach((name) => {
+      options.push({
+        id: `productType:${name}`,
+        label: `מוצר: ${name}`,
+      });
+    });
+
+    Array.from(managerNames).forEach((name) => {
+      options.push({
+        id: `manager:${name}`,
+        label: `מבטח / גוף מנהל: ${name}`,
+      });
+    });
+
+    return options;
   }, [products]);
+
+  const selectedFilterLabel =
+    filterOptions.find((option) => option.id === productFilter)?.label ||
+    "כל המוצרים";
 
   const filteredProducts = useMemo(() => {
     if (productFilter === "all") return products;
 
-    return products.filter((product) => {
-      const name = product.productType || product.planName || "ללא סוג מוצר";
-      return name === productFilter;
-    });
+    const [type, value] = productFilter.split(":");
+
+    if (type === "productType") {
+      return products.filter((product) => product.productType === value);
+    }
+
+    if (type === "manager") {
+      return products.filter((product) => product.managerName === value);
+    }
+
+    return products;
   }, [products, productFilter]);
 
-  const filteredProductDistribution = filteredProducts.map((p) => ({
-    id: p.id,
-    name: p.planName,
-    value: p.currentValue,
-  }));
+  const handleFilterSelect = (id) => {
+    setProductFilter(id);
+    setFilterOpen(false);
+  };
 
   return (
     <div style={page}>
@@ -134,16 +160,23 @@ function ClientMemberView({ member }) {
       </section>
 
       <section style={compareGrid}>
-        <SectionCard title="גרף לפי גופים מנהלים" icon="🏦">
-          <DonutSummaryCard
-            title="חלוקה לפי גופים מנהלים"
-            subtitle="התפלגות הנכסים האישיים לפי גוף מנהל."
-            items={managers}
-            formatCurrency={formatCurrency}
-          />
+        <SectionCard title="חלוקה לפי גופים מנהלים" icon="🏦">
+          {managers.length ? (
+            managers.map((item) => (
+              <DataRow
+                key={item.id || item.name}
+                label={item.name}
+                value={`${formatCurrency(item.value)} · ${formatPercent(
+                  item.percent
+                )}`}
+              />
+            ))
+          ) : (
+            <EmptyText>אין פירוט מנהלים אישי להצגה</EmptyText>
+          )}
         </SectionCard>
 
-        <SectionCard title="גרף לפי מוצרים" icon="🥧">
+        <SectionCard title="חלוקה לפי מוצרים" icon="🥧">
           <DonutSummaryCard
             title="חלוקה לפי מוצרים"
             subtitle="התפלגות הנכסים האישיים לפי תוכניות ומוצרים."
@@ -153,104 +186,90 @@ function ClientMemberView({ member }) {
         </SectionCard>
       </section>
 
-      <SectionCard title="חלוקה לפי גופים מנהלים" icon="📋">
-        {managers.length ? (
-          managers.map((item) => (
-            <DataRow
-              key={item.id || item.name}
-              label={item.name}
-              value={`${formatCurrency(item.value)} · ${formatPercent(
-                item.percent
-              )}`}
-            />
-          ))
-        ) : (
-          <EmptyText>אין פירוט מנהלים אישי להצגה</EmptyText>
-        )}
-      </SectionCard>
-
       <SectionCard title="מוצרים / תוכניות" icon="📄">
         <div style={productsHeaderRow}>
           <div>
-            <div style={productsHeaderTitle}>פירוט מוצרים</div>
+            <div style={productsHeaderTitle}>פירוט מוצרים / תוכניות</div>
             <div style={productsHeaderSub}>
-              ניתן לסנן לפי סוג מוצר ולראות את החלוקה הגרפית בהתאם.
+              ניתן לסנן לפי סוג מוצר או לפי גוף מנהל / מבטח.
             </div>
           </div>
 
-          <select
-            value={productFilter}
-            onChange={(event) => setProductFilter(event.target.value)}
-            style={productSelect}
-          >
-            <option value="all">כל המוצרים</option>
-            {productFilterOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </div>
+          <div style={filterWrap}>
+            <button
+              type="button"
+              onClick={() => setFilterOpen((prev) => !prev)}
+              style={filterButton}
+            >
+              <span style={hamburgerIcon}>☰</span>
+              <span style={filterButtonText}>{selectedFilterLabel}</span>
+              <span style={filterArrow}>{filterOpen ? "▲" : "▼"}</span>
+            </button>
 
-        <div style={productTableVisualGrid}>
-          <div style={productPieBox}>
-            <MiniDonutPanel
-              title="חלוקה לפי מוצרים"
-              items={filteredProductDistribution}
-              formatCurrency={formatCurrency}
-            />
-          </div>
-
-          <div style={productTableBox}>
-            {filteredProducts.length ? (
-              <div style={tableWrap}>
-                <table style={table}>
-                  <thead>
-                    <tr>
-                      <th style={th}>מוצר</th>
-                      <th style={th}>גוף מנהל</th>
-                      <th style={th}>סוג מוצר</th>
-                      <th style={th}>מספר פוליסה</th>
-                      <th style={th}>צבירה</th>
-                      <th style={th}>הפקדה חודשית</th>
-                      <th style={th}>קצבה צפויה</th>
-                      <th style={th}>דמי ניהול מצבירה</th>
-                      <th style={th}>חשיפה מנייתית</th>
-                      <th style={th}>חשיפה לחו"ל</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {filteredProducts.map((product) => (
-                      <tr key={product.id}>
-                        <td style={td}>{product.planName}</td>
-                        <td style={td}>{product.managerName}</td>
-                        <td style={td}>{product.productType}</td>
-                        <td style={td}>{product.policyNo || "—"}</td>
-                        <td style={td}>{formatCurrency(product.currentValue)}</td>
-                        <td style={td}>{formatCurrency(product.monthlyDeposit)}</td>
-                        <td style={td}>
-                          {formatCurrency(product.projectedMonthlyPension)}
-                        </td>
-                        <td style={td}>
-                          {Number(product.managementFeeFromBalance || 0).toFixed(2)}%
-                        </td>
-                        <td style={td}>
-                          <ExposureBadge value={product.equityExposure} />
-                        </td>
-                        <td style={td}>
-                          <ExposureBadge value={product.foreignExposure} />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {filterOpen && (
+              <div style={filterDropdown}>
+                {filterOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => handleFilterSelect(option.id)}
+                    style={filterDropdownItem(option.id === productFilter)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
               </div>
-            ) : (
-              <EmptyText>אין מוצרים להצגה לפי הסינון שנבחר</EmptyText>
             )}
           </div>
         </div>
+
+        {filteredProducts.length ? (
+          <div style={tableWrap}>
+            <table style={table}>
+              <thead>
+                <tr>
+                  <th style={th}>מוצר</th>
+                  <th style={th}>גוף מנהל</th>
+                  <th style={th}>סוג מוצר</th>
+                  <th style={th}>מספר פוליסה</th>
+                  <th style={th}>צבירה</th>
+                  <th style={th}>הפקדה חודשית</th>
+                  <th style={th}>קצבה צפויה</th>
+                  <th style={th}>דמי ניהול מצבירה</th>
+                  <th style={th}>חשיפה מנייתית</th>
+                  <th style={th}>חשיפה לחו"ל</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {filteredProducts.map((product) => (
+                  <tr key={product.id}>
+                    <td style={td}>{product.planName}</td>
+                    <td style={td}>{product.managerName}</td>
+                    <td style={td}>{product.productType}</td>
+                    <td style={td}>{product.policyNo || "—"}</td>
+                    <td style={td}>{formatCurrency(product.currentValue)}</td>
+                    <td style={td}>{formatCurrency(product.monthlyDeposit)}</td>
+                    <td style={td}>
+                      {formatCurrency(product.projectedMonthlyPension)}
+                    </td>
+                    <td style={td}>
+                      {Number(product.managementFeeFromBalance || 0).toFixed(2)}%
+                    </td>
+                    <td style={td}>
+                      <ExposureBadge value={product.equityExposure} />
+                    </td>
+                    <td style={td}>
+                      <ExposureBadge value={product.foreignExposure} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <EmptyText>אין מוצרים להצגה לפי הסינון שנבחר</EmptyText>
+        )}
       </SectionCard>
     </div>
   );
@@ -387,44 +406,6 @@ function DonutSummaryCard({ title, subtitle, items, formatCurrency }) {
   );
 }
 
-function MiniDonutPanel({ title, items, formatCurrency }) {
-  const data = buildSegments(items);
-
-  return (
-    <div>
-      <div style={miniPanelTitle}>{title}</div>
-
-      {!data.segments.length ? (
-        <EmptyText>אין נתונים להצגה</EmptyText>
-      ) : (
-        <>
-          <div style={miniDonutWrap}>
-            <div
-              style={{
-                ...miniDonutCircle,
-                background: `conic-gradient(${data.gradient})`,
-              }}
-            >
-              <div style={miniDonutHole} />
-            </div>
-          </div>
-
-          <div style={miniLegendList}>
-            {data.segments.slice(0, 5).map((seg, index) => (
-              <LegendRow
-                key={`${seg.id || seg.name}-${index}`}
-                seg={seg}
-                formatCurrency={formatCurrency}
-                compact
-              />
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
 function buildSegments(items) {
   const safeItems = Array.isArray(items)
     ? items.filter((item) => Number(item.value || 0) > 0)
@@ -462,9 +443,9 @@ function buildSegments(items) {
   return { segments, gradient };
 }
 
-function LegendRow({ seg, formatCurrency, compact = false }) {
+function LegendRow({ seg, formatCurrency }) {
   return (
-    <div style={compact ? miniLegendRow : legendRow}>
+    <div style={legendRow}>
       <span style={{ ...legendDot, background: seg.color }} />
       <div style={{ minWidth: 0 }}>
         <div style={legendName}>{seg.name}</div>
@@ -477,7 +458,6 @@ function LegendRow({ seg, formatCurrency, compact = false }) {
 
 function ExposureBadge({ value }) {
   const num = Number(value || 0);
-
   const color = num > 60 ? "#D14343" : num > 30 ? "#F0B43C" : "#3EAF63";
 
   return (
@@ -499,25 +479,6 @@ function getForeignExposureLabel(value) {
   if (num <= 25) return "חשיפה נמוכה לחו״ל";
   if (num <= 50) return "חשיפה בינונית לחו״ל";
   return "חשיפה גבוהה לחו״ל";
-}
-
-function formatDate(value) {
-  if (!value) return "—";
-  const str = String(value).trim();
-
-  if (/^\d{8}$/.test(str)) {
-    const y = str.slice(0, 4);
-    const m = str.slice(4, 6);
-    const d = str.slice(6, 8);
-    return `${d}/${m}/${y}`;
-  }
-
-  const date = new Date(str);
-  if (!isNaN(date.getTime())) {
-    return new Intl.DateTimeFormat("he-IL").format(date);
-  }
-
-  return str;
 }
 
 function AssetsIcon() {
@@ -577,7 +538,6 @@ function PensionIcon() {
 }
 
 const theme = {
-  pageBg: "#F9F7F3",
   surface: "#FFFFFF",
   surfaceAlt: "#FCFBF8",
   border: "#E2D1BF",
@@ -620,9 +580,7 @@ const heroHeader = {
   marginBottom: 18,
 };
 
-const heroCenter = {
-  textAlign: "center",
-};
+const heroCenter = { textAlign: "center" };
 
 const heroEyebrow = {
   fontSize: 12,
@@ -764,9 +722,7 @@ const dataRow = {
   fontSize: 12,
 };
 
-const dataLabel = {
-  color: theme.textSoft,
-};
+const dataLabel = { color: theme.textSoft };
 
 const dataValue = {
   color: theme.navy,
@@ -885,14 +841,6 @@ const legendRow = {
   fontSize: 12,
 };
 
-const miniLegendRow = {
-  display: "grid",
-  gridTemplateColumns: "10px 1fr auto",
-  gap: 7,
-  alignItems: "center",
-  fontSize: 11,
-};
-
 const legendDot = {
   width: 12,
   height: 12,
@@ -940,70 +888,72 @@ const productsHeaderSub = {
   marginTop: 4,
 };
 
-const productSelect = {
-  minWidth: 220,
+const filterWrap = {
+  position: "relative",
+  minWidth: 260,
+};
+
+const filterButton = {
+  width: "100%",
   minHeight: 42,
-  padding: "10px 14px",
   borderRadius: 12,
   border: `1px solid ${theme.border}`,
   background: "#fff",
   color: theme.navy,
-  fontWeight: 800,
   fontFamily: 'Calibri, "Arial", sans-serif',
   fontSize: 12,
-};
-
-const productTableVisualGrid = {
-  display: "grid",
-  gridTemplateColumns: "250px minmax(0, 1fr)",
-  gap: 16,
-  alignItems: "start",
-};
-
-const productPieBox = {
-  background: theme.surfaceAlt,
-  border: `1px solid ${theme.divider}`,
-  borderRadius: 16,
-  padding: 14,
-};
-
-const productTableBox = {
-  minWidth: 0,
-};
-
-const miniPanelTitle = {
-  fontSize: 13,
   fontWeight: 800,
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 10,
+  padding: "10px 14px",
+};
+
+const hamburgerIcon = {
+  fontSize: 16,
   color: theme.navy,
-  marginBottom: 12,
 };
 
-const miniDonutWrap = {
-  display: "flex",
-  justifyContent: "center",
-  marginBottom: 14,
+const filterButtonText = {
+  flex: 1,
+  textAlign: "right",
 };
 
-const miniDonutCircle = {
-  width: 150,
-  height: 150,
-  borderRadius: "50%",
-  position: "relative",
+const filterArrow = {
+  fontSize: 11,
+  color: theme.navy,
 };
 
-const miniDonutHole = {
+const filterDropdown = {
   position: "absolute",
-  inset: 31,
-  background: theme.surfaceAlt,
-  borderRadius: "50%",
-  border: `1px solid ${theme.divider}`,
+  top: "calc(100% + 8px)",
+  right: 0,
+  left: 0,
+  background: "#fff",
+  border: `1px solid ${theme.border}`,
+  borderRadius: 14,
+  boxShadow: "0 14px 34px rgba(16,42,67,0.14)",
+  padding: 8,
+  zIndex: 20,
+  maxHeight: 320,
+  overflowY: "auto",
 };
 
-const miniLegendList = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 8,
-};
+const filterDropdownItem = (active) => ({
+  width: "100%",
+  padding: "11px 12px",
+  borderRadius: 10,
+  border: "none",
+  background: active ? "#F4F7FB" : "#fff",
+  color: active ? theme.navy : theme.text,
+  fontFamily: 'Calibri, "Arial", sans-serif',
+  fontWeight: 800,
+  fontSize: 12,
+  cursor: "pointer",
+  textAlign: "right",
+});
 
 const tableWrap = {
   overflowX: "auto",
@@ -1015,7 +965,7 @@ const tableWrap = {
 const table = {
   width: "100%",
   borderCollapse: "collapse",
-  minWidth: 1040,
+  minWidth: 1100,
   background: "#fff",
 };
 
