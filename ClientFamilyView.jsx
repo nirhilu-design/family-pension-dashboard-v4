@@ -47,6 +47,7 @@ function ClientFamilyView({ clientModel }) {
         title="דוח פנסיוני משפחתי מאוחד"
         eyebrow="מסך לקוח · דוח משפחתי מאוחד"
         subtitle="ריכזנו עבורך תמונת מצב משפחתית אחת הכוללת את כלל הנכסים הפנסיוניים, תחזית פרישה, פיזור בין מוצרים וגופים מנהלים, חשיפות ומידע מרכזי לכל אחד מבני המשפחה."
+        lastUpdated={clientModel.lastUpdated}
       />
 
       <section style={topGrid}>
@@ -241,7 +242,7 @@ function buildCompareBars(withDeposits, withoutDeposits, formatCurrency) {
   ];
 }
 
-function Header({ eyebrow, title, subtitle }) {
+function Header({ eyebrow, title, subtitle, lastUpdated }) {
   return (
     <section style={heroHeader}>
       <div style={heroLogoWrap}>
@@ -256,7 +257,9 @@ function Header({ eyebrow, title, subtitle }) {
 
       <div style={heroMeta}>
         <div style={heroMetaLabel}>תאריך עדכון</div>
-        <div style={heroMetaValue}>{new Intl.DateTimeFormat("he-IL").format(new Date())}</div>
+        <div style={heroMetaValue}>
+          {lastUpdated || new Intl.DateTimeFormat("he-IL").format(new Date())}
+        </div>
       </div>
     </section>
   );
@@ -742,22 +745,26 @@ const heroHeader = {
   gridTemplateColumns: "1fr 2fr 1fr",
   alignItems: "center",
   gap: 16,
+  direction: "ltr",
 };
 
 const heroLogoWrap = {
-  justifySelf: "end",
+  justifySelf: "start",
+  direction: "ltr",
 };
 
 const heroCenter = {
   textAlign: "center",
+  direction: "rtl",
 };
 
 const heroMeta = {
   display: "flex",
   flexDirection: "column",
   gap: 4,
-  alignItems: "flex-start",
-  justifySelf: "start",
+  alignItems: "flex-end",
+  justifySelf: "end",
+  direction: "rtl",
 };
 
 const heroMetaLabel = {
