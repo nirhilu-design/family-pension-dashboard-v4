@@ -29,6 +29,7 @@ export function buildClientFamilyDataModel(reportData) {
       monthlyPensionWithoutDeposits: Number(
         family.monthlyPensionWithoutDeposits || 0
       ),
+      totalInsurance: Number(family.totalInsurance || 0),
     },
     exposures: {
       equity: weightedEquityExposure,
@@ -58,7 +59,10 @@ function buildClientMemberModel(member, index, reportData) {
   const mainGroups = buildMainGroupsFromProducts(products);
   const exposures = buildMemberExposures(products);
 
-  const deathCoverage = buildLifeCoverageDisplayAmount(products);
+  const deathCoverage =
+    member?.deathCoverage !== undefined && member?.deathCoverage !== null
+      ? Number(member.deathCoverage || 0)
+      : buildLifeCoverageDisplayAmount(products);
 
   return {
     id: createStableMemberId(memberName, index),
@@ -149,6 +153,8 @@ function extractMemberProducts(memberName, reportData) {
         0
     );
 
+    const hCoeff = policy?.savings?.hCoeff;
+
     return {
       id:
         policy.policyNo ||
@@ -170,9 +176,7 @@ function extractMemberProducts(memberName, reportData) {
 
       monthlyDeposit,
 
-      projectedLumpSumWithDeposits: Number(
-        policy?.savings?.totalPidions || 0
-      ),
+      projectedLumpSumWithDeposits: Number(policy?.savings?.totalPidions || 0),
 
       projectedLumpSumWithoutDeposits: Number(
         policy?.savings?.retireCurrBalance || 0
@@ -183,6 +187,8 @@ function extractMemberProducts(memberName, reportData) {
           policy?.savings?.projectedMonthlyPension ||
           0
       ),
+
+      hCoeff,
 
       joinDate: policy.joinDate || null,
 
@@ -207,6 +213,8 @@ function extractMemberProducts(memberName, reportData) {
       },
 
       mainGroups: getPolicyMainGroups(policy),
+
+      isNoCoeff: isNoCoeffPolicy(policy),
 
       isPensionFund: isPensionFundPolicy(policy),
 
@@ -305,8 +313,7 @@ function buildMemberExposures(products) {
     safeProducts.reduce(
       (sum, product) =>
         sum +
-        Number(product.currentValue || 0) *
-          Number(product.equityExposure || 0),
+        Number(product.currentValue || 0) * Number(product.equityExposure || 0),
       0
     ) / totalValue;
 
@@ -314,8 +321,7 @@ function buildMemberExposures(products) {
     safeProducts.reduce(
       (sum, product) =>
         sum +
-        Number(product.currentValue || 0) *
-          Number(product.foreignExposure || 0),
+        Number(product.currentValue || 0) * Number(product.foreignExposure || 0),
       0
     ) / totalValue;
 
@@ -392,29 +398,43 @@ function isPensionFundPolicy(policyOrProduct) {
 function isLifeInsurancePolicy(policyOrProduct) {
   if (isPensionFundPolicy(policyOrProduct)) return false;
 
-  const text = getPolicyText(policyOrProduct);
+  const text = getPolicyText(policyOrProduct).toLowerCase();
 
   return (
     text.includes("ביטוח חיים") ||
     text.includes("ריסק") ||
-    text.toLowerCase().includes("risk")
+    text.includes("risk")
   );
 }
 
+function isNoCoeffPolicy(policyOrProduct) {
+  const coeff =
+    policyOrProduct?.hCoeff ??
+    policyOrProduct?.savings?.hCoeff ??
+    policyOrProduct?.raw?.savings?.hCoeff;
+
+  return coeff === null || coeff === undefined || Number(coeff) === 0;
+}
+
+/**
+ * כלל ביטוח חיים להצגה:
+ * 1. TotalPidions לכל מוצר שאין לו HCoff
+ * 2. ועוד TotalBituah רק למוצר שנקרא ביטוח חיים / ריסק
+ */
 function buildLifeCoverageDisplayAmount(products) {
   const safeProducts = Array.isArray(products) ? products : [];
+
+  const noCoeffPidions = safeProducts.reduce((sum, product) => {
+    if (!isNoCoeffPolicy(product)) return sum;
+    return sum + Number(product.projectedLumpSumWithDeposits || 0);
+  }, 0);
 
   const actualLifeInsurance = safeProducts.reduce((sum, product) => {
     if (!product.isLifeInsurance) return sum;
     return sum + Number(product.coverage?.totalInsurance || 0);
   }, 0);
 
-  const nonPensionAssets = safeProducts.reduce((sum, product) => {
-    if (product.isPensionFund) return sum;
-    return sum + Number(product.currentValue || 0);
-  }, 0);
-
-  return actualLifeInsurance + nonPensionAssets;
+  return noCoeffPidions + actualLifeInsurance;
 }
 
 function createStableMemberId(name, index) {
