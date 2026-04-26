@@ -11,6 +11,20 @@ const EXPIRATION_OPTIONS = [
   { label: "חודש", hours: 720 },
 ];
 
+const theme = {
+  pageBg: "#F9F7F3",
+  surface: "#FFFFFF",
+  surfaceAlt: "#FCFBF8",
+  border: "#E2D1BF",
+  divider: "#EEE4D8",
+  text: "#102A43",
+  textSoft: "#627D98",
+  navy: "#00215D",
+  navyDark: "#001845",
+  accent: "#FF2756",
+  buttonBorder: "#D9DDE8",
+};
+
 function ClientDashboardPage({
   reportData,
   onBack,
@@ -89,6 +103,94 @@ function ClientDashboardPage({
     <>
       <style>
         {`
+          * {
+            box-sizing: border-box;
+          }
+
+          html, body {
+            margin: 0;
+            padding: 0;
+            font-family: Calibri, Arial, sans-serif;
+            font-size: 12px;
+          }
+
+          .client-action-button {
+            padding: 12px 18px;
+            min-height: 42px;
+            border-radius: 12px;
+            border: 1px solid ${theme.buttonBorder};
+            background: #ffffff;
+            color: ${theme.text};
+            font-weight: 800;
+            font-family: Calibri, Arial, sans-serif;
+            font-size: 13px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.18s ease;
+            min-width: 128px;
+          }
+
+          .client-action-button:hover {
+            border-color: ${theme.navy};
+            color: ${theme.navy};
+            transform: translateY(-1px);
+          }
+
+          .client-action-button:active {
+            transform: translateY(0);
+          }
+
+          .client-action-button.primary {
+            border-color: ${theme.navy};
+            background: ${theme.navy};
+            color: #ffffff;
+            box-shadow: 0 6px 14px rgba(0,33,93,0.16);
+          }
+
+          .client-action-button.primary:hover {
+            border-color: ${theme.navyDark};
+            background: ${theme.navyDark};
+            color: #ffffff;
+          }
+
+          .client-action-button.accent {
+            border-color: ${theme.accent};
+            background: ${theme.accent};
+            color: #ffffff;
+            box-shadow: 0 6px 14px rgba(255,39,86,0.16);
+          }
+
+          .client-action-button.accent:hover {
+            border-color: #e61f4d;
+            background: #e61f4d;
+            color: #ffffff;
+          }
+
+          .client-select {
+            padding: 12px 18px;
+            min-height: 42px;
+            border-radius: 12px;
+            border: 1px solid ${theme.buttonBorder};
+            background: #ffffff;
+            color: ${theme.text};
+            font-weight: 800;
+            font-family: Calibri, Arial, sans-serif;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            min-width: 132px;
+          }
+
+          .client-select:hover {
+            border-color: ${theme.navy};
+            color: ${theme.navy};
+          }
+
+          .client-select:focus {
+            outline: 2px solid rgba(0,33,93,0.22);
+            border-color: ${theme.navy};
+          }
+
           @media print {
             .client-no-print {
               display: none !important;
@@ -148,86 +250,6 @@ function ClientDashboardPage({
               display: none !important;
             }
           }
-
-          .client-action-button {
-            padding: 10px 14px;
-            min-height: 42px;
-            border-radius: 12px;
-            border: 1px solid #D9DDE8;
-            background: #ffffff;
-            color: #102A43;
-            font-weight: 800;
-            font-family: Calibri, Arial, sans-serif;
-            font-size: 14px;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: all 0.18s ease;
-          }
-
-          .client-action-button:hover {
-            border-color: #4F66E8;
-            color: #4F66E8;
-          }
-
-          .client-action-button:active {
-            background: #4F66E8;
-            border-color: #4F66E8;
-            color: #ffffff;
-          }
-
-          .client-action-button.primary {
-            border-color: #00215D;
-            background: #00215D;
-            color: #ffffff;
-          }
-
-          .client-action-button.primary:hover {
-            border-color: #4F66E8;
-            background: #4F66E8;
-            color: #ffffff;
-          }
-
-          .client-action-button.primary:active {
-            background: #4F66E8;
-            border-color: #4F66E8;
-            color: #ffffff;
-          }
-
-          .client-action-button.accent {
-            border-color: #4F66E8;
-            background: #4F66E8;
-            color: #ffffff;
-          }
-
-          .client-action-button.accent:hover {
-            border-color: #00215D;
-            background: #00215D;
-            color: #ffffff;
-          }
-
-          .client-select {
-            padding: 10px 14px;
-            min-height: 42px;
-            border-radius: 12px;
-            border: 1px solid #D9DDE8;
-            background: #ffffff;
-            color: #102A43;
-            font-weight: 800;
-            font-family: Calibri, Arial, sans-serif;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.18s ease;
-          }
-
-          .client-select:hover {
-            border-color: #4F66E8;
-            color: #4F66E8;
-          }
-
-          .client-select:focus {
-            outline: 2px solid rgba(79, 102, 232, 0.18);
-            border-color: #4F66E8;
-          }
         `}
       </style>
 
@@ -237,8 +259,8 @@ function ClientDashboardPage({
           minHeight: "100vh",
           direction: "rtl",
           fontFamily: 'Calibri, "Arial", sans-serif',
-          background: "#F7F5F1",
-          color: "#102A43",
+          background: theme.pageBg,
+          color: theme.text,
         }}
       >
         <div className="client-no-print" style={thinStickyBar}>
@@ -408,10 +430,22 @@ function ClientDashboardPage({
             {isSharedMode && (
               <div className="client-no-print" style={sharedNotice}>
                 <div>
-                  <div style={{ color: "#00215D", fontWeight: 800, fontSize: 16 }}>
+                  <div
+                    style={{
+                      color: theme.navy,
+                      fontWeight: 800,
+                      fontSize: 16,
+                    }}
+                  >
                     {activeShareDetails?.clientName || "תצוגת לקוח"}
                   </div>
-                  <div style={{ color: "#627D98", fontSize: 13, marginTop: 4 }}>
+                  <div
+                    style={{
+                      color: theme.textSoft,
+                      fontSize: 13,
+                      marginTop: 4,
+                    }}
+                  >
                     ניתן לשמור את המסך כ־PDF דרך הכפתור העליון.
                   </div>
                 </div>
@@ -440,8 +474,8 @@ function ClientDashboardPage({
 function InfoMini({ label, value }) {
   return (
     <span style={infoMini}>
-      <span style={{ color: "#627D98" }}>{label}:</span>
-      <span style={{ color: "#00215D", fontWeight: 800 }}>{value}</span>
+      <span style={{ color: theme.textSoft }}>{label}:</span>
+      <span style={{ color: theme.navy, fontWeight: 800 }}>{value}</span>
     </span>
   );
 }
@@ -452,7 +486,7 @@ const thinStickyBar = {
   zIndex: 50,
   background: "rgba(255,255,255,0.96)",
   backdropFilter: "blur(10px)",
-  borderBottom: "1px solid #DCCDBA",
+  borderBottom: `1px solid ${theme.border}`,
   boxShadow: "0 4px 16px rgba(16,42,67,0.06)",
   padding: "10px 18px",
 };
@@ -481,13 +515,15 @@ const tabButtonStyle = (active) => ({
   padding: "10px 14px",
   minHeight: 42,
   borderRadius: 12,
-  border: active ? "1px solid #4F66E8" : "1px solid #D9DDE8",
-  background: active ? "#4F66E8" : "#ffffff",
-  color: active ? "#ffffff" : "#102A43",
+  border: active
+    ? `1px solid ${theme.navy}`
+    : `1px solid ${theme.buttonBorder}`,
+  background: active ? theme.navy : "#ffffff",
+  color: active ? "#ffffff" : theme.text,
   fontWeight: 800,
   fontSize: 14,
   cursor: "pointer",
-  boxShadow: active ? "0 6px 14px rgba(79,102,232,0.16)" : "none",
+  boxShadow: active ? "0 6px 14px rgba(0,33,93,0.16)" : "none",
   whiteSpace: "nowrap",
   transition: "all 0.18s ease",
 });
@@ -515,8 +551,8 @@ const infoMini = {
   gap: 5,
   padding: "6px 10px",
   borderRadius: 999,
-  background: "#FCFBF8",
-  border: "1px solid #EEE4D8",
+  background: theme.surfaceAlt,
+  border: `1px solid ${theme.divider}`,
 };
 
 const miniStatus = {
@@ -529,11 +565,12 @@ const shareInput = {
   flex: "1 1 320px",
   minWidth: 260,
   borderRadius: 10,
-  border: "1px solid #D9DDE8",
+  border: `1px solid ${theme.buttonBorder}`,
   padding: "8px 10px",
   fontSize: 12,
   direction: "ltr",
   boxSizing: "border-box",
+  color: theme.text,
 };
 
 const mobileMenuWrap = {
@@ -549,9 +586,9 @@ const mobileMenuButton = {
   gap: 10,
   padding: "11px 14px",
   borderRadius: 12,
-  border: "1px solid #D9DDE8",
+  border: `1px solid ${theme.buttonBorder}`,
   background: "#ffffff",
-  color: "#00215D",
+  color: theme.navy,
   fontWeight: 800,
   fontSize: 14,
   cursor: "pointer",
@@ -563,7 +600,7 @@ const dropdown = {
   right: 0,
   left: 0,
   background: "#ffffff",
-  border: "1px solid #D9DDE8",
+  border: `1px solid ${theme.buttonBorder}`,
   borderRadius: 14,
   boxShadow: "0 14px 34px rgba(16,42,67,0.14)",
   padding: 8,
@@ -575,8 +612,8 @@ const dropdownItem = (active) => ({
   padding: "12px 14px",
   borderRadius: 10,
   border: "none",
-  background: active ? "#EEF1FF" : "#ffffff",
-  color: active ? "#4F66E8" : "#102A43",
+  background: active ? "#F4F7FB" : "#ffffff",
+  color: active ? theme.navy : theme.text,
   fontWeight: 800,
   fontSize: 14,
   cursor: "pointer",
@@ -585,7 +622,7 @@ const dropdownItem = (active) => ({
 
 const sharedNotice = {
   background: "#ffffff",
-  border: "1px solid #DCCDBA",
+  border: `1px solid ${theme.border}`,
   borderRadius: 18,
   padding: "14px 18px",
   marginBottom: 18,
@@ -594,6 +631,7 @@ const sharedNotice = {
   alignItems: "center",
   gap: 12,
   flexWrap: "wrap",
+  boxShadow: "0 2px 10px rgba(16,42,67,0.05)",
 };
 
 export default ClientDashboardPage;
