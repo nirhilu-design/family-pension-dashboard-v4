@@ -123,21 +123,21 @@ function ClientDashboardPage({
             color: ${theme.text};
             font-weight: 800;
             font-family: Calibri, Arial, sans-serif;
-            font-size: 13px;
+            font-size: 12px;
             cursor: pointer;
             white-space: nowrap;
             transition: all 0.18s ease;
             min-width: 128px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
           }
 
           .client-action-button:hover {
             border-color: ${theme.navy};
             color: ${theme.navy};
             transform: translateY(-1px);
-          }
-
-          .client-action-button:active {
-            transform: translateY(0);
           }
 
           .client-action-button.primary {
@@ -175,20 +175,9 @@ function ClientDashboardPage({
             color: ${theme.text};
             font-weight: 800;
             font-family: Calibri, Arial, sans-serif;
-            font-size: 13px;
+            font-size: 12px;
             cursor: pointer;
-            transition: all 0.18s ease;
             min-width: 132px;
-          }
-
-          .client-select:hover {
-            border-color: ${theme.navy};
-            color: ${theme.navy};
-          }
-
-          .client-select:focus {
-            outline: 2px solid rgba(0,33,93,0.22);
-            border-color: ${theme.navy};
           }
 
           @media print {
@@ -222,14 +211,6 @@ function ClientDashboardPage({
           }
 
           @media (max-width: 900px) {
-            .desktop-tabs {
-              display: none !important;
-            }
-
-            .mobile-view-select {
-              display: block !important;
-            }
-
             .thin-bar-inner {
               flex-direction: column !important;
               align-items: stretch !important;
@@ -242,12 +223,6 @@ function ClientDashboardPage({
             .thin-actions button,
             .thin-actions select {
               flex: 1 !important;
-            }
-          }
-
-          @media (min-width: 901px) {
-            .mobile-view-select {
-              display: none !important;
             }
           }
         `}
@@ -265,35 +240,14 @@ function ClientDashboardPage({
       >
         <div className="client-no-print" style={thinStickyBar}>
           <div className="thin-bar-inner" style={thinBarInner}>
-            <div className="desktop-tabs" style={tabs}>
-              <button
-                onClick={() => handleChangeView("family")}
-                style={tabButtonStyle(activeView === "family")}
-                title="מבט משפחתי"
-              >
-                👨‍👩‍👧‍👦 משפחתי
-              </button>
-
-              {members.map((member, index) => (
-                <button
-                  key={member.id}
-                  onClick={() => handleChangeView(member.id)}
-                  style={tabButtonStyle(activeView === member.id)}
-                  title={member.name}
-                >
-                  👤 {member.name || `לקוח ${index + 1}`}
-                </button>
-              ))}
-            </div>
-
-            <div className="mobile-view-select" style={mobileMenuWrap}>
+            <div style={viewSelectorWrap}>
               <button
                 onClick={() => setMenuOpen((prev) => !prev)}
-                style={mobileMenuButton}
+                style={viewSelectorButton}
               >
-                <span>☰</span>
-                <span>{activeLabel}</span>
-                <span>{menuOpen ? "▲" : "▼"}</span>
+                <span style={viewSelectorLabel}>שם לקוח:</span>
+                <span style={viewSelectorValue}>{activeLabel}</span>
+                <span style={viewSelectorArrow}>{menuOpen ? "▲" : "▼"}</span>
               </button>
 
               {menuOpen && (
@@ -323,6 +277,7 @@ function ClientDashboardPage({
                 onClick={handleExportPdf}
                 className="client-action-button primary"
               >
+                <DownloadIcon />
                 הורד PDF
               </button>
 
@@ -434,7 +389,7 @@ function ClientDashboardPage({
                     style={{
                       color: theme.navy,
                       fontWeight: 800,
-                      fontSize: 16,
+                      fontSize: 14,
                     }}
                   >
                     {activeShareDetails?.clientName || "תצוגת לקוח"}
@@ -442,7 +397,7 @@ function ClientDashboardPage({
                   <div
                     style={{
                       color: theme.textSoft,
-                      fontSize: 13,
+                      fontSize: 12,
                       marginTop: 4,
                     }}
                   >
@@ -454,6 +409,7 @@ function ClientDashboardPage({
                   onClick={handleExportPdf}
                   className="client-action-button primary"
                 >
+                  <DownloadIcon />
                   הורד PDF
                 </button>
               </div>
@@ -468,6 +424,32 @@ function ClientDashboardPage({
         </main>
       </div>
     </>
+  );
+}
+
+function DownloadIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M12 3V14"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M7.5 10L12 14.5L16.5 10"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M5 19H19"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }
 
@@ -500,32 +482,72 @@ const thinBarInner = {
   gap: 14,
 };
 
-const tabs = {
-  display: "flex",
-  gap: 8,
-  flexWrap: "wrap",
-  alignItems: "center",
+const viewSelectorWrap = {
+  position: "relative",
+  minWidth: 250,
 };
 
-const tabButtonStyle = (active) => ({
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 7,
-  padding: "10px 14px",
+const viewSelectorButton = {
+  width: "100%",
   minHeight: 42,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 10,
+  padding: "11px 16px",
   borderRadius: 12,
-  border: active
-    ? `1px solid ${theme.navy}`
-    : `1px solid ${theme.buttonBorder}`,
-  background: active ? theme.navy : "#ffffff",
-  color: active ? "#ffffff" : theme.text,
+  border: `1px solid ${theme.buttonBorder}`,
+  background: "#ffffff",
+  color: theme.text,
+  fontFamily: 'Calibri, "Arial", sans-serif',
+  fontSize: 12,
   fontWeight: 800,
-  fontSize: 14,
   cursor: "pointer",
-  boxShadow: active ? "0 6px 14px rgba(0,33,93,0.16)" : "none",
-  whiteSpace: "nowrap",
-  transition: "all 0.18s ease",
+  boxShadow: "0 4px 12px rgba(16,42,67,0.04)",
+};
+
+const viewSelectorLabel = {
+  color: theme.textSoft,
+  fontWeight: 700,
+};
+
+const viewSelectorValue = {
+  color: theme.navy,
+  fontWeight: 900,
+  flex: 1,
+  textAlign: "right",
+};
+
+const viewSelectorArrow = {
+  color: theme.navy,
+  fontSize: 11,
+};
+
+const dropdown = {
+  position: "absolute",
+  top: "calc(100% + 8px)",
+  right: 0,
+  left: 0,
+  background: "#ffffff",
+  border: `1px solid ${theme.buttonBorder}`,
+  borderRadius: 14,
+  boxShadow: "0 14px 34px rgba(16,42,67,0.14)",
+  padding: 8,
+  zIndex: 100,
+};
+
+const dropdownItem = (active) => ({
+  width: "100%",
+  padding: "12px 14px",
+  borderRadius: 10,
+  border: "none",
+  background: active ? "#F4F7FB" : "#ffffff",
+  color: active ? theme.navy : theme.text,
+  fontFamily: 'Calibri, "Arial", sans-serif',
+  fontWeight: 800,
+  fontSize: 12,
+  cursor: "pointer",
+  textAlign: "right",
 });
 
 const thinActions = {
@@ -572,53 +594,6 @@ const shareInput = {
   boxSizing: "border-box",
   color: theme.text,
 };
-
-const mobileMenuWrap = {
-  position: "relative",
-  width: "100%",
-};
-
-const mobileMenuButton = {
-  width: "100%",
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  gap: 10,
-  padding: "11px 14px",
-  borderRadius: 12,
-  border: `1px solid ${theme.buttonBorder}`,
-  background: "#ffffff",
-  color: theme.navy,
-  fontWeight: 800,
-  fontSize: 14,
-  cursor: "pointer",
-};
-
-const dropdown = {
-  position: "absolute",
-  top: "calc(100% + 8px)",
-  right: 0,
-  left: 0,
-  background: "#ffffff",
-  border: `1px solid ${theme.buttonBorder}`,
-  borderRadius: 14,
-  boxShadow: "0 14px 34px rgba(16,42,67,0.14)",
-  padding: 8,
-  zIndex: 100,
-};
-
-const dropdownItem = (active) => ({
-  width: "100%",
-  padding: "12px 14px",
-  borderRadius: 10,
-  border: "none",
-  background: active ? "#F4F7FB" : "#ffffff",
-  color: active ? theme.navy : theme.text,
-  fontWeight: 800,
-  fontSize: 14,
-  cursor: "pointer",
-  textAlign: "right",
-});
 
 const sharedNotice = {
   background: "#ffffff",
