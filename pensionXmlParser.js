@@ -209,10 +209,6 @@ function parsePolicy(policyNode) {
   const productType = pickFirstText(sectionRoots, "ProposeName2");
   const planName = pickFirstText(sectionRoots, "PlanName");
 
-  // חשוב:
-  // שם גוף מנהל צריך להיות מבוסס קודם על שדות מנהל אמיתיים,
-  // ואם הם לא קיימים - לקחת את PlanName
-  // ולא ליפול ל-ProductType, כי זה יוצר בלבול בין מוצר לגוף מנהל.
   const managerName =
     pickFirstText(sectionRoots, "CompanyName") ||
     pickFirstText(sectionRoots, "YeshutName") ||
@@ -286,15 +282,11 @@ function parsePolicy(policyNode) {
       retireCurrBalance: parseNumber(
         getText(save || policyNode, "RetireCurrBalance")
       ),
-      totalPidions: parseNumber(
-        getText(save || policyNode, "TotalPidions")
-      ),
+      totalPidions: parseNumber(getText(save || policyNode, "TotalPidions")),
       retireCurrBalancePension: parseNumber(
         getText(save || policyNode, "RetireCurrBalancePension")
       ),
-      pensionRetire: parseNumber(
-        getText(save || policyNode, "PensionRetire")
-      ),
+      pensionRetire: parseNumber(getText(save || policyNode, "PensionRetire")),
       projectedRetirementBalance: parseNumber(
         getText(save || policyNode, "RetireCurrBalance")
       ),
@@ -484,6 +476,50 @@ function isLifeInsurancePolicy(policy) {
   );
 }
 
+function isPensionFundPolicy(policy) {
+  const text = [
+    policy.productType,
+    policy.planName,
+    policy.details?.proposeName,
+    policy.details?.targetPlan,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  return (
+    text.includes("קרן פנסיה") ||
+    text.includes("פנסיה מקיפה") ||
+    text.includes("פנסיה כללית") ||
+    text.includes("פנסיה חדשה") ||
+    text.includes("פנסיה ותיקה")
+  );
+}
+
+function getLifeInsuranceAmount(policy) {
+  return Number(policy?.coverage?.totalInsurance ?? policy?.coverage?.totalRisk ?? 0);
+}
+
+function getNonPensionAccumulatedAmount(policy) {
+  if (isPensionFundPolicy(policy)) return 0;
+  return Number(policy?.savings?.totalAccumulated || 0);
+}
+
+function buildLifeCoverageDisplayAmount(policies) {
+  const safePolicies = Array.isArray(policies) ? policies : [];
+  const unique = uniquePolicies(safePolicies);
+
+  const lifeInsuranceAmount = sumNullable(
+    unique.filter(isLifeInsurancePolicy).map(getLifeInsuranceAmount)
+  );
+
+  const nonPensionAssetsAmount = sumNullable(
+    unique.map(getNonPensionAccumulatedAmount)
+  );
+
+  return lifeInsuranceAmount + nonPensionAssetsAmount;
+}
+
 function isNoCoeffPolicy(policy) {
   const coeff = policy?.savings?.hCoeff;
   return coeff === null || coeff === undefined || coeff === 0;
@@ -545,9 +581,7 @@ function buildTracks(flatPolicies) {
       name: track.name,
       value: track.value,
       equityPercent:
-        track.value > 0
-          ? Math.round(track.weightedEquity / track.value)
-          : 0,
+        track.value > 0 ? Math.round(track.weightedEquity / track.value) : 0,
     }))
     .filter((track) => track.value > 0)
     .sort((a, b) => b.value - a.value);
@@ -661,12 +695,6 @@ export function buildLegacyReportData(parsedFiles) {
   );
 
   const noCoeffPolicies = flatPolicies.filter(isNoCoeffPolicy);
-  const lifeInsurancePolicies = flatPolicies.filter(isLifeInsurancePolicy);
-
-  const insurancePolicies = uniquePolicies([
-    ...noCoeffPolicies,
-    ...lifeInsurancePolicies,
-  ]);
 
   const totalAssets = sumNullable(
     files.map((f) => f.summary?.save?.totalAccumulated)
@@ -692,9 +720,7 @@ export function buildLegacyReportData(parsedFiles) {
     noCoeffPolicies.map((p) => p.savings?.totalPidions)
   );
 
-  const totalInsurance = sumNullable(
-    insurancePolicies.map((p) => p.savings?.totalAccumulated)
-  );
+  const totalInsurance = buildLifeCoverageDisplayAmount(flatPolicies);
 
   const retirementAges = Array.from(
     new Set(
@@ -716,18 +742,11 @@ export function buildLegacyReportData(parsedFiles) {
     );
 
     const memberNoCoeff = memberPolicies.filter(isNoCoeffPolicy);
-    const memberLife = memberPolicies.filter(isLifeInsurancePolicy);
-    const memberInsurancePolicies = uniquePolicies([
-      ...memberNoCoeff,
-      ...memberLife,
-    ]);
 
     const assets = file.summary?.save?.totalAccumulated || 0;
     const monthlyDepositsMember = file.summary?.budget?.sumCost || 0;
 
-    const deathCoverage = sumNullable(
-      memberInsurancePolicies.map((p) => p.savings?.totalAccumulated)
-    );
+    const deathCoverage = buildLifeCoverageDisplayAmount(memberPolicies);
 
     const disabilityValue = sumNullable(
       memberPolicies.map(
@@ -742,9 +761,7 @@ export function buildLegacyReportData(parsedFiles) {
     );
 
     const disabilityPercent =
-      salaryBase > 0
-        ? Math.round((disabilityValue / salaryBase) * 100)
-        : 0;
+      salaryBase > 0 ? Math.round((disabilityValue / salaryBase) * 100) : 0;
 
     return {
       name: file.member.fullName || "ללא שם",
@@ -865,11 +882,11 @@ export function buildLegacyReportData(parsedFiles) {
       details: uniqueLoanDetails,
     },
     beneficiaries: {
-      hasData: false,
+      hasData: totalInsurance > 0,
       coverageAmount: totalInsurance,
       summary:
         totalInsurance > 0
-          ? "זוהה כיסוי / סכום ביטוח במוצרים הרלוונטיים"
+          ? "סכום ביטוח חיים כולל צבירות במוצרים שאינם קרנות פנסיה"
           : "לא התקבל מידע",
     },
     weightedEquityExposure,
