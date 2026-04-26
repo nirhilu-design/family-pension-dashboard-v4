@@ -27,26 +27,18 @@ function ClientMemberView({ member }) {
 
   const filterOptions = useMemo(() => {
     const options = [{ id: "all", label: "כל המוצרים" }];
-
     const productTypes = new Set();
-    const managerNames = new Set();
 
     products.forEach((product) => {
-      if (product.productType) productTypes.add(product.productType);
-      if (product.managerName) managerNames.add(product.managerName);
+      if (product.productType) {
+        productTypes.add(product.productType);
+      }
     });
 
     Array.from(productTypes).forEach((name) => {
       options.push({
         id: `productType:${name}`,
-        label: `מוצר: ${name}`,
-      });
-    });
-
-    Array.from(managerNames).forEach((name) => {
-      options.push({
-        id: `manager:${name}`,
-        label: `מבטח / גוף מנהל: ${name}`,
+        label: name,
       });
     });
 
@@ -64,10 +56,6 @@ function ClientMemberView({ member }) {
 
     if (type === "productType") {
       return products.filter((product) => product.productType === value);
-    }
-
-    if (type === "manager") {
-      return products.filter((product) => product.managerName === value);
     }
 
     return products;
@@ -161,19 +149,12 @@ function ClientMemberView({ member }) {
 
       <section style={compareGrid}>
         <SectionCard title="חלוקה לפי גופים מנהלים" icon="🏦">
-          {managers.length ? (
-            managers.map((item) => (
-              <DataRow
-                key={item.id || item.name}
-                label={item.name}
-                value={`${formatCurrency(item.value)} · ${formatPercent(
-                  item.percent
-                )}`}
-              />
-            ))
-          ) : (
-            <EmptyText>אין פירוט מנהלים אישי להצגה</EmptyText>
-          )}
+          <DonutSummaryCard
+            title="חלוקה לפי גופים מנהלים"
+            subtitle="התפלגות הנכסים האישיים לפי גוף מנהל."
+            items={managers}
+            formatCurrency={formatCurrency}
+          />
         </SectionCard>
 
         <SectionCard title="חלוקה לפי מוצרים" icon="🥧">
@@ -190,9 +171,7 @@ function ClientMemberView({ member }) {
         <div style={productsHeaderRow}>
           <div>
             <div style={productsHeaderTitle}>פירוט מוצרים / תוכניות</div>
-            <div style={productsHeaderSub}>
-              ניתן לסנן לפי סוג מוצר או לפי גוף מנהל / מבטח.
-            </div>
+            <div style={productsHeaderSub}>ניתן לסנן לפי סוג מוצר.</div>
           </div>
 
           <div style={filterWrap}>
@@ -411,7 +390,10 @@ function buildSegments(items) {
     ? items.filter((item) => Number(item.value || 0) > 0)
     : [];
 
-  const total = safeItems.reduce((sum, item) => sum + Number(item.value || 0), 0);
+  const total = safeItems.reduce(
+    (sum, item) => sum + Number(item.value || 0),
+    0
+  );
 
   if (!safeItems.length || total <= 0) {
     return { segments: [], gradient: "#D7DEE7 0% 100%" };
@@ -503,7 +485,15 @@ function DepositIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <rect x="4" y="14" width="16" height="6" rx="2" stroke="#00215D" strokeWidth="2.2" />
+      <rect
+        x="4"
+        y="14"
+        width="16"
+        height="6"
+        rx="2"
+        stroke="#00215D"
+        strokeWidth="2.2"
+      />
     </svg>
   );
 }
@@ -517,7 +507,12 @@ function SavingsIcon() {
         strokeWidth="2.2"
       />
       <path d="M12 8.5V15.5" stroke="#FF2756" strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M9.7 10.5H13.2C14.1 10.5 14.7 11 14.7 11.8C14.7 12.6 14.1 13.1 13.2 13.1H10.8" stroke="#FF2756" strokeWidth="2.2" strokeLinecap="round" />
+      <path
+        d="M9.7 10.5H13.2C14.1 10.5 14.7 11 14.7 11.8C14.7 12.6 14.1 13.1 13.2 13.1H10.8"
+        stroke="#FF2756"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -531,7 +526,12 @@ function PensionIcon() {
         strokeWidth="2.2"
         strokeLinejoin="round"
       />
-      <path d="M9 20V13H15V20" stroke="#FF2756" strokeWidth="2.2" strokeLinejoin="round" />
+      <path
+        d="M9 20V13H15V20"
+        stroke="#FF2756"
+        strokeWidth="2.2"
+        strokeLinejoin="round"
+      />
       <path d="M4 20H20" stroke="#00215D" strokeWidth="2.2" strokeLinecap="round" />
     </svg>
   );
