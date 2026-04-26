@@ -1,4 +1,8 @@
+import { useMemo, useState } from "react";
+
 function ClientMemberView({ member }) {
+  const [productFilter, setProductFilter] = useState("all");
+
   const formatCurrency = (value) =>
     `₪${Number(value || 0).toLocaleString("en-US")}`;
 
@@ -20,6 +24,34 @@ function ClientMemberView({ member }) {
     value: p.currentValue,
   }));
 
+  const productFilterOptions = useMemo(() => {
+    const unique = new Map();
+
+    products.forEach((product) => {
+      const name = product.productType || product.planName || "ללא סוג מוצר";
+      if (!unique.has(name)) {
+        unique.set(name, name);
+      }
+    });
+
+    return Array.from(unique.values());
+  }, [products]);
+
+  const filteredProducts = useMemo(() => {
+    if (productFilter === "all") return products;
+
+    return products.filter((product) => {
+      const name = product.productType || product.planName || "ללא סוג מוצר";
+      return name === productFilter;
+    });
+  }, [products, productFilter]);
+
+  const filteredProductDistribution = filteredProducts.map((p) => ({
+    id: p.id,
+    name: p.planName,
+    value: p.currentValue,
+  }));
+
   return (
     <div style={page}>
       <Header
@@ -30,24 +62,28 @@ function ClientMemberView({ member }) {
 
       <section style={topGrid}>
         <KpiCard
+          icon={<AssetsIcon />}
           title="סך נכסים"
           value={formatCurrency(summary.totalAssets)}
           subtext="סך הצבירה האישית"
         />
 
         <KpiCard
+          icon={<DepositIcon />}
           title="הפקדה חודשית"
           value={formatCurrency(summary.monthlyDeposits)}
           subtext="סך ההפקדות החודשיות"
         />
 
         <KpiCard
+          icon={<SavingsIcon />}
           title="צבירה צפויה"
           value={formatCurrency(summary.projectedLumpSumWithDeposits)}
           subtext="צבירה צפויה בגיל פרישה"
         />
 
         <KpiCard
+          icon={<PensionIcon />}
           title="קצבה צפויה"
           value={formatCurrency(summary.monthlyPensionWithDeposits)}
           subtext="קצבה חודשית צפויה"
@@ -60,13 +96,21 @@ function ClientMemberView({ member }) {
             הצגת רמות החשיפה האישיות למניות ולחו"ל לפי המוצרים המשויכים לבן המשפחה.
           </div>
 
-          <DataRow label="חשיפה למניות" value={formatPercent(exposures.equity)} />
-          <ModernBar value={exposures.equity} />
+          <ExposureMetricBlock
+            label="חשיפה למניות"
+            value={exposures.equity}
+            valueText={formatPercent(exposures.equity)}
+            description={getExposureLabel(exposures.equity)}
+          />
 
-          <div style={{ height: 14 }} />
+          <div style={{ height: 18 }} />
 
-          <DataRow label='חשיפה לחו"ל' value={formatPercent(exposures.foreign)} />
-          <ModernBar value={exposures.foreign} />
+          <ExposureMetricBlock
+            label='חשיפה לחו"ל'
+            value={exposures.foreign}
+            valueText={formatPercent(exposures.foreign)}
+            description={getForeignExposureLabel(exposures.foreign)}
+          />
         </SectionCard>
 
         <SectionCard title="כיסויים ביטוחיים" icon="🛡️">
@@ -126,53 +170,87 @@ function ClientMemberView({ member }) {
       </SectionCard>
 
       <SectionCard title="מוצרים / תוכניות" icon="📄">
-        {products.length ? (
-          <div style={tableWrap}>
-            <table style={table}>
-              <thead>
-                <tr>
-                  <th style={th}>מוצר</th>
-                  <th style={th}>גוף מנהל</th>
-                  <th style={th}>סוג מוצר</th>
-                  <th style={th}>מספר פוליסה</th>
-                  <th style={th}>צבירה</th>
-                  <th style={th}>הפקדה חודשית</th>
-                  <th style={th}>קצבה צפויה</th>
-                  <th style={th}>דמי ניהול מצבירה</th>
-                  <th style={th}>חשיפה מנייתית</th>
-                  <th style={th}>חשיפה לחו"ל</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {products.map((product) => (
-                  <tr key={product.id}>
-                    <td style={td}>{product.planName}</td>
-                    <td style={td}>{product.managerName}</td>
-                    <td style={td}>{product.productType}</td>
-                    <td style={td}>{product.policyNo || "—"}</td>
-                    <td style={td}>{formatCurrency(product.currentValue)}</td>
-                    <td style={td}>{formatCurrency(product.monthlyDeposit)}</td>
-                    <td style={td}>
-                      {formatCurrency(product.projectedMonthlyPension)}
-                    </td>
-                    <td style={td}>
-                      {Number(product.managementFeeFromBalance || 0).toFixed(2)}%
-                    </td>
-                    <td style={td}>
-                      <ExposureBadge value={product.equityExposure} />
-                    </td>
-                    <td style={td}>
-                      <ExposureBadge value={product.foreignExposure} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div style={productsHeaderRow}>
+          <div>
+            <div style={productsHeaderTitle}>פירוט מוצרים</div>
+            <div style={productsHeaderSub}>
+              ניתן לסנן לפי סוג מוצר ולראות את החלוקה הגרפית בהתאם.
+            </div>
           </div>
-        ) : (
-          <EmptyText>אין פירוט מוצרים להצגה</EmptyText>
-        )}
+
+          <select
+            value={productFilter}
+            onChange={(event) => setProductFilter(event.target.value)}
+            style={productSelect}
+          >
+            <option value="all">כל המוצרים</option>
+            {productFilterOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={productTableVisualGrid}>
+          <div style={productPieBox}>
+            <MiniDonutPanel
+              title="חלוקה לפי מוצרים"
+              items={filteredProductDistribution}
+              formatCurrency={formatCurrency}
+            />
+          </div>
+
+          <div style={productTableBox}>
+            {filteredProducts.length ? (
+              <div style={tableWrap}>
+                <table style={table}>
+                  <thead>
+                    <tr>
+                      <th style={th}>מוצר</th>
+                      <th style={th}>גוף מנהל</th>
+                      <th style={th}>סוג מוצר</th>
+                      <th style={th}>מספר פוליסה</th>
+                      <th style={th}>צבירה</th>
+                      <th style={th}>הפקדה חודשית</th>
+                      <th style={th}>קצבה צפויה</th>
+                      <th style={th}>דמי ניהול מצבירה</th>
+                      <th style={th}>חשיפה מנייתית</th>
+                      <th style={th}>חשיפה לחו"ל</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {filteredProducts.map((product) => (
+                      <tr key={product.id}>
+                        <td style={td}>{product.planName}</td>
+                        <td style={td}>{product.managerName}</td>
+                        <td style={td}>{product.productType}</td>
+                        <td style={td}>{product.policyNo || "—"}</td>
+                        <td style={td}>{formatCurrency(product.currentValue)}</td>
+                        <td style={td}>{formatCurrency(product.monthlyDeposit)}</td>
+                        <td style={td}>
+                          {formatCurrency(product.projectedMonthlyPension)}
+                        </td>
+                        <td style={td}>
+                          {Number(product.managementFeeFromBalance || 0).toFixed(2)}%
+                        </td>
+                        <td style={td}>
+                          <ExposureBadge value={product.equityExposure} />
+                        </td>
+                        <td style={td}>
+                          <ExposureBadge value={product.foreignExposure} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <EmptyText>אין מוצרים להצגה לפי הסינון שנבחר</EmptyText>
+            )}
+          </div>
+        </div>
       </SectionCard>
     </div>
   );
@@ -190,9 +268,10 @@ function Header({ eyebrow, title, subtitle }) {
   );
 }
 
-function KpiCard({ title, value, subtext }) {
+function KpiCard({ icon, title, value, subtext }) {
   return (
     <div style={kpiCard}>
+      <div style={kpiIconWrap}>{icon}</div>
       <div style={kpiTitle}>{title}</div>
       <div style={kpiValue}>{value}</div>
       <div style={kpiSub}>{subtext}</div>
@@ -211,6 +290,23 @@ function SectionCard({ title, icon, children }) {
       </div>
       {children}
     </section>
+  );
+}
+
+function ExposureMetricBlock({ label, value, valueText, description }) {
+  return (
+    <div>
+      <div style={exposureTopRow}>
+        <div>
+          <div style={exposureLabel}>{label}</div>
+          <div style={exposureDescription}>{description}</div>
+        </div>
+
+        <div style={exposureValue}>{valueText}</div>
+      </div>
+
+      <ModernBar value={value} />
+    </div>
   );
 }
 
@@ -248,13 +344,9 @@ function ModernBar({ value }) {
 }
 
 function DonutSummaryCard({ title, subtitle, items, formatCurrency }) {
-  const safeItems = Array.isArray(items)
-    ? items.filter((item) => Number(item.value || 0) > 0)
-    : [];
+  const data = buildSegments(items);
 
-  const total = safeItems.reduce((sum, item) => sum + Number(item.value || 0), 0);
-
-  if (!safeItems.length || total <= 0) {
+  if (!data.segments.length) {
     return (
       <section style={{ ...donutCard, border: "none", boxShadow: "none" }}>
         <h3 style={donutTitle}>{title}</h3>
@@ -262,6 +354,86 @@ function DonutSummaryCard({ title, subtitle, items, formatCurrency }) {
         <EmptyText>אין נתונים להצגה</EmptyText>
       </section>
     );
+  }
+
+  return (
+    <section style={{ ...donutCard, border: "none", boxShadow: "none" }}>
+      <h3 style={donutTitle}>{title}</h3>
+      <div style={{ ...smallText, marginTop: 6 }}>{subtitle}</div>
+
+      <div style={donutLayout}>
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <div
+            style={{
+              ...donutCircle,
+              background: `conic-gradient(${data.gradient})`,
+            }}
+          >
+            <div style={donutHole} />
+          </div>
+        </div>
+
+        <div style={legendList}>
+          {data.segments.slice(0, 6).map((seg, index) => (
+            <LegendRow
+              key={`${seg.id || seg.name}-${index}`}
+              seg={seg}
+              formatCurrency={formatCurrency}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function MiniDonutPanel({ title, items, formatCurrency }) {
+  const data = buildSegments(items);
+
+  return (
+    <div>
+      <div style={miniPanelTitle}>{title}</div>
+
+      {!data.segments.length ? (
+        <EmptyText>אין נתונים להצגה</EmptyText>
+      ) : (
+        <>
+          <div style={miniDonutWrap}>
+            <div
+              style={{
+                ...miniDonutCircle,
+                background: `conic-gradient(${data.gradient})`,
+              }}
+            >
+              <div style={miniDonutHole} />
+            </div>
+          </div>
+
+          <div style={miniLegendList}>
+            {data.segments.slice(0, 5).map((seg, index) => (
+              <LegendRow
+                key={`${seg.id || seg.name}-${index}`}
+                seg={seg}
+                formatCurrency={formatCurrency}
+                compact
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function buildSegments(items) {
+  const safeItems = Array.isArray(items)
+    ? items.filter((item) => Number(item.value || 0) > 0)
+    : [];
+
+  const total = safeItems.reduce((sum, item) => sum + Number(item.value || 0), 0);
+
+  if (!safeItems.length || total <= 0) {
+    return { segments: [], gradient: "#D7DEE7 0% 100%" };
   }
 
   let current = 0;
@@ -275,6 +447,7 @@ function DonutSummaryCard({ title, subtitle, items, formatCurrency }) {
 
     return {
       ...item,
+      value,
       percent,
       start,
       end,
@@ -286,45 +459,120 @@ function DonutSummaryCard({ title, subtitle, items, formatCurrency }) {
     .map((seg) => `${seg.color} ${seg.start}% ${seg.end}%`)
     .join(", ");
 
+  return { segments, gradient };
+}
+
+function LegendRow({ seg, formatCurrency, compact = false }) {
   return (
-    <section style={{ ...donutCard, border: "none", boxShadow: "none" }}>
-      <h3 style={donutTitle}>{title}</h3>
-      <div style={{ ...smallText, marginTop: 6 }}>{subtitle}</div>
-
-      <div style={donutLayout}>
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <div style={{ ...donutCircle, background: `conic-gradient(${gradient})` }}>
-            <div style={donutHole} />
-          </div>
-        </div>
-
-        <div style={legendList}>
-          {segments.slice(0, 6).map((seg, index) => (
-            <div key={`${seg.id || seg.name}-${index}`} style={legendRow}>
-              <span style={{ ...legendDot, background: seg.color }} />
-              <div style={{ minWidth: 0 }}>
-                <div style={legendName}>{seg.name}</div>
-                <div style={legendSub}>{formatCurrency(seg.value)}</div>
-              </div>
-              <div style={legendPercent}>{seg.percent.toFixed(1)}%</div>
-            </div>
-          ))}
-        </div>
+    <div style={compact ? miniLegendRow : legendRow}>
+      <span style={{ ...legendDot, background: seg.color }} />
+      <div style={{ minWidth: 0 }}>
+        <div style={legendName}>{seg.name}</div>
+        <div style={legendSub}>{formatCurrency(seg.value)}</div>
       </div>
-    </section>
+      <div style={legendPercent}>{seg.percent.toFixed(1)}%</div>
+    </div>
   );
 }
 
 function ExposureBadge({ value }) {
   const num = Number(value || 0);
 
-  const color =
-    num > 60 ? "#D14343" : num > 30 ? "#F0B43C" : "#3EAF63";
+  const color = num > 60 ? "#D14343" : num > 30 ? "#F0B43C" : "#3EAF63";
 
   return (
     <span style={{ color, fontWeight: 800 }}>
       {num > 0 ? `${num.toFixed(1)}%` : "—"}
     </span>
+  );
+}
+
+function getExposureLabel(value) {
+  const num = Number(value || 0);
+  if (num <= 30) return "חשיפה נמוכה";
+  if (num <= 60) return "חשיפה בינונית";
+  return "חשיפה גבוהה";
+}
+
+function getForeignExposureLabel(value) {
+  const num = Number(value || 0);
+  if (num <= 25) return "חשיפה נמוכה לחו״ל";
+  if (num <= 50) return "חשיפה בינונית לחו״ל";
+  return "חשיפה גבוהה לחו״ל";
+}
+
+function formatDate(value) {
+  if (!value) return "—";
+  const str = String(value).trim();
+
+  if (/^\d{8}$/.test(str)) {
+    const y = str.slice(0, 4);
+    const m = str.slice(4, 6);
+    const d = str.slice(6, 8);
+    return `${d}/${m}/${y}`;
+  }
+
+  const date = new Date(str);
+  if (!isNaN(date.getTime())) {
+    return new Intl.DateTimeFormat("he-IL").format(date);
+  }
+
+  return str;
+}
+
+function AssetsIcon() {
+  return (
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+      <path d="M4 18V9" stroke="#00215D" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M10 18V5" stroke="#00215D" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M16 18V12" stroke="#00215D" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M3 19H21" stroke="#FF2756" strokeWidth="2.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function DepositIcon() {
+  return (
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+      <path d="M12 3V14" stroke="#FF2756" strokeWidth="2.2" strokeLinecap="round" />
+      <path
+        d="M8.5 6.5L12 3L15.5 6.5"
+        stroke="#FF2756"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <rect x="4" y="14" width="16" height="6" rx="2" stroke="#00215D" strokeWidth="2.2" />
+    </svg>
+  );
+}
+
+function SavingsIcon() {
+  return (
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M5 12C5 8.7 8.1 6 12 6C15.9 6 19 8.7 19 12C19 15.3 15.9 18 12 18C8.1 18 5 15.3 5 12Z"
+        stroke="#00215D"
+        strokeWidth="2.2"
+      />
+      <path d="M12 8.5V15.5" stroke="#FF2756" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M9.7 10.5H13.2C14.1 10.5 14.7 11 14.7 11.8C14.7 12.6 14.1 13.1 13.2 13.1H10.8" stroke="#FF2756" strokeWidth="2.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function PensionIcon() {
+  return (
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M6 20V8L12 4L18 8V20"
+        stroke="#00215D"
+        strokeWidth="2.2"
+        strokeLinejoin="round"
+      />
+      <path d="M9 20V13H15V20" stroke="#FF2756" strokeWidth="2.2" strokeLinejoin="round" />
+      <path d="M4 20H20" stroke="#00215D" strokeWidth="2.2" strokeLinecap="round" />
+    </svg>
   );
 }
 
@@ -385,9 +633,9 @@ const heroEyebrow = {
 
 const heroTitle = {
   margin: 0,
-  fontSize: 14,
+  fontSize: 30,
   fontWeight: 700,
-  lineHeight: 1.4,
+  lineHeight: 1.2,
   color: "#fff",
 };
 
@@ -429,8 +677,20 @@ const kpiCard = {
   display: "flex",
   flexDirection: "column",
   justifyContent: "center",
+  alignItems: "center",
   textAlign: "center",
   boxShadow: "0 2px 10px rgba(16,42,67,0.05)",
+};
+
+const kpiIconWrap = {
+  width: 74,
+  height: 74,
+  borderRadius: 22,
+  background: "#F4F7FB",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  marginBottom: 14,
 };
 
 const kpiTitle = {
@@ -511,6 +771,34 @@ const dataLabel = {
 const dataValue = {
   color: theme.navy,
   fontWeight: 700,
+};
+
+const exposureTopRow = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "baseline",
+  gap: 12,
+  marginBottom: 10,
+};
+
+const exposureLabel = {
+  fontSize: 12,
+  color: theme.textSoft,
+  fontWeight: 700,
+};
+
+const exposureDescription = {
+  fontSize: 14,
+  color: theme.navy,
+  fontWeight: 700,
+  marginTop: 4,
+};
+
+const exposureValue = {
+  fontSize: 34,
+  color: theme.navy,
+  fontWeight: 700,
+  lineHeight: 1.1,
 };
 
 const modernTrack = {
@@ -597,6 +885,14 @@ const legendRow = {
   fontSize: 12,
 };
 
+const miniLegendRow = {
+  display: "grid",
+  gridTemplateColumns: "10px 1fr auto",
+  gap: 7,
+  alignItems: "center",
+  fontSize: 11,
+};
+
 const legendDot = {
   width: 12,
   height: 12,
@@ -623,6 +919,92 @@ const legendPercent = {
   fontWeight: 700,
 };
 
+const productsHeaderRow = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: 14,
+  flexWrap: "wrap",
+  marginBottom: 16,
+};
+
+const productsHeaderTitle = {
+  fontSize: 14,
+  fontWeight: 700,
+  color: theme.navy,
+};
+
+const productsHeaderSub = {
+  fontSize: 12,
+  color: theme.textSoft,
+  marginTop: 4,
+};
+
+const productSelect = {
+  minWidth: 220,
+  minHeight: 42,
+  padding: "10px 14px",
+  borderRadius: 12,
+  border: `1px solid ${theme.border}`,
+  background: "#fff",
+  color: theme.navy,
+  fontWeight: 800,
+  fontFamily: 'Calibri, "Arial", sans-serif',
+  fontSize: 12,
+};
+
+const productTableVisualGrid = {
+  display: "grid",
+  gridTemplateColumns: "250px minmax(0, 1fr)",
+  gap: 16,
+  alignItems: "start",
+};
+
+const productPieBox = {
+  background: theme.surfaceAlt,
+  border: `1px solid ${theme.divider}`,
+  borderRadius: 16,
+  padding: 14,
+};
+
+const productTableBox = {
+  minWidth: 0,
+};
+
+const miniPanelTitle = {
+  fontSize: 13,
+  fontWeight: 800,
+  color: theme.navy,
+  marginBottom: 12,
+};
+
+const miniDonutWrap = {
+  display: "flex",
+  justifyContent: "center",
+  marginBottom: 14,
+};
+
+const miniDonutCircle = {
+  width: 150,
+  height: 150,
+  borderRadius: "50%",
+  position: "relative",
+};
+
+const miniDonutHole = {
+  position: "absolute",
+  inset: 31,
+  background: theme.surfaceAlt,
+  borderRadius: "50%",
+  border: `1px solid ${theme.divider}`,
+};
+
+const miniLegendList = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 8,
+};
+
 const tableWrap = {
   overflowX: "auto",
   borderRadius: 14,
@@ -633,7 +1015,7 @@ const tableWrap = {
 const table = {
   width: "100%",
   borderCollapse: "collapse",
-  minWidth: 1100,
+  minWidth: 1040,
   background: "#fff",
 };
 
