@@ -21,54 +21,103 @@ function ClientMemberView({ member }) {
   }));
 
   return (
-    <div>
+    <div style={page}>
       <Header
         title={member.name}
-        subtitle="תצוגה אישית מתוך הדוח המשפחתי המאוחד."
+        eyebrow="מסך לקוח · מבט אישי"
+        subtitle="תצוגה אישית מתוך הדוח הפנסיוני המשפחתי המאוחד."
       />
 
-      <Grid4>
-        <SummaryCard title="סך נכסים" value={formatCurrency(summary.totalAssets)} />
-        <SummaryCard title="הפקדה חודשית" value={formatCurrency(summary.monthlyDeposits)} />
-        <SummaryCard title="צבירה צפויה" value={formatCurrency(summary.projectedLumpSumWithDeposits)} />
-        <SummaryCard title="קצבה צפויה" value={formatCurrency(summary.monthlyPensionWithDeposits)} />
-      </Grid4>
+      <section style={topGrid}>
+        <KpiCard
+          title="סך נכסים"
+          value={formatCurrency(summary.totalAssets)}
+          subtext="סך הצבירה האישית"
+        />
 
-      <Grid2>
-        <SectionCard title="חשיפות אישיות">
-          <DataRow label="חשיפה למניות" value={formatPercent(exposures.equity)} />
-          <DataRow label='חשיפה לחו"ל' value={formatPercent(exposures.foreign)} />
+        <KpiCard
+          title="הפקדה חודשית"
+          value={formatCurrency(summary.monthlyDeposits)}
+          subtext="סך ההפקדות החודשיות"
+        />
 
-          <div style={{ marginTop: 18 }}>
-            <SimpleBar label="מניות" value={exposures.equity} />
-            <SimpleBar label='חו"ל' value={exposures.foreign} />
+        <KpiCard
+          title="צבירה צפויה"
+          value={formatCurrency(summary.projectedLumpSumWithDeposits)}
+          subtext="צבירה צפויה בגיל פרישה"
+        />
+
+        <KpiCard
+          title="קצבה צפויה"
+          value={formatCurrency(summary.monthlyPensionWithDeposits)}
+          subtext="קצבה חודשית צפויה"
+        />
+      </section>
+
+      <section style={lowerTwoGrid}>
+        <SectionCard title="חשיפות אישיות" icon="📊">
+          <div style={explanation}>
+            הצגת רמות החשיפה האישיות למניות ולחו"ל לפי המוצרים המשויכים לבן המשפחה.
           </div>
+
+          <DataRow label="חשיפה למניות" value={formatPercent(exposures.equity)} />
+          <ModernBar value={exposures.equity} />
+
+          <div style={{ height: 14 }} />
+
+          <DataRow label='חשיפה לחו"ל' value={formatPercent(exposures.foreign)} />
+          <ModernBar value={exposures.foreign} />
         </SectionCard>
 
-        <SectionCard title="כיסויים ביטוחיים">
-          <DataRow label="ביטוח חיים" value={formatCurrency(insurance.deathCoverage)} />
-          <DataRow label="אובדן כושר עבודה" value={formatCurrency(insurance.disabilityValue)} />
-          <DataRow label="אחוז אובדן כושר עבודה" value={formatPercent(insurance.disabilityPercent)} />
-        </SectionCard>
-      </Grid2>
+        <SectionCard title="כיסויים ביטוחיים" icon="🛡️">
+          <div style={explanation}>
+            ריכוז הכיסויים הביטוחיים האישיים שנמצאו בקבצים.
+          </div>
 
-      <Grid2>
-        <SectionCard title="גרף לפי גופים מנהלים">
-          <DonutChart items={managers} />
+          <DataRow
+            label="ביטוח חיים"
+            value={formatCurrency(insurance.deathCoverage)}
+          />
+          <DataRow
+            label="אובדן כושר עבודה"
+            value={formatCurrency(insurance.disabilityValue)}
+          />
+          <DataRow
+            label="אחוז אובדן כושר עבודה"
+            value={formatPercent(insurance.disabilityPercent)}
+          />
+        </SectionCard>
+      </section>
+
+      <section style={compareGrid}>
+        <SectionCard title="גרף לפי גופים מנהלים" icon="🏦">
+          <DonutSummaryCard
+            title="חלוקה לפי גופים מנהלים"
+            subtitle="התפלגות הנכסים האישיים לפי גוף מנהל."
+            items={managers}
+            formatCurrency={formatCurrency}
+          />
         </SectionCard>
 
-        <SectionCard title="גרף לפי מוצרים">
-          <DonutChart items={productDistribution} />
+        <SectionCard title="גרף לפי מוצרים" icon="🥧">
+          <DonutSummaryCard
+            title="חלוקה לפי מוצרים"
+            subtitle="התפלגות הנכסים האישיים לפי תוכניות ומוצרים."
+            items={productDistribution}
+            formatCurrency={formatCurrency}
+          />
         </SectionCard>
-      </Grid2>
+      </section>
 
-      <SectionCard title="חלוקה לפי גופים מנהלים">
+      <SectionCard title="חלוקה לפי גופים מנהלים" icon="📋">
         {managers.length ? (
           managers.map((item) => (
             <DataRow
-              key={item.id}
+              key={item.id || item.name}
               label={item.name}
-              value={`${formatCurrency(item.value)} · ${formatPercent(item.percent)}`}
+              value={`${formatCurrency(item.value)} · ${formatPercent(
+                item.percent
+              )}`}
             />
           ))
         ) : (
@@ -76,12 +125,12 @@ function ClientMemberView({ member }) {
         )}
       </SectionCard>
 
-      <SectionCard title="מוצרים / תוכניות">
+      <SectionCard title="מוצרים / תוכניות" icon="📄">
         {products.length ? (
-          <div style={{ overflowX: "auto" }}>
+          <div style={tableWrap}>
             <table style={table}>
               <thead>
-                <tr style={{ background: "#F7F5F1" }}>
+                <tr>
                   <th style={th}>מוצר</th>
                   <th style={th}>גוף מנהל</th>
                   <th style={th}>סוג מוצר</th>
@@ -104,7 +153,9 @@ function ClientMemberView({ member }) {
                     <td style={td}>{product.policyNo || "—"}</td>
                     <td style={td}>{formatCurrency(product.currentValue)}</td>
                     <td style={td}>{formatCurrency(product.monthlyDeposit)}</td>
-                    <td style={td}>{formatCurrency(product.projectedMonthlyPension)}</td>
+                    <td style={td}>
+                      {formatCurrency(product.projectedMonthlyPension)}
+                    </td>
                     <td style={td}>
                       {Number(product.managementFeeFromBalance || 0).toFixed(2)}%
                     </td>
@@ -127,38 +178,37 @@ function ClientMemberView({ member }) {
   );
 }
 
-function Header({ title, subtitle }) {
+function Header({ eyebrow, title, subtitle }) {
   return (
-    <div style={header}>
-      <h1 style={{ margin: 0, fontSize: 32 }}>{title}</h1>
-      <div style={{ marginTop: 10, fontSize: 15, lineHeight: 1.8, opacity: 0.9 }}>
-        {subtitle}
+    <section style={heroHeader}>
+      <div style={heroCenter}>
+        <div style={heroEyebrow}>{eyebrow}</div>
+        <h1 style={heroTitle}>{title}</h1>
+        <div style={heroSubtitle}>{subtitle}</div>
       </div>
-    </div>
+    </section>
   );
 }
 
-function Grid4({ children }) {
-  return <div style={grid4}>{children}</div>;
-}
-
-function Grid2({ children }) {
-  return <div style={grid2}>{children}</div>;
-}
-
-function SummaryCard({ title, value }) {
+function KpiCard({ title, value, subtext }) {
   return (
-    <div style={summaryCard}>
-      <div style={summaryTitle}>{title}</div>
-      <div style={summaryValue}>{value}</div>
+    <div style={kpiCard}>
+      <div style={kpiTitle}>{title}</div>
+      <div style={kpiValue}>{value}</div>
+      <div style={kpiSub}>{subtext}</div>
     </div>
   );
 }
 
-function SectionCard({ title, children }) {
+function SectionCard({ title, icon, children }) {
   return (
     <section style={sectionCard}>
-      <h2 style={sectionTitle}>{title}</h2>
+      <div style={sectionHeader}>
+        <div style={titleWithIcon}>
+          {icon ? <span>{icon}</span> : null}
+          <h2 style={h2}>{title}</h2>
+        </div>
+      </div>
       {children}
     </section>
   );
@@ -167,62 +217,68 @@ function SectionCard({ title, children }) {
 function DataRow({ label, value }) {
   return (
     <div style={dataRow}>
-      <div style={{ color: "#627D98" }}>{label}</div>
-      <div style={{ color: "#00215D", fontWeight: 700 }}>{value}</div>
+      <div style={dataLabel}>{label}</div>
+      <div style={dataValue}>{value}</div>
     </div>
   );
 }
 
 function EmptyText({ children }) {
-  return <div style={{ color: "#627D98", fontSize: 14 }}>{children}</div>;
+  return <div style={emptyState}>{children}</div>;
 }
 
-function SimpleBar({ label, value }) {
+function ModernBar({ value }) {
   const safe = Math.max(0, Math.min(100, Number(value || 0)));
 
   return (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-        <span style={{ color: "#627D98", fontSize: 13 }}>{label}</span>
-        <span style={{ color: "#00215D", fontWeight: 700 }}>{safe.toFixed(1)}%</span>
+    <div style={{ paddingTop: 6 }}>
+      <div style={modernTrack}>
+        <div style={{ ...modernFill, width: `${safe}%` }} />
       </div>
-      <div style={{ height: 14, borderRadius: 999, background: "#EAF1FB", overflow: "hidden" }}>
-        <div
-          style={{
-            width: `${safe}%`,
-            height: "100%",
-            borderRadius: 999,
-            background: "linear-gradient(90deg, #43B5D9, #1F77B4)",
-          }}
-        />
+
+      <div style={barScale}>
+        <span>0%</span>
+        <span>25%</span>
+        <span>50%</span>
+        <span>75%</span>
+        <span>100%</span>
       </div>
     </div>
   );
 }
 
-function DonutChart({ items }) {
-  const safeItems = Array.isArray(items) ? items.filter((i) => Number(i.value || 0) > 0) : [];
-  const colors = ["#00215D", "#1F77B4", "#43B5D9", "#8F63C9", "#F0B43C", "#F07C8A", "#8FB996"];
+function DonutSummaryCard({ title, subtitle, items, formatCurrency }) {
+  const safeItems = Array.isArray(items)
+    ? items.filter((item) => Number(item.value || 0) > 0)
+    : [];
+
   const total = safeItems.reduce((sum, item) => sum + Number(item.value || 0), 0);
 
   if (!safeItems.length || total <= 0) {
-    return <EmptyText>אין נתונים להצגה</EmptyText>;
+    return (
+      <section style={{ ...donutCard, border: "none", boxShadow: "none" }}>
+        <h3 style={donutTitle}>{title}</h3>
+        <div style={{ ...smallText, marginTop: 6 }}>{subtitle}</div>
+        <EmptyText>אין נתונים להצגה</EmptyText>
+      </section>
+    );
   }
 
   let current = 0;
+
   const segments = safeItems.map((item, index) => {
     const value = Number(item.value || 0);
-    const start = current;
     const percent = (value / total) * 100;
-    const end = start + percent;
+    const start = current;
+    const end = current + percent;
     current = end;
 
     return {
       ...item,
       percent,
-      color: colors[index % colors.length],
       start,
       end,
+      color: chartColors[index % chartColors.length],
     };
   });
 
@@ -231,41 +287,31 @@ function DonutChart({ items }) {
     .join(", ");
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "180px 1fr", gap: 20, alignItems: "center" }}>
-      <div style={{ display: "flex", justifyContent: "center" }}>
-        <div
-          style={{
-            width: 170,
-            height: 170,
-            borderRadius: "50%",
-            background: `conic-gradient(${gradient})`,
-            position: "relative",
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              inset: 34,
-              background: "#fff",
-              borderRadius: "50%",
-              border: "1px solid #EEE4D8",
-            }}
-          />
+    <section style={{ ...donutCard, border: "none", boxShadow: "none" }}>
+      <h3 style={donutTitle}>{title}</h3>
+      <div style={{ ...smallText, marginTop: 6 }}>{subtitle}</div>
+
+      <div style={donutLayout}>
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <div style={{ ...donutCircle, background: `conic-gradient(${gradient})` }}>
+            <div style={donutHole} />
+          </div>
+        </div>
+
+        <div style={legendList}>
+          {segments.slice(0, 6).map((seg, index) => (
+            <div key={`${seg.id || seg.name}-${index}`} style={legendRow}>
+              <span style={{ ...legendDot, background: seg.color }} />
+              <div style={{ minWidth: 0 }}>
+                <div style={legendName}>{seg.name}</div>
+                <div style={legendSub}>{formatCurrency(seg.value)}</div>
+              </div>
+              <div style={legendPercent}>{seg.percent.toFixed(1)}%</div>
+            </div>
+          ))}
         </div>
       </div>
-
-      <div>
-        {segments.map((seg) => (
-          <div key={seg.id || seg.name} style={{ display: "grid", gridTemplateColumns: "12px 1fr auto", gap: 8, alignItems: "center", marginBottom: 10 }}>
-            <span style={{ width: 12, height: 12, borderRadius: "50%", background: seg.color }} />
-            <span style={{ color: "#102A43", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {seg.name}
-            </span>
-            <span style={{ color: "#00215D", fontWeight: 700 }}>{seg.percent.toFixed(1)}%</span>
-          </div>
-        ))}
-      </div>
-    </div>
+    </section>
   );
 }
 
@@ -282,60 +328,171 @@ function ExposureBadge({ value }) {
   );
 }
 
-const header = {
-  background: "linear-gradient(135deg, #0D347A, #00215D)",
+const theme = {
+  pageBg: "#F9F7F3",
+  surface: "#FFFFFF",
+  surfaceAlt: "#FCFBF8",
+  border: "#E2D1BF",
+  divider: "#EEE4D8",
+  text: "#102A43",
+  textSoft: "#627D98",
+  navy: "#00215D",
+  navyDark: "#001845",
+  accent: "#FF2756",
+  softBlue: "#EAF1FB",
+};
+
+const chartColors = [
+  "#00215D",
+  "#FF2756",
+  "#1F77B4",
+  "#43B5D9",
+  "#8F63C9",
+  "#F0B43C",
+  "#9FD0E6",
+  "#8FB996",
+  "#C08497",
+  "#7B8CBF",
+];
+
+const page = {
+  direction: "rtl",
+  fontFamily: 'Calibri, "Arial", sans-serif',
+  fontSize: 12,
+  lineHeight: 1.6,
+  color: theme.text,
+};
+
+const heroHeader = {
+  background: `linear-gradient(135deg, ${theme.navy}, ${theme.navyDark})`,
   color: "#fff",
   borderRadius: 24,
-  padding: 28,
-  marginBottom: 22,
+  padding: "24px 26px",
+  boxShadow: "0 8px 28px rgba(0,33,93,0.14)",
+  marginBottom: 18,
 };
 
-const grid4 = {
+const heroCenter = {
+  textAlign: "center",
+};
+
+const heroEyebrow = {
+  fontSize: 12,
+  color: "rgba(255,255,255,0.78)",
+  marginBottom: 8,
+  fontWeight: 700,
+};
+
+const heroTitle = {
+  margin: 0,
+  fontSize: 14,
+  fontWeight: 700,
+  lineHeight: 1.4,
+  color: "#fff",
+};
+
+const heroSubtitle = {
+  margin: "12px auto 0",
+  maxWidth: 760,
+  fontSize: 12,
+  lineHeight: 1.8,
+  color: "rgba(255,255,255,0.9)",
+};
+
+const topGrid = {
   display: "grid",
   gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-  gap: 16,
+  gap: 18,
   marginBottom: 18,
 };
 
-const grid2 = {
+const lowerTwoGrid = {
   display: "grid",
   gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-  gap: 16,
+  gap: 18,
   marginBottom: 18,
 };
 
-const summaryCard = {
-  background: "#ffffff",
-  border: "1px solid #DCCDBA",
-  borderRadius: 18,
-  padding: 18,
-  minHeight: 120,
+const compareGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  gap: 18,
+  marginBottom: 18,
 };
 
-const summaryTitle = {
-  fontSize: 13,
-  color: "#627D98",
-  marginBottom: 8,
+const kpiCard = {
+  background: theme.surface,
+  border: `1px solid ${theme.border}`,
+  borderRadius: 20,
+  padding: 20,
+  minHeight: 188,
+  display: "flex",
+  flexDirection: "column",
+  justifyContent: "center",
+  textAlign: "center",
+  boxShadow: "0 2px 10px rgba(16,42,67,0.05)",
 };
 
-const summaryValue = {
-  fontSize: 26,
+const kpiTitle = {
+  fontSize: 14,
+  color: theme.textSoft,
   fontWeight: 700,
-  color: "#00215D",
+  marginBottom: 10,
+};
+
+const kpiValue = {
+  fontSize: 34,
+  lineHeight: 1.1,
+  fontWeight: 700,
+  color: theme.navy,
+  marginBottom: 10,
+};
+
+const kpiSub = {
+  fontSize: 12,
+  color: "#7A8CA8",
+  lineHeight: 1.7,
+  maxWidth: 260,
+  margin: "0 auto",
 };
 
 const sectionCard = {
-  background: "#ffffff",
-  border: "1px solid #DCCDBA",
-  borderRadius: 18,
+  background: theme.surface,
+  border: `1px solid ${theme.border}`,
+  borderRadius: 20,
   padding: 20,
+  boxShadow: "0 2px 10px rgba(16,42,67,0.05)",
   marginBottom: 18,
 };
 
-const sectionTitle = {
-  marginTop: 0,
-  color: "#00215D",
-  fontSize: 18,
+const sectionHeader = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: 12,
+  flexWrap: "wrap",
+  marginBottom: 10,
+};
+
+const titleWithIcon = {
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+};
+
+const h2 = {
+  margin: 0,
+  fontSize: 14,
+  color: theme.navy,
+  fontWeight: 700,
+  lineHeight: 1.4,
+};
+
+const explanation = {
+  fontSize: 12,
+  color: theme.textSoft,
+  lineHeight: 1.7,
+  marginBottom: 16,
 };
 
 const dataRow = {
@@ -343,8 +500,134 @@ const dataRow = {
   justifyContent: "space-between",
   gap: 12,
   padding: "10px 0",
-  borderBottom: "1px solid #EEE4D8",
+  borderBottom: `1px solid ${theme.divider}`,
+  fontSize: 12,
+};
+
+const dataLabel = {
+  color: theme.textSoft,
+};
+
+const dataValue = {
+  color: theme.navy,
+  fontWeight: 700,
+};
+
+const modernTrack = {
+  position: "relative",
+  height: 16,
+  borderRadius: 999,
+  background:
+    "linear-gradient(90deg, #F9F7F3 0%, #EAF1FB 45%, #E2D1BF 75%, #00215D 100%)",
+  overflow: "hidden",
+};
+
+const modernFill = {
+  height: "100%",
+  borderRadius: 999,
+  background: `linear-gradient(90deg, ${theme.accent} 0%, ${theme.navy} 100%)`,
+  boxShadow: "0 1px 3px rgba(0,33,93,0.25)",
+};
+
+const barScale = {
+  display: "flex",
+  justifyContent: "space-between",
+  marginTop: 10,
+  fontSize: 12,
+  color: theme.textSoft,
+  direction: "ltr",
+};
+
+const donutCard = {
+  background: theme.surface,
+  border: `1px solid ${theme.border}`,
+  borderRadius: 20,
+  padding: 0,
+  minHeight: "auto",
+};
+
+const donutTitle = {
+  margin: 0,
+  color: theme.navy,
   fontSize: 14,
+  fontWeight: 700,
+};
+
+const smallText = {
+  fontSize: 12,
+  color: theme.textSoft,
+  lineHeight: 1.6,
+};
+
+const donutLayout = {
+  display: "grid",
+  gridTemplateColumns: "180px 1fr",
+  gap: 20,
+  alignItems: "center",
+  marginTop: 12,
+};
+
+const donutCircle = {
+  width: 170,
+  height: 170,
+  borderRadius: "50%",
+  position: "relative",
+  flexShrink: 0,
+};
+
+const donutHole = {
+  position: "absolute",
+  inset: 34,
+  background: "#fff",
+  borderRadius: "50%",
+  border: `1px solid ${theme.divider}`,
+};
+
+const legendList = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 10,
+};
+
+const legendRow = {
+  display: "grid",
+  gridTemplateColumns: "12px 1fr auto",
+  gap: 8,
+  alignItems: "center",
+  fontSize: 12,
+};
+
+const legendDot = {
+  width: 12,
+  height: 12,
+  borderRadius: "50%",
+  display: "inline-block",
+};
+
+const legendName = {
+  color: theme.text,
+  fontWeight: 700,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+};
+
+const legendSub = {
+  color: theme.textSoft,
+  fontSize: 11,
+  marginTop: 2,
+};
+
+const legendPercent = {
+  color: theme.navy,
+  fontWeight: 700,
+};
+
+const tableWrap = {
+  overflowX: "auto",
+  borderRadius: 14,
+  border: `1px solid ${theme.divider}`,
+  background: "#fff",
 };
 
 const table = {
@@ -352,27 +635,36 @@ const table = {
   borderCollapse: "collapse",
   minWidth: 1100,
   background: "#fff",
-  border: "1px solid #EEE4D8",
-  borderRadius: 12,
-  overflow: "hidden",
 };
 
 const th = {
   textAlign: "right",
   padding: 12,
-  fontSize: 13,
-  color: "#627D98",
-  borderBottom: "1px solid #EEE4D8",
+  fontSize: 12,
+  color: theme.textSoft,
+  borderBottom: `1px solid ${theme.divider}`,
   whiteSpace: "nowrap",
+  fontWeight: 700,
+  background: "#FAF8F4",
 };
 
 const td = {
   textAlign: "right",
   padding: 12,
-  fontSize: 14,
-  color: "#102A43",
+  fontSize: 12,
+  color: theme.text,
   borderBottom: "1px solid #F0E6DA",
   whiteSpace: "nowrap",
+};
+
+const emptyState = {
+  background: theme.surfaceAlt,
+  border: `1px dashed ${theme.border}`,
+  borderRadius: 14,
+  padding: 18,
+  fontSize: 12,
+  color: theme.textSoft,
+  lineHeight: 1.7,
 };
 
 export default ClientMemberView;
