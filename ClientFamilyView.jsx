@@ -96,25 +96,21 @@ function ClientFamilyView({ clientModel }) {
 
       <section style={lowerTwoGrid}>
         <SectionCard title='חשיפה לחו"ל' icon="🌍">
-          <div style={explanation}>
-            התרשים מציג את החשיפה המשפחתית לחו"ל לפי הנתונים שעובדו מהקבצים.
-          </div>
-
-          <DataRow label='חשיפה לחו"ל' value={formatPercent(exposures.foreign)} />
-          <ModernBar value={exposures.foreign} />
+          <ExposureMetricBlock
+            value={exposures.foreign}
+            valueText={formatPercent(exposures.foreign)}
+            label={getForeignExposureLabel(exposures.foreign)}
+            explanationText='התרשים מציג את החשיפה המשפחתית לחו"ל לפי הנתונים שעובדו מהקבצים.'
+          />
         </SectionCard>
 
         <SectionCard title="חשיפה מנייתית משוקללת" icon="📊">
-          <div style={explanation}>
-            המדד מציג את רמת החשיפה למניות ברמת התא המשפחתי.
-          </div>
-
-          <div style={equityValueWrap}>
-            <div style={equityValue}>{formatPercent(exposures.equity)}</div>
-            <div style={equityLabel}>{getExposureLabel(exposures.equity)}</div>
-          </div>
-
-          <ModernBar value={exposures.equity} />
+          <ExposureMetricBlock
+            value={exposures.equity}
+            valueText={formatPercent(exposures.equity)}
+            label={getExposureLabel(exposures.equity)}
+            explanationText="המדד מציג את רמת החשיפה למניות ברמת התא המשפחתי."
+          />
         </SectionCard>
       </section>
 
@@ -152,13 +148,21 @@ function ClientFamilyView({ clientModel }) {
       </SectionCard>
 
       <SectionCard title="הלוואות על חשבון מוצרים פנסיוניים" icon="💳">
-        <div style={explanation}>פירוט הלוואות לפי אדם עם סיכום כולל ויחס לנכסים.</div>
+        <div style={explanation}>
+          פירוט הלוואות לפי אדם עם סיכום כולל ויחס לנכסים.
+        </div>
 
         {loanDetails.length ? (
           <>
             <div style={summaryStatsGrid}>
-              <SmallStat title="סה״כ הלוואות" value={formatCurrency(totalLoansAmount)} />
-              <SmallStat title="יחס לנכסים" value={`${loanRatioToAssets.toFixed(1)}%`} />
+              <SmallStat
+                title="סה״כ הלוואות"
+                value={formatCurrency(totalLoansAmount)}
+              />
+              <SmallStat
+                title="יחס לנכסים"
+                value={`${loanRatioToAssets.toFixed(1)}%`}
+              />
             </div>
 
             <div style={tableWrap}>
@@ -176,7 +180,9 @@ function ClientFamilyView({ clientModel }) {
                   {loanDetails.map((loan, index) => (
                     <tr key={loan.id || index}>
                       <td style={td}>
-                        {[loan.firstName, loan.familyName].filter(Boolean).join(" ") ||
+                        {[loan.firstName, loan.familyName]
+                          .filter(Boolean)
+                          .join(" ") ||
                           loan.name ||
                           "—"}
                       </td>
@@ -200,7 +206,10 @@ function ClientFamilyView({ clientModel }) {
           <SmallStat title="מוצרים" value={products.length} />
           <SmallStat title="גופים מנהלים" value={managers.length} />
           <SmallStat title="בני משפחה" value={members.length} />
-          <SmallStat title="חשיפה מנייתית" value={formatPercent(exposures.equity)} />
+          <SmallStat
+            title="חשיפה מנייתית"
+            value={formatPercent(exposures.equity)}
+          />
         </div>
 
         <InfoBox
@@ -213,7 +222,10 @@ function ClientFamilyView({ clientModel }) {
           value={formatCurrency(summary.projectedLumpSumWithDeposits)}
         />
 
-        <InfoBox label="יחס הלוואות לנכסים" value={`${loanRatioToAssets.toFixed(1)}%`} />
+        <InfoBox
+          label="יחס הלוואות לנכסים"
+          value={`${loanRatioToAssets.toFixed(1)}%`}
+        />
       </SectionCard>
     </div>
   );
@@ -290,6 +302,21 @@ function SectionCard({ title, icon, children }) {
   );
 }
 
+function ExposureMetricBlock({ value, valueText, label, explanationText }) {
+  return (
+    <>
+      <div style={explanation}>{explanationText}</div>
+
+      <div style={equityValueWrap}>
+        <div style={equityValue}>{valueText}</div>
+        <div style={equityLabel}>{label}</div>
+      </div>
+
+      <ModernBar value={value} />
+    </>
+  );
+}
+
 function ComparisonChartCard({ title, explanation, bars }) {
   return (
     <section style={compareCard}>
@@ -307,7 +334,9 @@ function ComparisonChartCard({ title, explanation, bars }) {
             <div style={compareTrack}>
               <div
                 style={{
-                  ...(bar.tone === "primary" ? compareFillPrimary : compareFillMuted),
+                  ...(bar.tone === "primary"
+                    ? compareFillPrimary
+                    : compareFillMuted),
                   width: `${Math.max(bar.ratio, 6)}%`,
                 }}
               />
@@ -402,7 +431,10 @@ function buildSegments(items) {
     ? items.filter((item) => Number(item.value || 0) > 0)
     : [];
 
-  const total = safeItems.reduce((sum, item) => sum + Number(item.value || 0), 0);
+  const total = safeItems.reduce(
+    (sum, item) => sum + Number(item.value || 0),
+    0
+  );
 
   if (!safeItems.length || total <= 0) {
     return { segments: [], gradient: "#D7DEE7 0% 100%" };
@@ -489,7 +521,9 @@ function MemberCard({ member, formatCurrency }) {
       <div style={insuranceGrid}>
         <div style={insuranceCard}>
           <div style={insuranceLabel}>🛡️ ביטוח חיים</div>
-          <div style={insuranceValue}>{formatCurrency(insurance.deathCoverage)}</div>
+          <div style={insuranceValue}>
+            {formatCurrency(insurance.deathCoverage)}
+          </div>
         </div>
 
         <div style={insuranceCard}>
@@ -522,15 +556,6 @@ function CompareMiniCard({ title, leftLabel, leftValue, rightLabel, rightValue }
           <div style={compareMiniSideValue}>{rightValue}</div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function DataRow({ label, value }) {
-  return (
-    <div style={dataRow}>
-      <div style={dataLabel}>{label}</div>
-      <div style={dataValue}>{value}</div>
     </div>
   );
 }
@@ -582,6 +607,13 @@ function getExposureLabel(value) {
   if (num <= 30) return "חשיפה נמוכה";
   if (num <= 60) return "חשיפה בינונית";
   return "חשיפה גבוהה";
+}
+
+function getForeignExposureLabel(value) {
+  const num = Number(value || 0);
+  if (num <= 25) return "חשיפה נמוכה לחו״ל";
+  if (num <= 50) return "חשיפה בינונית לחו״ל";
+  return "חשיפה גבוהה לחו״ל";
 }
 
 function formatDate(value) {
@@ -679,11 +711,27 @@ function ZviranLogo({ light = false }) {
 function GiftIcon() {
   return (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-      <rect x="4" y="7" width="16" height="13" rx="2" stroke="#00215D" strokeWidth="2" />
+      <rect
+        x="4"
+        y="7"
+        width="16"
+        height="13"
+        rx="2"
+        stroke="#00215D"
+        strokeWidth="2"
+      />
       <path d="M12 7V20" stroke="#00215D" strokeWidth="2" />
       <path d="M4 11H20" stroke="#00215D" strokeWidth="2" />
-      <path d="M9 7C7.8 7 7 6.2 7 5C7 3.8 7.8 3 9 3C10.8 3 12 5 12 7" stroke="#00215D" strokeWidth="2" />
-      <path d="M15 7C16.2 7 17 6.2 17 5C17 3.8 16.2 3 15 3C13.2 3 12 5 12 7" stroke="#00215D" strokeWidth="2" />
+      <path
+        d="M9 7C7.8 7 7 6.2 7 5C7 3.8 7.8 3 9 3C10.8 3 12 5 12 7"
+        stroke="#00215D"
+        strokeWidth="2"
+      />
+      <path
+        d="M15 7C16.2 7 17 6.2 17 5C17 3.8 16.2 3 15 3C13.2 3 12 5 12 7"
+        stroke="#00215D"
+        strokeWidth="2"
+      />
     </svg>
   );
 }
@@ -691,9 +739,28 @@ function GiftIcon() {
 function DepositIcon() {
   return (
     <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
-      <path d="M12 3V14" stroke="#FF2756" strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M8.5 6.5L12 3L15.5 6.5" stroke="#FF2756" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-      <rect x="4" y="14" width="16" height="6" rx="2" stroke="#FF2756" strokeWidth="2.2" />
+      <path
+        d="M12 3V14"
+        stroke="#FF2756"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M8.5 6.5L12 3L15.5 6.5"
+        stroke="#FF2756"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <rect
+        x="4"
+        y="14"
+        width="16"
+        height="6"
+        rx="2"
+        stroke="#FF2756"
+        strokeWidth="2.2"
+      />
     </svg>
   );
 }
@@ -1176,24 +1243,6 @@ const equityLabel = {
   fontSize: 14,
   fontWeight: 700,
   color: theme.textSoft,
-};
-
-const dataRow = {
-  display: "flex",
-  justifyContent: "space-between",
-  gap: 12,
-  padding: "10px 0",
-  borderBottom: `1px solid ${theme.divider}`,
-  fontSize: 12,
-};
-
-const dataLabel = {
-  color: theme.textSoft,
-};
-
-const dataValue = {
-  color: theme.navy,
-  fontWeight: 700,
 };
 
 const modernTrack = {
