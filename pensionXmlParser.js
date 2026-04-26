@@ -469,11 +469,7 @@ function isLifeInsurancePolicy(policy) {
     .join(" ")
     .trim();
 
-  return (
-    text.includes("ביטוח חיים") ||
-    text.includes("חיים") ||
-    text.includes("ריסק")
-  );
+  return text.includes("ביטוח חיים") || text.includes("ריסק");
 }
 
 function isPensionFundPolicy(policy) {
@@ -497,7 +493,7 @@ function isPensionFundPolicy(policy) {
 }
 
 function getLifeInsuranceAmount(policy) {
-  return Number(policy?.coverage?.totalInsurance ?? policy?.coverage?.totalRisk ?? 0);
+  return Number(policy?.coverage?.totalInsurance || 0);
 }
 
 function getNonPensionAccumulatedAmount(policy) {
@@ -602,6 +598,7 @@ function buildMainGroupAllocation(flatPolicies) {
 
     plans.forEach((plan) => {
       const mainGroups = Array.isArray(plan.mainGroups) ? plan.mainGroups : [];
+
       mainGroups.forEach((group) => {
         const rate = Number(group?.rate || 0);
         if (!group?.name || rate <= 0) return;
