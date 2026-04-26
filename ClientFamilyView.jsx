@@ -10,26 +10,6 @@ function ClientFamilyView({ clientModel }) {
 
   const formatPercent = (value) => `${Number(value || 0).toFixed(1)}%`;
 
-  const lumpBars = [
-    {
-      label: "צבירה צפויה",
-      value: summary.projectedLumpSumWithDeposits,
-      display: formatCurrency(summary.projectedLumpSumWithDeposits),
-      ratio: 100,
-      tone: "primary",
-    },
-  ];
-
-  const pensionBars = [
-    {
-      label: "קצבה צפויה",
-      value: summary.monthlyPensionWithDeposits,
-      display: formatCurrency(summary.monthlyPensionWithDeposits),
-      ratio: 100,
-      tone: "primary",
-    },
-  ];
-
   return (
     <div style={page}>
       <Header
@@ -40,44 +20,52 @@ function ClientFamilyView({ clientModel }) {
 
       <section style={topGrid}>
         <KpiCard
+          icon={<GiftIcon />}
           title="סך נכסים"
           value={formatCurrency(summary.totalAssets)}
           subtext="סך הצבירה הכולל של התא המשפחתי"
         />
 
         <KpiCard
+          icon={<DepositIcon />}
           title="הפקדה חודשית"
           value={formatCurrency(summary.monthlyDeposits)}
           subtext="סך ההפקדות החודשיות של בני המשפחה"
         />
 
-        <DonutSummaryCard
-          title="חלוקה לפי מוצרים"
-          subtitle="התפלגות הנכסים בין סוגי החיסכון הקיימים בתיק."
-          items={products}
-          formatCurrency={formatCurrency}
+        <KpiCard
+          icon={<PensionIcon />}
+          title="צבירה צפויה"
+          value={formatCurrency(summary.projectedLumpSumWithDeposits)}
+          subtext="צבירה צפויה בגיל פרישה"
         />
 
-        <DonutSummaryCard
-          title="חלוקה לפי גופים מנהלים"
-          subtitle="התפלגות הניהול בין החברות והגופים המנהלים."
-          items={managers}
-          formatCurrency={formatCurrency}
+        <KpiCard
+          icon={<MonthlyIcon />}
+          title="קצבה צפויה"
+          value={formatCurrency(summary.monthlyPensionWithDeposits)}
+          subtext="קצבה חודשית צפויה בגיל פרישה"
         />
       </section>
 
-      <section style={compareGrid}>
-        <ComparisonCard
-          title="צבירה צפויה בגיל פרישה"
-          explanation="הצגת הצבירה הצפויה על בסיס הנתונים שהתקבלו במודל הלקוח."
-          bars={lumpBars}
-        />
+      <section style={fullWidthSection}>
+        <SectionCard title="חלוקה לפי מוצרים" icon="🥧">
+          <FullWidthDonutCard
+            items={products}
+            formatCurrency={formatCurrency}
+            emptyText="אין נתוני מוצרים להצגה"
+          />
+        </SectionCard>
+      </section>
 
-        <ComparisonCard
-          title="קצבה חודשית בגיל פרישה"
-          explanation="הצגת הקצבה החודשית הצפויה על בסיס הנתונים שהתקבלו במודל הלקוח."
-          bars={pensionBars}
-        />
+      <section style={fullWidthSection}>
+        <SectionCard title="חלוקה לפי גופים מנהלים" icon="🏦">
+          <FullWidthDonutCard
+            items={managers}
+            formatCurrency={formatCurrency}
+            emptyText="אין נתוני גופים מנהלים להצגה"
+          />
+        </SectionCard>
       </section>
 
       <section style={lowerTwoGrid}>
@@ -105,10 +93,6 @@ function ClientFamilyView({ clientModel }) {
       </section>
 
       <section style={bottomGrid}>
-        <SectionCard title="חלוקה לפי סוגי מוצרים" icon="🥧">
-          <DonutBreakdownCard items={products} formatCurrency={formatCurrency} />
-        </SectionCard>
-
         <SectionCard title="סיכום מהיר" icon="🧾">
           <div style={summaryStatsGrid}>
             <SmallStat title="מוצרים" value={products.length} />
@@ -130,19 +114,39 @@ function ClientFamilyView({ clientModel }) {
             value={formatCurrency(summary.projectedLumpSumWithDeposits)}
           />
         </SectionCard>
+
+        <SectionCard title="רשימת גופים מנהלים" icon="📋">
+          {managers.length ? (
+            managers.map((item) => (
+              <DataRow
+                key={item.id || item.name}
+                label={item.name}
+                value={`${formatCurrency(item.value)} · ${formatPercent(
+                  item.percent
+                )}`}
+              />
+            ))
+          ) : (
+            <EmptyText>אין נתוני גופים מנהלים להצגה</EmptyText>
+          )}
+        </SectionCard>
       </section>
 
       <SectionCard title="פירוט לפי בני משפחה" icon="👨‍👩‍👧‍👦">
         <div style={explanation}>
-          מוצגת תמונת מצב אישית לכל אחד מבני המשפחה, כולל צבירה, הפקדה וקצבה צפויה.
+          מוצגת תמונת מצב אישית לכל אחד מבני המשפחה, כולל צבירה, הפקדה, קצבה
+          צפויה, סכום חד הוני וכיסויים ביטוחיים.
         </div>
 
         {members.length ? (
           <div style={membersGrid}>
             {members.map((member) => (
-              <div key={member.id} style={memberCard}>
+              <div key={member.id || member.name} style={memberCard}>
                 <div style={memberTop}>
-                  <div style={memberName}>{member.name}</div>
+                  <div>
+                    <div style={memberName}>{member.name}</div>
+                  </div>
+
                   <div style={chip}>
                     הפקדה חודשית:{" "}
                     {formatCurrency(member.summary?.monthlyDeposits)}
@@ -157,41 +161,55 @@ function ClientFamilyView({ clientModel }) {
                 </div>
 
                 <div style={miniGrid}>
-                  <MiniCard
+                  <CompareMiniCard
                     title="קצבה חודשית צפויה"
-                    value={formatCurrency(
+                    leftLabel="עם הפקדות"
+                    leftValue={formatCurrency(
                       member.summary?.monthlyPensionWithDeposits
+                    )}
+                    rightLabel="ללא הפקדות"
+                    rightValue={formatCurrency(
+                      member.summary?.monthlyPensionWithoutDeposits
                     )}
                   />
 
-                  <MiniCard
-                    title="צבירה צפויה"
-                    value={formatCurrency(
+                  <CompareMiniCard
+                    title="סכום חד הוני לפרישה"
+                    leftLabel="עם הפקדות"
+                    leftValue={formatCurrency(
                       member.summary?.projectedLumpSumWithDeposits
                     )}
+                    rightLabel="ללא הפקדות"
+                    rightValue={formatCurrency(
+                      member.summary?.projectedLumpSumWithoutDeposits
+                    )}
                   />
+                </div>
+
+                <div style={insuranceGrid}>
+                  <div style={insuranceCard}>
+                    <div style={insuranceLabel}>🛡️ ביטוח חיים</div>
+                    <div style={insuranceValue}>
+                      {formatCurrency(member.insurance?.deathCoverage)}
+                    </div>
+                  </div>
+
+                  <div style={insuranceCard}>
+                    <div style={insuranceLabel}>🧍 אובדן כושר עבודה</div>
+                    <div style={insuranceValue}>
+                      {formatCurrency(member.insurance?.disabilityValue)} (
+                      {Number(member.insurance?.disabilityPercent || 0).toFixed(
+                        1
+                      )}
+                      %)
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         ) : (
           <EmptyText>אין בני משפחה להצגה</EmptyText>
-        )}
-      </SectionCard>
-
-      <SectionCard title="רשימת גופים מנהלים" icon="🏦">
-        {managers.length ? (
-          managers.map((item) => (
-            <DataRow
-              key={item.id || item.name}
-              label={item.name}
-              value={`${formatCurrency(item.value)} · ${formatPercent(
-                item.percent
-              )}`}
-            />
-          ))
-        ) : (
-          <EmptyText>אין נתוני גופים מנהלים להצגה</EmptyText>
         )}
       </SectionCard>
     </div>
@@ -210,9 +228,10 @@ function Header({ eyebrow, title, subtitle }) {
   );
 }
 
-function KpiCard({ title, value, subtext }) {
+function KpiCard({ icon, title, value, subtext }) {
   return (
     <div style={kpiCard}>
+      <div style={kpiIconWrap}>{icon}</div>
       <div style={kpiTitle}>{title}</div>
       <div style={kpiValue}>{value}</div>
       <div style={kpiSub}>{subtext}</div>
@@ -234,32 +253,64 @@ function SectionCard({ title, icon, children }) {
   );
 }
 
-function ComparisonCard({ title, explanation, bars }) {
+function FullWidthDonutCard({ items, formatCurrency, emptyText }) {
+  const safeItems = Array.isArray(items)
+    ? items.filter((item) => Number(item.value || 0) > 0)
+    : [];
+
+  const total = safeItems.reduce((sum, item) => sum + Number(item.value || 0), 0);
+
+  if (!safeItems.length || total <= 0) {
+    return <EmptyText>{emptyText}</EmptyText>;
+  }
+
+  let current = 0;
+
+  const segments = safeItems.map((item, index) => {
+    const value = Number(item.value || 0);
+    const percent = (value / total) * 100;
+    const start = current;
+    const end = current + percent;
+    current = end;
+
+    return {
+      ...item,
+      percent,
+      start,
+      end,
+      color: chartColors[index % chartColors.length],
+    };
+  });
+
+  const gradient = segments
+    .map((seg) => `${seg.color} ${seg.start}% ${seg.end}%`)
+    .join(", ");
+
   return (
-    <section style={compareCard}>
-      <div style={compareTitle}>{title}</div>
-      <div style={compareDesc}>{explanation}</div>
+    <div style={fullDonutLayout}>
+      <div style={donutRight}>
+        <div style={donut3dShadow}>
+          <div style={{ ...donut3d, background: `conic-gradient(${gradient})` }}>
+            <div style={donut3dHole} />
+          </div>
+        </div>
+      </div>
 
-      <div style={compareBarList}>
-        {bars.map((bar) => (
-          <div key={bar.label} style={compareBarItem}>
-            <div style={compareBarTop}>
-              <div style={compareBarLabel}>{bar.label}</div>
-              <div style={compareBarValue}>{bar.display}</div>
+      <div style={donutLegendLeft}>
+        {segments.map((seg, index) => (
+          <div key={`${seg.id || seg.name}-${index}`} style={breakdownItem}>
+            <span style={{ ...breakdownDot, background: seg.color }} />
+
+            <div style={{ minWidth: 0 }}>
+              <div style={breakdownName}>{seg.name}</div>
+              <div style={breakdownSub}>{formatCurrency(seg.value)}</div>
             </div>
 
-            <div style={compareTrack}>
-              <div
-                style={{
-                  ...compareFillPrimary,
-                  width: `${Math.max(Number(bar.ratio || 0), 6)}%`,
-                }}
-              />
-            </div>
+            <div style={breakdownPercent}>{seg.percent.toFixed(1)}%</div>
           </div>
         ))}
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -290,11 +341,24 @@ function InfoBox({ label, value }) {
   );
 }
 
-function MiniCard({ title, value }) {
+function CompareMiniCard({ title, leftLabel, leftValue, rightLabel, rightValue }) {
   return (
     <div style={compareMiniCard}>
       <div style={compareMiniTitle}>{title}</div>
-      <div style={compareMiniValue}>{value}</div>
+
+      <div style={compareMiniInner}>
+        <div style={compareMiniSide}>
+          <div style={compareMiniSideLabel}>{leftLabel}</div>
+          <div style={compareMiniSideValue}>{leftValue}</div>
+        </div>
+
+        <div style={dividerLine} />
+
+        <div style={compareMiniSide}>
+          <div style={compareMiniSideLabel}>{rightLabel}</div>
+          <div style={compareMiniSideValue}>{rightValue}</div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -323,139 +387,129 @@ function ModernBar({ value }) {
   );
 }
 
-function DonutSummaryCard({ title, subtitle, items, formatCurrency }) {
-  const safeItems = Array.isArray(items)
-    ? items.filter((item) => Number(item.value || 0) > 0)
-    : [];
-
-  const total = safeItems.reduce((sum, item) => sum + Number(item.value || 0), 0);
-
-  if (!safeItems.length || total <= 0) {
-    return (
-      <section style={donutCard}>
-        <h3 style={donutTitle}>{title}</h3>
-        <div style={{ ...smallText, marginTop: 6 }}>{subtitle}</div>
-        <EmptyText>אין נתונים להצגה</EmptyText>
-      </section>
-    );
-  }
-
-  let current = 0;
-
-  const segments = safeItems.map((item, index) => {
-    const value = Number(item.value || 0);
-    const percent = (value / total) * 100;
-    const start = current;
-    const end = current + percent;
-    current = end;
-
-    return {
-      ...item,
-      percent,
-      start,
-      end,
-      color: chartColors[index % chartColors.length],
-    };
-  });
-
-  const gradient = segments
-    .map((seg) => `${seg.color} ${seg.start}% ${seg.end}%`)
-    .join(", ");
-
-  return (
-    <section style={donutCard}>
-      <h3 style={donutTitle}>{title}</h3>
-      <div style={{ ...smallText, marginTop: 6 }}>{subtitle}</div>
-
-      <div style={donutLayout}>
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <div style={{ ...donutCircle, background: `conic-gradient(${gradient})` }}>
-            <div style={donutHole} />
-          </div>
-        </div>
-
-        <div style={legendList}>
-          {segments.slice(0, 5).map((seg, index) => (
-            <div key={`${seg.id || seg.name}-${index}`} style={legendRow}>
-              <span style={{ ...legendDot, background: seg.color }} />
-              <div style={{ minWidth: 0 }}>
-                <div style={legendName}>{seg.name}</div>
-                <div style={legendSub}>{formatCurrency(seg.value)}</div>
-              </div>
-              <div style={legendPercent}>{seg.percent.toFixed(1)}%</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function DonutBreakdownCard({ items, formatCurrency }) {
-  const safeItems = Array.isArray(items)
-    ? items.filter((item) => Number(item.value || 0) > 0)
-    : [];
-
-  const total = safeItems.reduce((sum, item) => sum + Number(item.value || 0), 0);
-
-  if (!safeItems.length || total <= 0) {
-    return <EmptyText>אין נתונים להצגה</EmptyText>;
-  }
-
-  let current = 0;
-
-  const segments = safeItems.map((item, index) => {
-    const value = Number(item.value || 0);
-    const percent = (value / total) * 100;
-    const start = current;
-    const end = current + percent;
-    current = end;
-
-    return {
-      ...item,
-      percent,
-      start,
-      end,
-      color: chartColors[index % chartColors.length],
-    };
-  });
-
-  const gradient = segments
-    .map((seg) => `${seg.color} ${seg.start}% ${seg.end}%`)
-    .join(", ");
-
-  return (
-    <div style={breakdownWrap}>
-      <div style={largeDonutWrap}>
-        <div style={{ ...largeDonut, background: `conic-gradient(${gradient})` }}>
-          <div style={largeDonutHole} />
-        </div>
-      </div>
-
-      <div style={breakdownList}>
-        {segments.map((seg, index) => (
-          <div key={`${seg.id || seg.name}-${index}`} style={breakdownItem}>
-            <div style={breakdownPercent}>{seg.percent.toFixed(1)}%</div>
-
-            <div style={{ minWidth: 0 }}>
-              <div style={breakdownName}>{seg.name}</div>
-              <div style={breakdownSub}>{formatCurrency(seg.value)}</div>
-            </div>
-
-            <span style={{ ...breakdownDot, background: seg.color }} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function getExposureLabel(value) {
   const num = Number(value || 0);
 
   if (num <= 30) return "חשיפה נמוכה";
   if (num <= 60) return "חשיפה בינונית";
   return "חשיפה גבוהה";
+}
+
+function GiftIcon() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+      <rect
+        x="4"
+        y="7"
+        width="16"
+        height="13"
+        rx="2"
+        stroke="#00215D"
+        strokeWidth="2"
+      />
+      <path d="M12 7V20" stroke="#00215D" strokeWidth="2" />
+      <path d="M4 11H20" stroke="#00215D" strokeWidth="2" />
+      <path
+        d="M9 7C7.8 7 7 6.2 7 5C7 3.8 7.8 3 9 3C10.8 3 12 5 12 7"
+        stroke="#00215D"
+        strokeWidth="2"
+      />
+      <path
+        d="M15 7C16.2 7 17 6.2 17 5C17 3.8 16.2 3 15 3C13.2 3 12 5 12 7"
+        stroke="#00215D"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
+
+function DepositIcon() {
+  return (
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M12 3V14"
+        stroke="#FF2756"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M8.5 6.5L12 3L15.5 6.5"
+        stroke="#FF2756"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <rect
+        x="4"
+        y="14"
+        width="16"
+        height="6"
+        rx="2"
+        stroke="#FF2756"
+        strokeWidth="2.2"
+      />
+    </svg>
+  );
+}
+
+function PensionIcon() {
+  return (
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M5 19H19"
+        stroke="#00215D"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M7 16L11 12L14 14L18 8"
+        stroke="#00215D"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M18 8H14"
+        stroke="#FF2756"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M18 8V12"
+        stroke="#FF2756"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function MonthlyIcon() {
+  return (
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+      <rect
+        x="4"
+        y="5"
+        width="16"
+        height="14"
+        rx="3"
+        stroke="#00215D"
+        strokeWidth="2"
+      />
+      <path
+        d="M8 10H16"
+        stroke="#FF2756"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M8 14H13"
+        stroke="#00215D"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
 }
 
 const theme = {
@@ -470,7 +524,6 @@ const theme = {
   navyDark: "#001845",
   accent: "#FF2756",
   softBlue: "#EAF1FB",
-  mutedBar: "#C7D1E2",
 };
 
 const chartColors = [
@@ -537,10 +590,8 @@ const topGrid = {
   marginBottom: 18,
 };
 
-const compareGrid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-  gap: 18,
+const fullWidthSection = {
+  width: "100%",
   marginBottom: 18,
 };
 
@@ -553,7 +604,7 @@ const lowerTwoGrid = {
 
 const bottomGrid = {
   display: "grid",
-  gridTemplateColumns: "1.35fr 0.9fr",
+  gridTemplateColumns: "0.9fr 1.1fr",
   gap: 18,
   alignItems: "start",
   marginBottom: 18,
@@ -568,8 +619,21 @@ const kpiCard = {
   display: "flex",
   flexDirection: "column",
   justifyContent: "center",
+  alignItems: "center",
   textAlign: "center",
   boxShadow: "0 2px 10px rgba(16,42,67,0.05)",
+};
+
+const kpiIconWrap = {
+  width: 74,
+  height: 74,
+  borderRadius: 22,
+  background: "#F4F7FB",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexShrink: 0,
+  marginBottom: 14,
 };
 
 const kpiTitle = {
@@ -634,72 +698,92 @@ const explanation = {
   marginBottom: 16,
 };
 
-const compareCard = {
-  background: theme.surface,
-  border: `1px solid ${theme.border}`,
-  borderRadius: 20,
-  padding: 20,
-  minHeight: 210,
-  boxShadow: "0 2px 10px rgba(16,42,67,0.05)",
+const fullDonutLayout = {
+  display: "grid",
+  gridTemplateColumns: "340px 1fr",
+  gap: 26,
+  alignItems: "center",
+  direction: "rtl",
 };
 
-const compareTitle = {
-  fontSize: 14,
+const donutRight = {
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+};
+
+const donut3dShadow = {
+  width: 250,
+  height: 250,
+  borderRadius: "50%",
+  background: "linear-gradient(180deg, rgba(0,33,93,0.18), rgba(0,0,0,0.05))",
+  padding: 10,
+  boxShadow: "0 18px 34px rgba(0,33,93,0.14)",
+};
+
+const donut3d = {
+  width: "100%",
+  height: "100%",
+  borderRadius: "50%",
+  position: "relative",
+  boxShadow:
+    "inset 0 12px 18px rgba(255,255,255,0.35), inset 0 -16px 24px rgba(0,0,0,0.12)",
+};
+
+const donut3dHole = {
+  position: "absolute",
+  inset: 58,
+  background: "#fff",
+  borderRadius: "50%",
+  border: `1px solid ${theme.divider}`,
+  boxShadow:
+    "inset 0 8px 16px rgba(0,0,0,0.06), 0 2px 5px rgba(255,255,255,0.9)",
+};
+
+const donutLegendLeft = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 10,
+};
+
+const breakdownItem = {
+  background: "#fff",
+  border: "1px solid #E5D9CB",
+  borderRadius: 14,
+  padding: 12,
+  display: "grid",
+  gridTemplateColumns: "14px 1fr auto",
+  gap: 10,
+  alignItems: "center",
+};
+
+const breakdownDot = {
+  width: 14,
+  height: 14,
+  borderRadius: "50%",
+  display: "inline-block",
+};
+
+const breakdownName = {
   fontWeight: 700,
   color: theme.navy,
-  marginBottom: 8,
+  fontSize: 14,
+  textAlign: "right",
 };
 
-const compareDesc = {
+const breakdownSub = {
   fontSize: 12,
   color: theme.textSoft,
-  lineHeight: 1.7,
-  marginBottom: 18,
+  marginTop: 2,
+  textAlign: "right",
 };
 
-const compareBarList = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 18,
-};
-
-const compareBarItem = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 8,
-};
-
-const compareBarTop = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  gap: 8,
-};
-
-const compareBarLabel = {
-  fontSize: 12,
-  color: "#4A5D7A",
+const breakdownPercent = {
   fontWeight: 700,
-};
-
-const compareBarValue = {
-  fontSize: 18,
   color: theme.navy,
-  fontWeight: 700,
-};
-
-const compareTrack = {
-  width: "100%",
-  height: 18,
-  borderRadius: 999,
-  background: theme.softBlue,
-  overflow: "hidden",
-};
-
-const compareFillPrimary = {
-  height: "100%",
-  borderRadius: 999,
-  background: `linear-gradient(90deg, ${theme.accent}, ${theme.navy})`,
+  fontSize: 14,
+  minWidth: 64,
+  textAlign: "left",
 };
 
 const equityValueWrap = {
@@ -765,168 +849,6 @@ const barScale = {
   fontSize: 12,
   color: theme.textSoft,
   direction: "ltr",
-};
-
-const donutCard = {
-  background: theme.surface,
-  border: `1px solid ${theme.border}`,
-  borderRadius: 20,
-  padding: 18,
-  minHeight: 188,
-  boxShadow: "0 2px 10px rgba(16,42,67,0.05)",
-};
-
-const donutTitle = {
-  margin: 0,
-  color: theme.navy,
-  fontSize: 14,
-  fontWeight: 700,
-};
-
-const smallText = {
-  fontSize: 12,
-  color: theme.textSoft,
-  lineHeight: 1.6,
-};
-
-const donutLayout = {
-  display: "grid",
-  gridTemplateColumns: "110px 1fr",
-  gap: 14,
-  alignItems: "center",
-  marginTop: 12,
-};
-
-const donutCircle = {
-  width: 96,
-  height: 96,
-  borderRadius: "50%",
-  position: "relative",
-  flexShrink: 0,
-};
-
-const donutHole = {
-  position: "absolute",
-  inset: 15,
-  background: "#fff",
-  borderRadius: "50%",
-  border: "1px solid #E5D9CB",
-};
-
-const legendList = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 8,
-};
-
-const legendRow = {
-  display: "grid",
-  gridTemplateColumns: "10px 1fr auto",
-  gap: 8,
-  alignItems: "center",
-  fontSize: 12,
-};
-
-const legendDot = {
-  width: 10,
-  height: 10,
-  borderRadius: "50%",
-  display: "inline-block",
-};
-
-const legendName = {
-  color: theme.text,
-  fontWeight: 700,
-  whiteSpace: "nowrap",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-};
-
-const legendSub = {
-  color: theme.textSoft,
-  fontSize: 11,
-  marginTop: 2,
-};
-
-const legendPercent = {
-  color: theme.text,
-  fontWeight: 700,
-};
-
-const breakdownWrap = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 18,
-  alignItems: "center",
-};
-
-const largeDonutWrap = {
-  display: "flex",
-  justifyContent: "center",
-  width: "100%",
-};
-
-const largeDonut = {
-  width: 220,
-  height: 220,
-  borderRadius: "50%",
-  position: "relative",
-  flexShrink: 0,
-};
-
-const largeDonutHole = {
-  position: "absolute",
-  inset: 40,
-  background: "#fff",
-  borderRadius: "50%",
-  border: "1px solid #E5D9CB",
-};
-
-const breakdownList = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 10,
-  width: "100%",
-};
-
-const breakdownItem = {
-  background: "#fff",
-  border: "1px solid #E5D9CB",
-  borderRadius: 14,
-  padding: 12,
-  display: "grid",
-  gridTemplateColumns: "auto 1fr auto",
-  gap: 10,
-  alignItems: "center",
-};
-
-const breakdownPercent = {
-  fontWeight: 700,
-  color: theme.navy,
-  fontSize: 14,
-  minWidth: 64,
-  textAlign: "right",
-};
-
-const breakdownName = {
-  fontWeight: 700,
-  color: theme.navy,
-  fontSize: 14,
-  textAlign: "right",
-};
-
-const breakdownSub = {
-  fontSize: 12,
-  color: theme.textSoft,
-  marginTop: 2,
-  textAlign: "right",
-};
-
-const breakdownDot = {
-  width: 14,
-  height: 14,
-  borderRadius: "50%",
-  display: "inline-block",
 };
 
 const summaryStatsGrid = {
@@ -1044,6 +966,7 @@ const miniGrid = {
   display: "grid",
   gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
   gap: 12,
+  marginBottom: 12,
 };
 
 const compareMiniCard = {
@@ -1060,7 +983,58 @@ const compareMiniTitle = {
   fontWeight: 700,
 };
 
-const compareMiniValue = {
+const compareMiniInner = {
+  display: "grid",
+  gridTemplateColumns: "1fr 1px 1fr",
+  gap: 10,
+  alignItems: "stretch",
+};
+
+const dividerLine = {
+  background: theme.divider,
+  width: 1,
+};
+
+const compareMiniSide = {
+  textAlign: "center",
+};
+
+const compareMiniSideLabel = {
+  fontSize: 11,
+  color: theme.textSoft,
+  marginBottom: 6,
+};
+
+const compareMiniSideValue = {
+  fontSize: 16,
+  fontWeight: 700,
+  color: theme.navy,
+  lineHeight: 1.2,
+};
+
+const insuranceGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  gap: 12,
+};
+
+const insuranceCard = {
+  background: theme.surfaceAlt,
+  border: `1px solid ${theme.divider}`,
+  borderRadius: 14,
+  padding: 12,
+};
+
+const insuranceLabel = {
+  fontSize: 12,
+  color: theme.textSoft,
+  marginBottom: 6,
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+};
+
+const insuranceValue = {
   fontSize: 16,
   fontWeight: 700,
   color: theme.navy,
