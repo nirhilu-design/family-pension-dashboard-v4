@@ -55,6 +55,10 @@ function buildClientMemberModel(member, index, reportData) {
 
   const products = extractMemberProducts(memberName, reportData);
   const managers = buildManagersFromProducts(products);
+  const mainGroups = buildMainGroupsFromProducts(products);
+  const exposures = buildMemberExposures(products);
+
+  const deathCoverage = buildLifeCoverageDisplayAmount(products);
 
   return {
     id: createStableMemberId(memberName, index),
@@ -76,13 +80,13 @@ function buildClientMemberModel(member, index, reportData) {
       ),
     },
     insurance: {
-      deathCoverage: Number(member?.deathCoverage || 0),
+      deathCoverage,
       disabilityValue: Number(member?.disabilityValue || 0),
       disabilityPercent: Number(member?.disabilityPercent || 0),
     },
-    exposures: {
-      equity: Number(member?.weightedEquityExposure || 0),
-      foreign: Number(member?.weightedForeignExposure || 0),
+    exposures,
+    distributions: {
+      mainGroups,
     },
     products,
     managers,
@@ -196,6 +200,18 @@ function extractMemberProducts(memberName, reportData) {
 
       foreignExposure: getPolicyForeignExposure(policy),
 
+      coverage: {
+        totalInsurance: Number(policy?.coverage?.totalInsurance || 0),
+        totalRisk: Number(policy?.coverage?.totalRisk || 0),
+        disabilityPension: Number(policy?.coverage?.disabilityPension || 0),
+      },
+
+      mainGroups: getPolicyMainGroups(policy),
+
+      isPensionFund: isPensionFundPolicy(policy),
+
+      isLifeInsurance: isLifeInsurancePolicy(policy),
+
       raw: policy,
     };
   });
@@ -229,6 +245,86 @@ function buildManagersFromProducts(products) {
   }));
 }
 
+function buildMainGroupsFromProducts(products) {
+  const safeProducts = Array.isArray(products) ? products : [];
+  const map = new Map();
+
+  safeProducts.forEach((product) => {
+    const productValue = Number(product.currentValue || 0);
+    if (productValue <= 0) return;
+
+    const groups = Array.isArray(product.mainGroups) ? product.mainGroups : [];
+    if (!groups.length) return;
+
+    groups.forEach((group) => {
+      const rate = Number(group.rate || 0);
+      if (!group.name || rate <= 0) return;
+
+      const value = productValue * (rate / 100);
+      const key = `${group.id || ""}|${group.name}`;
+
+      if (!map.has(key)) {
+        map.set(key, {
+          id: group.id || key,
+          name: group.name,
+          value: 0,
+        });
+      }
+
+      map.get(key).value += value;
+    });
+  });
+
+  const items = Array.from(map.values()).filter((item) => item.value > 0);
+  const total = items.reduce((sum, item) => sum + item.value, 0);
+
+  return items
+    .map((item) => ({
+      ...item,
+      percent: total > 0 ? (item.value / total) * 100 : 0,
+    }))
+    .sort((a, b) => b.value - a.value);
+}
+
+function buildMemberExposures(products) {
+  const safeProducts = Array.isArray(products) ? products : [];
+
+  const totalValue = safeProducts.reduce(
+    (sum, product) => sum + Number(product.currentValue || 0),
+    0
+  );
+
+  if (totalValue <= 0) {
+    return {
+      equity: 0,
+      foreign: 0,
+    };
+  }
+
+  const weightedEquity =
+    safeProducts.reduce(
+      (sum, product) =>
+        sum +
+        Number(product.currentValue || 0) *
+          Number(product.equityExposure || 0),
+      0
+    ) / totalValue;
+
+  const weightedForeign =
+    safeProducts.reduce(
+      (sum, product) =>
+        sum +
+        Number(product.currentValue || 0) *
+          Number(product.foreignExposure || 0),
+      0
+    ) / totalValue;
+
+  return {
+    equity: weightedEquity,
+    foreign: weightedForeign,
+  };
+}
+
 function getPolicyEquityExposure(policy) {
   const investPlans = Array.isArray(policy?.investPlans)
     ? policy.investPlans
@@ -257,6 +353,68 @@ function getPolicyForeignExposure(policy) {
   );
 
   return total / investPlans.length;
+}
+
+function getPolicyMainGroups(policy) {
+  const investPlans = Array.isArray(policy?.investPlans)
+    ? policy.investPlans
+    : [];
+
+  return investPlans.flatMap((plan) =>
+    Array.isArray(plan?.mainGroups) ? plan.mainGroups : []
+  );
+}
+
+function getPolicyText(policyOrProduct) {
+  return [
+    policyOrProduct?.productType,
+    policyOrProduct?.planName,
+    policyOrProduct?.details?.proposeName,
+    policyOrProduct?.details?.targetPlan,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+}
+
+function isPensionFundPolicy(policyOrProduct) {
+  const text = getPolicyText(policyOrProduct);
+
+  return (
+    text.includes("קרן פנסיה") ||
+    text.includes("פנסיה מקיפה") ||
+    text.includes("פנסיה כללית") ||
+    text.includes("פנסיה חדשה") ||
+    text.includes("פנסיה ותיקה")
+  );
+}
+
+function isLifeInsurancePolicy(policyOrProduct) {
+  if (isPensionFundPolicy(policyOrProduct)) return false;
+
+  const text = getPolicyText(policyOrProduct);
+
+  return (
+    text.includes("ביטוח חיים") ||
+    text.includes("ריסק") ||
+    text.toLowerCase().includes("risk")
+  );
+}
+
+function buildLifeCoverageDisplayAmount(products) {
+  const safeProducts = Array.isArray(products) ? products : [];
+
+  const actualLifeInsurance = safeProducts.reduce((sum, product) => {
+    if (!product.isLifeInsurance) return sum;
+    return sum + Number(product.coverage?.totalInsurance || 0);
+  }, 0);
+
+  const nonPensionAssets = safeProducts.reduce((sum, product) => {
+    if (product.isPensionFund) return sum;
+    return sum + Number(product.currentValue || 0);
+  }, 0);
+
+  return actualLifeInsurance + nonPensionAssets;
 }
 
 function createStableMemberId(name, index) {
