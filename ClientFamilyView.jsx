@@ -1,9 +1,9 @@
+// החלף את כל הקובץ
+
 function ClientFamilyView({ clientModel }) {
   const summary = clientModel.summary || {};
   const exposures = clientModel.exposures || {};
   const members = clientModel.members || [];
-  const managers = clientModel.distributions?.managers || [];
-  const products = clientModel.distributions?.products || [];
 
   const formatCurrency = (value) =>
     `₪${Number(value || 0).toLocaleString("en-US")}`;
@@ -11,294 +11,123 @@ function ClientFamilyView({ clientModel }) {
   const formatPercent = (value) => `${Number(value || 0).toFixed(1)}%`;
 
   return (
-    <div>
+    <div style={page}>
       <Header
-        title="דשבורד משפחתי"
-        subtitle="תמונה מאוחדת של כלל הנכסים, ההפקדות, התחזיות והחשיפות של התא המשפחתי."
+        title="דוח משפחתי"
+        subtitle="תמונה מאוחדת של כלל הנכסים והתחזיות"
       />
 
-      <Grid4>
-        <SummaryCard title="סך נכסים משפחתי" value={formatCurrency(summary.totalAssets)} />
-        <SummaryCard title="הפקדה חודשית" value={formatCurrency(summary.monthlyDeposits)} />
-        <SummaryCard title="צבירה צפויה" value={formatCurrency(summary.projectedLumpSumWithDeposits)} />
-        <SummaryCard title="קצבה צפויה" value={formatCurrency(summary.monthlyPensionWithDeposits)} />
-      </Grid4>
+      <div style={grid4}>
+        <KpiCard title="סך נכסים" value={formatCurrency(summary.totalAssets)} />
+        <KpiCard title="הפקדה חודשית" value={formatCurrency(summary.monthlyDeposits)} />
+        <KpiCard title="צבירה צפויה" value={formatCurrency(summary.projectedLumpSumWithDeposits)} />
+        <KpiCard title="קצבה צפויה" value={formatCurrency(summary.monthlyPensionWithDeposits)} />
+      </div>
 
-      <Grid2>
-        <SectionCard title="חשיפות משפחתיות">
-          <DataRow label="חשיפה למניות" value={formatPercent(exposures.equity)} />
-          <DataRow label='חשיפה לחו"ל' value={formatPercent(exposures.foreign)} />
+      <Section title="חשיפות">
+        <DataRow label="חשיפה למניות" value={formatPercent(exposures.equity)} />
+        <Bar value={exposures.equity} />
 
-          <div style={{ marginTop: 18 }}>
-            <SimpleBar label="מניות" value={exposures.equity} />
-            <SimpleBar label='חו"ל' value={exposures.foreign} />
-          </div>
-        </SectionCard>
+        <DataRow label='חשיפה לחו"ל' value={formatPercent(exposures.foreign)} />
+        <Bar value={exposures.foreign} />
+      </Section>
 
-        <SectionCard title="חלוקה לפי גופים מנהלים">
-          <DonutChart items={managers} />
-        </SectionCard>
-      </Grid2>
-
-      <SectionCard title="בני משפחה">
-        {members.length ? (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 16 }}>
-            {members.map((member) => (
-              <div key={member.id} style={memberCard}>
-                <div style={memberTitle}>{member.name}</div>
-                <DataRow label="סך נכסים" value={formatCurrency(member.summary.totalAssets)} />
-                <DataRow label="הפקדה חודשית" value={formatCurrency(member.summary.monthlyDeposits)} />
-                <DataRow label="קצבה צפויה" value={formatCurrency(member.summary.monthlyPensionWithDeposits)} />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <EmptyText>אין בני משפחה להצגה</EmptyText>
-        )}
-      </SectionCard>
-
-      <Grid2>
-        <SectionCard title="חלוקה לפי סוגי מוצרים">
-          <DonutChart items={products} />
-        </SectionCard>
-
-        <SectionCard title="רשימת גופים מנהלים">
-          {managers.length ? (
-            managers.map((item) => (
-              <DataRow
-                key={item.id}
-                label={item.name}
-                value={`${formatCurrency(item.value)} · ${formatPercent(item.percent)}`}
-              />
-            ))
-          ) : (
-            <EmptyText>אין נתוני גופים מנהלים להצגה</EmptyText>
-          )}
-        </SectionCard>
-      </Grid2>
+      <Section title="בני משפחה">
+        <div style={grid2}>
+          {members.map((m) => (
+            <div key={m.id} style={card}>
+              <div style={title}>{m.name}</div>
+              <DataRow label="נכסים" value={formatCurrency(m.summary.totalAssets)} />
+              <DataRow label="קצבה" value={formatCurrency(m.summary.monthlyPensionWithDeposits)} />
+            </div>
+          ))}
+        </div>
+      </Section>
     </div>
   );
 }
+
+const page = {
+  fontFamily: "Calibri",
+  fontSize: 12,
+  color: "#102A43",
+};
+
+const grid4 = {
+  display: "grid",
+  gridTemplateColumns: "repeat(4,1fr)",
+  gap: 16,
+};
+
+const grid2 = {
+  display: "grid",
+  gridTemplateColumns: "repeat(2,1fr)",
+  gap: 16,
+};
+
+const card = {
+  border: "1px solid #E2D1BF",
+  borderRadius: 18,
+  padding: 16,
+  background: "#fff",
+};
+
+const title = {
+  fontSize: 14,
+  fontWeight: 700,
+  color: "#00215D",
+  marginBottom: 10,
+};
 
 function Header({ title, subtitle }) {
   return (
-    <div style={header}>
-      <h1 style={{ margin: 0, fontSize: 32 }}>{title}</h1>
-      <div style={{ marginTop: 10, fontSize: 15, lineHeight: 1.8, opacity: 0.9 }}>
-        {subtitle}
-      </div>
+    <div style={{ marginBottom: 20 }}>
+      <h1 style={{ fontSize: 14 }}>{title}</h1>
+      <div style={{ fontSize: 12 }}>{subtitle}</div>
     </div>
   );
 }
 
-function Grid4({ children }) {
-  return <div style={grid4}>{children}</div>;
-}
-
-function Grid2({ children }) {
-  return <div style={grid2}>{children}</div>;
-}
-
-function SummaryCard({ title, value }) {
+function Section({ title, children }) {
   return (
-    <div style={summaryCard}>
-      <div style={summaryTitle}>{title}</div>
-      <div style={summaryValue}>{value}</div>
-    </div>
-  );
-}
-
-function SectionCard({ title, children }) {
-  return (
-    <section style={sectionCard}>
-      <h2 style={sectionTitle}>{title}</h2>
+    <div style={{ marginTop: 20 }}>
+      <h2 style={{ fontSize: 14 }}>{title}</h2>
       {children}
-    </section>
+    </div>
+  );
+}
+
+function KpiCard({ title, value }) {
+  return (
+    <div style={card}>
+      <div style={{ fontSize: 12 }}>{title}</div>
+      <div style={{ fontSize: 22, fontWeight: 700, color: "#00215D" }}>{value}</div>
+    </div>
   );
 }
 
 function DataRow({ label, value }) {
   return (
-    <div style={dataRow}>
-      <div style={{ color: "#627D98" }}>{label}</div>
-      <div style={{ color: "#00215D", fontWeight: 700 }}>{value}</div>
+    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+      <span>{label}</span>
+      <span style={{ fontWeight: 700 }}>{value}</span>
     </div>
   );
 }
 
-function EmptyText({ children }) {
-  return <div style={{ color: "#627D98", fontSize: 14 }}>{children}</div>;
-}
-
-function SimpleBar({ label, value }) {
-  const safe = Math.max(0, Math.min(100, Number(value || 0)));
-
+function Bar({ value }) {
   return (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-        <span style={{ color: "#627D98", fontSize: 13 }}>{label}</span>
-        <span style={{ color: "#00215D", fontWeight: 700 }}>{safe.toFixed(1)}%</span>
-      </div>
-      <div style={{ height: 14, borderRadius: 999, background: "#EAF1FB", overflow: "hidden" }}>
-        <div
-          style={{
-            width: `${safe}%`,
-            height: "100%",
-            borderRadius: 999,
-            background: "linear-gradient(90deg, #43B5D9, #1F77B4)",
-          }}
-        />
-      </div>
+    <div style={{ height: 10, background: "#EAF1FB", borderRadius: 999 }}>
+      <div
+        style={{
+          width: `${value}%`,
+          height: "100%",
+          background: "#00215D",
+          borderRadius: 999,
+        }}
+      />
     </div>
   );
 }
-
-function DonutChart({ items }) {
-  const safeItems = Array.isArray(items) ? items.filter((i) => Number(i.value || 0) > 0) : [];
-  const colors = ["#00215D", "#1F77B4", "#43B5D9", "#8F63C9", "#F0B43C", "#F07C8A", "#8FB996"];
-  const total = safeItems.reduce((sum, item) => sum + Number(item.value || 0), 0);
-
-  if (!safeItems.length || total <= 0) {
-    return <EmptyText>אין נתונים להצגה</EmptyText>;
-  }
-
-  let current = 0;
-  const segments = safeItems.map((item, index) => {
-    const value = Number(item.value || 0);
-    const start = current;
-    const percent = (value / total) * 100;
-    const end = start + percent;
-    current = end;
-
-    return {
-      ...item,
-      percent,
-      color: colors[index % colors.length],
-      start,
-      end,
-    };
-  });
-
-  const gradient = segments
-    .map((seg) => `${seg.color} ${seg.start}% ${seg.end}%`)
-    .join(", ");
-
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "180px 1fr", gap: 20, alignItems: "center" }}>
-      <div style={{ display: "flex", justifyContent: "center" }}>
-        <div
-          style={{
-            width: 170,
-            height: 170,
-            borderRadius: "50%",
-            background: `conic-gradient(${gradient})`,
-            position: "relative",
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              inset: 34,
-              background: "#fff",
-              borderRadius: "50%",
-              border: "1px solid #EEE4D8",
-            }}
-          />
-        </div>
-      </div>
-
-      <div>
-        {segments.map((seg) => (
-          <div key={seg.id || seg.name} style={{ display: "grid", gridTemplateColumns: "12px 1fr auto", gap: 8, alignItems: "center", marginBottom: 10 }}>
-            <span style={{ width: 12, height: 12, borderRadius: "50%", background: seg.color }} />
-            <span style={{ color: "#102A43", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {seg.name}
-            </span>
-            <span style={{ color: "#00215D", fontWeight: 700 }}>{seg.percent.toFixed(1)}%</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-const header = {
-  background: "linear-gradient(135deg, #0D347A, #00215D)",
-  color: "#fff",
-  borderRadius: 24,
-  padding: 28,
-  marginBottom: 22,
-};
-
-const grid4 = {
-  display: "grid",
-  gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-  gap: 16,
-  marginBottom: 18,
-};
-
-const grid2 = {
-  display: "grid",
-  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-  gap: 16,
-  marginBottom: 18,
-};
-
-const summaryCard = {
-  background: "#ffffff",
-  border: "1px solid #DCCDBA",
-  borderRadius: 18,
-  padding: 18,
-  minHeight: 120,
-};
-
-const summaryTitle = {
-  fontSize: 13,
-  color: "#627D98",
-  marginBottom: 8,
-};
-
-const summaryValue = {
-  fontSize: 26,
-  fontWeight: 700,
-  color: "#00215D",
-};
-
-const sectionCard = {
-  background: "#ffffff",
-  border: "1px solid #DCCDBA",
-  borderRadius: 18,
-  padding: 20,
-  marginBottom: 18,
-};
-
-const sectionTitle = {
-  marginTop: 0,
-  color: "#00215D",
-  fontSize: 18,
-};
-
-const dataRow = {
-  display: "flex",
-  justifyContent: "space-between",
-  gap: 12,
-  padding: "10px 0",
-  borderBottom: "1px solid #EEE4D8",
-  fontSize: 14,
-};
-
-const memberCard = {
-  border: "1px solid #EEE4D8",
-  borderRadius: 16,
-  padding: 16,
-  background: "#FCFBF8",
-};
-
-const memberTitle = {
-  fontSize: 18,
-  fontWeight: 700,
-  color: "#00215D",
-  marginBottom: 10,
-};
 
 export default ClientFamilyView;
