@@ -34,8 +34,7 @@ export default function ReportPage({
   const formatCurrency = (value) =>
     `₪${Number(value || 0).toLocaleString("en-US")}`;
 
-  const formatPercentLabel = (value) =>
-    `${Math.round(Number(value || 0))}%`;
+  const formatPercentLabel = (value) => `${Math.round(Number(value || 0))}%`;
 
   const formatDate = (value) => {
     if (!value) return "—";
@@ -61,7 +60,9 @@ export default function ReportPage({
         .map((loan, index) => ({
           id:
             loan.id ||
-            `${loan.firstName || ""}_${loan.familyName || ""}_${loan.endDate || ""}_${index}`,
+            `${loan.firstName || ""}_${loan.familyName || ""}_${
+              loan.endDate || ""
+            }_${index}`,
           firstName: loan.firstName || "",
           familyName: loan.familyName || "",
           amount: Number(loan.amount || 0),
@@ -161,24 +162,36 @@ export default function ReportPage({
       ? "חשיפה בינונית"
       : "חשיפה גבוהה";
 
-  const pageBg = "#F7F5F1";
+  const pageBg = "#F9F7F3";
   const surface = "#FFFFFF";
   const surfaceAlt = "#FCFBF8";
-  const border = "#DCCDBA";
+  const border = "#E2D1BF";
   const divider = "#EEE4D8";
   const text = "#102A43";
   const textSoft = "#627D98";
-  const title = "#0D347A";
+  const navy = "#00215D";
+  const accent = "#FF2756";
   const blue = "#1F77B4";
   const cyan = "#43B5D9";
   const purple = "#8F63C9";
-  const pink = "#F07C8A";
+  const pink = "#FF2756";
   const gold = "#F0B43C";
-  const navy = "#00215D";
   const mutedBar = "#C7D1E2";
   const softBlue = "#EAF1FB";
   const buttonBorder = "#D9DDE8";
-  const actionBlue = "#4F66E8";
+
+  const brandChartColors = [
+    navy,
+    accent,
+    blue,
+    cyan,
+    purple,
+    gold,
+    "#9FD0E6",
+    "#8FB996",
+    "#C08497",
+    "#7B8CBF",
+  ];
 
   const styles = {
     page: {
@@ -210,7 +223,7 @@ export default function ReportPage({
     sectionCard: {
       background: surface,
       border: `1px solid ${border}`,
-      borderRadius: "18px",
+      borderRadius: "20px",
       padding: "20px",
       boxShadow: "0 2px 10px rgba(16,42,67,0.05)",
       boxSizing: "border-box",
@@ -218,11 +231,11 @@ export default function ReportPage({
       pageBreakInside: "avoid",
     },
     heroHeader: {
-      background: `linear-gradient(135deg, ${title}, ${navy})`,
+      background: `linear-gradient(135deg, ${navy}, #001845)`,
       color: "#fff",
       borderRadius: "24px",
       padding: "24px 26px",
-      boxShadow: "0 8px 28px rgba(0,33,93,0.12)",
+      boxShadow: "0 8px 28px rgba(0,33,93,0.14)",
       display: "grid",
       gridTemplateColumns: "1fr 2fr 1fr",
       alignItems: "center",
@@ -282,7 +295,7 @@ export default function ReportPage({
     kpiCard: {
       background: surface,
       border: `1px solid ${border}`,
-      borderRadius: "18px",
+      borderRadius: "20px",
       padding: "20px",
       minHeight: "188px",
       display: "flex",
@@ -292,12 +305,13 @@ export default function ReportPage({
       boxSizing: "border-box",
       breakInside: "avoid",
       pageBreakInside: "avoid",
+      transition: "all 0.2s ease",
     },
     kpiIconWrap: {
       width: "74px",
       height: "74px",
       borderRadius: "22px",
-      background: "#F3F5F9",
+      background: "#F4F7FB",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -330,7 +344,7 @@ export default function ReportPage({
     donutCard: {
       background: surface,
       border: `1px solid ${border}`,
-      borderRadius: "18px",
+      borderRadius: "20px",
       padding: "18px",
       minHeight: "188px",
       boxShadow: "0 2px 10px rgba(16,42,67,0.05)",
@@ -366,7 +380,7 @@ export default function ReportPage({
     compareCard: {
       background: surface,
       border: `1px solid ${border}`,
-      borderRadius: "18px",
+      borderRadius: "20px",
       padding: "20px",
       minHeight: "210px",
       boxShadow: "0 2px 10px rgba(16,42,67,0.05)",
@@ -425,7 +439,7 @@ export default function ReportPage({
     compareFillPrimary: {
       height: "100%",
       borderRadius: "999px",
-      background: `linear-gradient(90deg, ${cyan}, ${blue})`,
+      background: `linear-gradient(90deg, ${accent}, ${navy})`,
     },
     compareFillMuted: {
       height: "100%",
@@ -441,7 +455,7 @@ export default function ReportPage({
     equityCard: {
       background: surface,
       border: `1px solid ${border}`,
-      borderRadius: "18px",
+      borderRadius: "20px",
       padding: "20px",
       minHeight: "210px",
       boxShadow: "0 2px 10px rgba(16,42,67,0.05)",
@@ -554,7 +568,7 @@ export default function ReportPage({
     memberCard: {
       background: surface,
       border: `1px solid ${border}`,
-      borderRadius: "18px",
+      borderRadius: "20px",
       padding: "18px",
       boxShadow: "0 2px 10px rgba(16,42,67,0.05)",
       boxSizing: "border-box",
@@ -822,7 +836,9 @@ export default function ReportPage({
   };
 
   if (!reportData || !reportData.family) {
-    return <div style={{ padding: "40px", direction: "rtl" }}>טוען נתונים...</div>;
+    return (
+      <div style={{ padding: "40px", direction: "rtl" }}>טוען נתונים...</div>
+    );
   }
 
   return (
@@ -860,46 +876,76 @@ export default function ReportPage({
 
           .action-button {
             padding: 12px 18px;
+            min-height: 42px;
             border-radius: 12px;
             border: 1px solid ${buttonBorder};
             background: #ffffff;
             color: #102A43;
-            font-weight: 700;
+            font-weight: 800;
             font-family: Calibri, Arial, sans-serif;
-            font-size: 12px;
+            font-size: 13px;
             cursor: pointer;
             transition: all 0.18s ease;
             min-width: 160px;
+            white-space: nowrap;
           }
 
           .action-button:hover {
-            border-color: ${actionBlue};
-            color: ${actionBlue};
+            border-color: ${navy};
+            color: ${navy};
+            transform: translateY(-1px);
           }
 
           .action-button:active {
-            background: ${actionBlue};
-            border-color: ${actionBlue};
+            transform: translateY(0);
+          }
+
+          .action-button.primary {
+            border-color: ${navy};
+            background: ${navy};
+            color: #ffffff;
+            box-shadow: 0 6px 14px rgba(0, 33, 93, 0.16);
+          }
+
+          .action-button.primary:hover {
+            border-color: #001845;
+            background: #001845;
+            color: #ffffff;
+          }
+
+          .action-button.accent {
+            border-color: ${accent};
+            background: ${accent};
+            color: #ffffff;
+            box-shadow: 0 6px 14px rgba(255, 39, 86, 0.16);
+          }
+
+          .action-button.accent:hover {
+            border-color: #e61f4d;
+            background: #e61f4d;
             color: #ffffff;
           }
 
           .action-button.danger {
-            color: #d14343;
-            border-color: #efb1b1;
+            background: #ffffff;
+            color: ${accent};
+            border-color: ${accent};
           }
 
           .action-button.danger:hover {
-            border-color: ${actionBlue};
-            color: ${actionBlue};
-          }
-
-          .action-button.primary-outline {
-            color: #102A43;
+            background: #fff0f3;
+            border-color: ${accent};
+            color: ${accent};
           }
 
           .action-button:focus-visible {
-            outline: 2px solid rgba(79, 102, 232, 0.25);
+            outline: 2px solid rgba(0, 33, 93, 0.22);
             outline-offset: 2px;
+          }
+
+          .kpi-card-hover:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 18px rgba(16,42,67,0.08) !important;
           }
 
           @media print {
@@ -1024,14 +1070,11 @@ export default function ReportPage({
 
       <div style={styles.page}>
         <div className="no-print" style={styles.actionsBar}>
-          <button onClick={onBack} className="action-button primary-outline">
+          <button onClick={onBack} className="action-button">
             חזרה למסך העלאה
           </button>
 
-          <button
-            onClick={onOpenClientDashboard}
-            className="action-button primary-outline"
-          >
+          <button onClick={onOpenClientDashboard} className="action-button accent">
             פתח תצוגת לקוח
           </button>
 
@@ -1039,13 +1082,16 @@ export default function ReportPage({
             איפוס מלא
           </button>
 
-          <button onClick={handleExportPdf} className="action-button primary-outline">
+          <button onClick={handleExportPdf} className="action-button primary">
             ייצוא ל־PDF
           </button>
         </div>
 
         <div style={styles.container}>
-          <section className="print-section responsive-hero avoid-break" style={styles.heroHeader}>
+          <section
+            className="print-section responsive-hero avoid-break"
+            style={styles.heroHeader}
+          >
             <div className="responsive-hero-meta" style={styles.heroMeta}>
               <div style={styles.heroMetaLabel}>תאריך עדכון</div>
               <div style={styles.heroMetaValue}>{family.lastUpdated || "—"}</div>
@@ -1056,9 +1102,8 @@ export default function ReportPage({
               <h1 style={styles.heroTitle}>דוח פנסיוני משפחתי מאוחד</h1>
               <div style={styles.heroSubtitle}>
                 ריכזנו עבורך תמונת מצב משפחתית אחת הכוללת את כלל הנכסים
-                הפנסיוניים, תחזית פרישה, פיזור בין מוצרים וגופים מנהלים,
-                חשיפה מנייתית, הלוואות, כיסויים ומידע מרכזי לכל אחד מבני
-                המשפחה.
+                הפנסיוניים, תחזית פרישה, פיזור בין מוצרים וגופים מנהלים, חשיפה
+                מנייתית, הלוואות, כיסויים ומידע מרכזי לכל אחד מבני המשפחה.
               </div>
             </div>
 
@@ -1067,7 +1112,10 @@ export default function ReportPage({
             </div>
           </section>
 
-          <section className="print-section responsive-grid-4 avoid-break" style={styles.topGrid}>
+          <section
+            className="print-section responsive-grid-4 avoid-break"
+            style={styles.topGrid}
+          >
             <KpiCard
               styles={styles}
               icon={<GiftIcon />}
@@ -1088,7 +1136,7 @@ export default function ReportPage({
               title="חלוקה לפי מוצרים"
               subtitle="התפלגות הנכסים בין סוגי החיסכון הקיימים בתיק."
               items={products}
-              colors={[blue, cyan, purple, pink, gold, "#9FD0E6"]}
+              colors={brandChartColors}
               styles={styles}
               formatCurrency={formatCurrency}
             />
@@ -1097,13 +1145,16 @@ export default function ReportPage({
               title="חלוקה לפי גופים מנהלים"
               subtitle="התפלגות הניהול בין החברות והגופים המנהלים."
               items={managers}
-              colors={[navy, blue, purple, gold, pink, "#9FD0E6"]}
+              colors={brandChartColors}
               styles={styles}
               formatCurrency={formatCurrency}
             />
           </section>
 
-          <section className="print-section responsive-grid-2 avoid-break" style={styles.compareGrid}>
+          <section
+            className="print-section responsive-grid-2 avoid-break"
+            style={styles.compareGrid}
+          >
             <ComparisonChartCard
               styles={styles}
               title="צבירה צפויה בגיל פרישה"
@@ -1119,8 +1170,14 @@ export default function ReportPage({
             />
           </section>
 
-          <section className="print-section responsive-lower-two" style={styles.lowerTwoGrid}>
-            <section className="foreign-exposure-print avoid-break" style={styles.sectionCard}>
+          <section
+            className="print-section responsive-lower-two"
+            style={styles.lowerTwoGrid}
+          >
+            <section
+              className="foreign-exposure-print avoid-break"
+              style={styles.sectionCard}
+            >
               <div style={styles.sectionHeader}>
                 <div style={styles.titleWithIcon}>
                   <span>🌍</span>
@@ -1139,7 +1196,7 @@ export default function ReportPage({
                   weightedForeignExposure
                 )}`}
                 items={foreignExposureAllocation}
-                colors={[purple, gold]}
+                colors={[accent, gold]}
                 styles={styles}
               />
             </section>
@@ -1153,7 +1210,8 @@ export default function ReportPage({
               </div>
 
               <div style={styles.explanation}>
-                המדד מחושב על בסיס משקל המסלולים בתיק ואחוז המניות המשוער בכל מסלול.
+                המדד מחושב על בסיס משקל המסלולים בתיק ואחוז המניות המשוער בכל
+                מסלול.
               </div>
 
               <div style={styles.equityValueWrap}>
@@ -1167,8 +1225,14 @@ export default function ReportPage({
             </section>
           </section>
 
-          <section className="print-section responsive-bottom-grid" style={styles.bottomGrid}>
-            <section className="main-group-print avoid-break" style={styles.sectionCard}>
+          <section
+            className="print-section responsive-bottom-grid"
+            style={styles.bottomGrid}
+          >
+            <section
+              className="main-group-print avoid-break"
+              style={styles.sectionCard}
+            >
               <div style={styles.sectionHeader}>
                 <div style={styles.titleWithIcon}>
                   <span>🥧</span>
@@ -1177,30 +1241,22 @@ export default function ReportPage({
               </div>
 
               <div style={styles.explanation}>
-                התרשים מציג חלוקה משוקללת לפי צבירה של הקטגוריות הראשיות
-                בכלל המוצרים של שני הלקוחות.
+                התרשים מציג חלוקה משוקללת לפי צבירה של הקטגוריות הראשיות בכלל
+                המוצרים של שני הלקוחות.
               </div>
 
               <DonutBreakdownCard
                 items={mainGroupAllocation}
                 styles={styles}
                 formatCurrency={formatCurrency}
-                colors={[
-                  navy,
-                  blue,
-                  cyan,
-                  purple,
-                  pink,
-                  gold,
-                  "#9FD0E6",
-                  "#8FB996",
-                  "#C08497",
-                  "#7B8CBF",
-                ]}
+                colors={brandChartColors}
               />
             </section>
 
-            <section className="summary-box-print avoid-break" style={styles.sectionCard}>
+            <section
+              className="summary-box-print avoid-break"
+              style={styles.sectionCard}
+            >
               <div style={styles.sectionHeader}>
                 <div style={styles.titleWithIcon}>
                   <span>🧾</span>
@@ -1251,7 +1307,10 @@ export default function ReportPage({
             </section>
           </section>
 
-          <section className="print-section members-section force-new-page-print" style={styles.sectionCard}>
+          <section
+            className="print-section members-section force-new-page-print"
+            style={styles.sectionCard}
+          >
             <h2 style={styles.h2}>פירוט לפי בני משפחה</h2>
             <div style={styles.explanation}>
               מוצגת תמונת מצב אישית לכל אחד מבני המשפחה, כולל קצבה, סכום חד
@@ -1260,7 +1319,11 @@ export default function ReportPage({
 
             <div className="responsive-members-grid" style={styles.membersGrid}>
               {members.map((member) => (
-                <div key={member.name} className="member-card-print avoid-break" style={styles.memberCard}>
+                <div
+                  key={member.name}
+                  className="member-card-print avoid-break"
+                  style={styles.memberCard}
+                >
                   <div style={styles.memberTop}>
                     <div>
                       <div style={styles.memberName}>{member.name}</div>
@@ -1278,7 +1341,10 @@ export default function ReportPage({
                     </div>
                   </div>
 
-                  <div className="responsive-mini-grid" style={styles.compareMiniGrid}>
+                  <div
+                    className="responsive-mini-grid"
+                    style={styles.compareMiniGrid}
+                  >
                     <div style={styles.compareMiniCard}>
                       <div style={styles.compareMiniTitle}>קצבה חודשית צפויה</div>
                       <div style={styles.compareMiniInner}>
@@ -1322,7 +1388,10 @@ export default function ReportPage({
                     </div>
                   </div>
 
-                  <div className="responsive-insurance-grid" style={styles.insuranceGrid}>
+                  <div
+                    className="responsive-insurance-grid"
+                    style={styles.insuranceGrid}
+                  >
                     <div style={styles.insuranceCard}>
                       <div style={styles.insuranceLabel}>🛡️ ביטוח חיים</div>
                       <div style={styles.insuranceValue}>
@@ -1333,7 +1402,8 @@ export default function ReportPage({
                     <div style={styles.insuranceCard}>
                       <div style={styles.insuranceLabel}>🧍 אובדן כושר עבודה</div>
                       <div style={styles.insuranceValue}>
-                        {formatCurrency(member.disabilityValue)} ({member.disabilityPercent}%)
+                        {formatCurrency(member.disabilityValue)} (
+                        {member.disabilityPercent}%)
                       </div>
                     </div>
                   </div>
@@ -1346,7 +1416,10 @@ export default function ReportPage({
             </div>
           </section>
 
-          <section className="print-section loans-section force-new-page-print" style={styles.loansBenefitsGrid}>
+          <section
+            className="print-section loans-section force-new-page-print"
+            style={styles.loansBenefitsGrid}
+          >
             <section style={styles.sectionCard}>
               <div style={styles.sectionHeader}>
                 <div style={styles.titleWithIcon}>
@@ -1379,9 +1452,14 @@ export default function ReportPage({
                       >
                         <div style={styles.loanPersonName}>{personName}</div>
 
-                        <div className="responsive-loan-summary" style={styles.loanSummaryRow}>
+                        <div
+                          className="responsive-loan-summary"
+                          style={styles.loanSummaryRow}
+                        >
                           <div style={styles.loanSummaryCard}>
-                            <div style={styles.loanSummaryLabel}>סך סכום הלוואות</div>
+                            <div style={styles.loanSummaryLabel}>
+                              סך סכום הלוואות
+                            </div>
                             <div style={styles.loanSummaryValue}>
                               {formatCurrency(totalAmount)}
                             </div>
@@ -1395,7 +1473,10 @@ export default function ReportPage({
                           </div>
                         </div>
 
-                        <div className="print-table-block avoid-break" style={styles.loanTableWrap}>
+                        <div
+                          className="print-table-block avoid-break"
+                          style={styles.loanTableWrap}
+                        >
                           <table style={styles.loanTable}>
                             <thead>
                               <tr>
@@ -1408,10 +1489,18 @@ export default function ReportPage({
                             <tbody>
                               {personLoans.map((loan) => (
                                 <tr key={loan.id}>
-                                  <td style={styles.loanTd}>{formatCurrency(loan.amount)}</td>
-                                  <td style={styles.loanTd}>{loan.repaymentFrequency || "—"}</td>
-                                  <td style={styles.loanTd}>{formatCurrency(loan.balance)}</td>
-                                  <td style={styles.loanTd}>{formatDate(loan.endDate)}</td>
+                                  <td style={styles.loanTd}>
+                                    {formatCurrency(loan.amount)}
+                                  </td>
+                                  <td style={styles.loanTd}>
+                                    {loan.repaymentFrequency || "—"}
+                                  </td>
+                                  <td style={styles.loanTd}>
+                                    {formatCurrency(loan.balance)}
+                                  </td>
+                                  <td style={styles.loanTd}>
+                                    {formatDate(loan.endDate)}
+                                  </td>
                                 </tr>
                               ))}
                             </tbody>
@@ -1425,7 +1514,10 @@ export default function ReportPage({
                     className="print-table-block loan-group-print avoid-break"
                     style={{ ...styles.loanGroup, marginTop: "16px" }}
                   >
-                    <div className="responsive-loan-summary" style={styles.loanSummaryRow}>
+                    <div
+                      className="responsive-loan-summary"
+                      style={styles.loanSummaryRow}
+                    >
                       <div style={styles.loanSummaryCard}>
                         <div style={styles.loanSummaryLabel}>סה"כ הלוואות</div>
                         <div style={styles.loanSummaryValue}>
@@ -1454,7 +1546,10 @@ export default function ReportPage({
             </section>
           </section>
 
-          <section className="print-section recommendations-section recommendations-print avoid-break" style={styles.sectionCard}>
+          <section
+            className="print-section recommendations-section recommendations-print avoid-break"
+            style={styles.sectionCard}
+          >
             <div style={styles.sectionHeader}>
               <div style={styles.titleWithIcon}>
                 <span>📝</span>
@@ -1495,7 +1590,7 @@ export default function ReportPage({
 
 function KpiCard({ styles, icon, title, value, subtext }) {
   return (
-    <div style={styles.kpiCard}>
+    <div style={styles.kpiCard} className="kpi-card-hover">
       <div
         className="responsive-kpi-inner"
         style={{
@@ -1558,7 +1653,7 @@ function EquityBarModern({ value }) {
           height: "16px",
           borderRadius: "999px",
           background:
-            "linear-gradient(90deg, #E6F7EF 0%, #EAF1FB 40%, #D8E8F8 75%, #B9D5EF 100%)",
+            "linear-gradient(90deg, #F9F7F3 0%, #EAF1FB 45%, #E2D1BF 75%, #00215D 100%)",
           overflow: "visible",
         }}
       >
@@ -1567,8 +1662,8 @@ function EquityBarModern({ value }) {
             width: `${safeValue}%`,
             height: "100%",
             borderRadius: "999px",
-            background: "linear-gradient(90deg, #43B5D9 0%, #1F77B4 100%)",
-            boxShadow: "0 1px 3px rgba(31,119,180,0.25)",
+            background: "linear-gradient(90deg, #FF2756 0%, #00215D 100%)",
+            boxShadow: "0 1px 3px rgba(0,33,93,0.25)",
           }}
         />
 
@@ -1580,9 +1675,9 @@ function EquityBarModern({ value }) {
             width: "24px",
             height: "24px",
             borderRadius: "50%",
-            background: "#0D347A",
+            background: "#00215D",
             border: "3px solid #fff",
-            boxShadow: "0 4px 12px rgba(13,52,122,0.18)",
+            boxShadow: "0 4px 12px rgba(0,33,93,0.18)",
           }}
         />
       </div>
@@ -1792,7 +1887,14 @@ function DonutBreakdownCard({ items, styles, formatCurrency, colors }) {
         </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+          width: "100%",
+        }}
+      >
         {segments.length ? (
           segments.map((seg, index) => (
             <div
@@ -1873,7 +1975,8 @@ function DonutBreakdownCard({ items, styles, formatCurrency, colors }) {
 
 function PercentDonutCard({ title, subtitle, items, colors, styles }) {
   const safeItems = Array.isArray(items) ? items : [];
-  const total = safeItems.reduce((sum, item) => sum + (item.value || 0), 0) || 100;
+  const total =
+    safeItems.reduce((sum, item) => sum + (item.value || 0), 0) || 100;
 
   let current = 0;
   const segments = safeItems.map((item, index) => {
@@ -1897,9 +2000,19 @@ function PercentDonutCard({ title, subtitle, items, colors, styles }) {
       : "#D7DEE7 0% 100%";
 
   return (
-    <section style={{ ...styles.donutCard, minHeight: "auto", boxShadow: "none", padding: 0, border: "none" }}>
+    <section
+      style={{
+        ...styles.donutCard,
+        minHeight: "auto",
+        boxShadow: "none",
+        padding: 0,
+        border: "none",
+      }}
+    >
       <h3 style={styles.donutTitle}>{title}</h3>
-      <div style={{ ...styles.smallText, marginTop: "6px", marginBottom: "14px" }}>{subtitle}</div>
+      <div style={{ ...styles.smallText, marginTop: "6px", marginBottom: "14px" }}>
+        {subtitle}
+      </div>
 
       <div style={styles.donutLayout}>
         <div style={{ display: "flex", justifyContent: "center" }}>
@@ -2003,7 +2116,7 @@ function ZviranLogo({ light = false }) {
             position: "absolute",
             width: "24px",
             height: "8px",
-            background: "#ff4b78",
+            background: "#FF2756",
             borderRadius: "999px",
             top: "15px",
             left: "16px",
@@ -2055,13 +2168,13 @@ function DepositIcon() {
     <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
       <path
         d="M12 3V14"
-        stroke="#3EAF63"
+        stroke="#FF2756"
         strokeWidth="2.2"
         strokeLinecap="round"
       />
       <path
         d="M8.5 6.5L12 3L15.5 6.5"
-        stroke="#3EAF63"
+        stroke="#FF2756"
         strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -2072,7 +2185,7 @@ function DepositIcon() {
         width="16"
         height="6"
         rx="2"
-        stroke="#3EAF63"
+        stroke="#FF2756"
         strokeWidth="2.2"
       />
     </svg>
@@ -2082,11 +2195,27 @@ function DepositIcon() {
 function GiftIcon() {
   return (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-      <rect x="4" y="7" width="16" height="13" rx="2" stroke="#00215D" strokeWidth="2" />
+      <rect
+        x="4"
+        y="7"
+        width="16"
+        height="13"
+        rx="2"
+        stroke="#00215D"
+        strokeWidth="2"
+      />
       <path d="M12 7V20" stroke="#00215D" strokeWidth="2" />
       <path d="M4 11H20" stroke="#00215D" strokeWidth="2" />
-      <path d="M9 7C7.8 7 7 6.2 7 5C7 3.8 7.8 3 9 3C10.8 3 12 5 12 7" stroke="#00215D" strokeWidth="2" />
-      <path d="M15 7C16.2 7 17 6.2 17 5C17 3.8 16.2 3 15 3C13.2 3 12 5 12 7" stroke="#00215D" strokeWidth="2" />
+      <path
+        d="M9 7C7.8 7 7 6.2 7 5C7 3.8 7.8 3 9 3C10.8 3 12 5 12 7"
+        stroke="#00215D"
+        strokeWidth="2"
+      />
+      <path
+        d="M15 7C16.2 7 17 6.2 17 5C17 3.8 16.2 3 15 3C13.2 3 12 5 12 7"
+        stroke="#00215D"
+        strokeWidth="2"
+      />
     </svg>
   );
 }
