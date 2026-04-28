@@ -1824,7 +1824,7 @@ function DonutBreakdownCard({
   const percentText = (value) => {
     const num = Number(value || 0);
     if (num < 0.05) return "0.0%";
-    return `${num.toFixed(1)}%`;
+    return `${Math.round(num)}%`;
   };
 
   return (
