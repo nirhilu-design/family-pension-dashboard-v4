@@ -32,7 +32,7 @@ export default function ReportPage({
   };
 
   const formatCurrency = (value) =>
-    `₪${Number(value || 0).toLocaleString("en-US")}`;
+    `₪${Math.round(Number(value || 0)).toLocaleString("en-US")}`;
 
   const formatPercentLabel = (value) => `${Math.round(Number(value || 0))}%`;
 
