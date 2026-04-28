@@ -174,7 +174,6 @@ export default function ReportPage({
   const blue = "#1F77B4";
   const cyan = "#43B5D9";
   const purple = "#8F63C9";
-  const pink = "#FF2756";
   const gold = "#F0B43C";
   const mutedBar = "#C7D1E2";
   const softBlue = "#EAF1FB";
@@ -188,9 +187,9 @@ export default function ReportPage({
     purple,
     gold,
     "#9FD0E6",
-    "#8FB996",
-    "#C08497",
-    "#7B8CBF",
+    "#58BF78",
+    "#B79ADE",
+    "#A8B0BA",
   ];
 
   const styles = {
@@ -512,13 +511,13 @@ export default function ReportPage({
     },
     bottomGrid: {
       display: "grid",
-      gridTemplateColumns: "1.35fr 0.9fr",
+      gridTemplateColumns: "1fr",
       gap: "18px",
       alignItems: "start",
     },
     summaryStatsGrid: {
       display: "grid",
-      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+      gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
       gap: "12px",
       marginBottom: "14px",
     },
@@ -539,6 +538,11 @@ export default function ReportPage({
       fontSize: "18px",
       fontWeight: 700,
       color: navy,
+    },
+    simpleInfoGrid: {
+      display: "grid",
+      gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+      gap: "12px",
     },
     simpleInfoBox: {
       background: surfaceAlt,
@@ -1007,7 +1011,19 @@ export default function ReportPage({
             }
 
             .responsive-bottom-grid {
-              grid-template-columns: 1.35fr 0.9fr !important;
+              grid-template-columns: 1fr !important;
+            }
+
+            .main-breakdown-layout {
+              grid-template-columns: 0.95fr 1.05fr !important;
+            }
+
+            .summary-stats-print {
+              grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            }
+
+            .summary-info-print {
+              grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
             }
 
             .members-section {
@@ -1040,7 +1056,9 @@ export default function ReportPage({
             .responsive-bottom-grid,
             .responsive-members-grid,
             .responsive-loans-grid,
-            .responsive-lower-two {
+            .responsive-lower-two,
+            .main-breakdown-layout,
+            .summary-info-print {
               grid-template-columns: 1fr !important;
             }
 
@@ -1061,7 +1079,8 @@ export default function ReportPage({
             .responsive-insurance-grid,
             .responsive-loan-summary,
             .responsive-kpi-inner,
-            .responsive-grid-4 {
+            .responsive-grid-4,
+            .summary-stats-print {
               grid-template-columns: 1fr !important;
             }
           }
@@ -1233,19 +1252,9 @@ export default function ReportPage({
               className="main-group-print avoid-break"
               style={styles.sectionCard}
             >
-              <div style={styles.sectionHeader}>
-                <div style={styles.titleWithIcon}>
-                  <span>🥧</span>
-                  <h2 style={styles.h2}>חלוקה לפי אפיקים ראשיים</h2>
-                </div>
-              </div>
-
-              <div style={styles.explanation}>
-                התרשים מציג חלוקה משוקללת לפי צבירה של הקטגוריות הראשיות בכלל
-                המוצרים של שני הלקוחות.
-              </div>
-
               <DonutBreakdownCard
+                title="חלוקה עבור אפיקים ראשיים"
+                subtitle="התרשים מציג את חלוקת אפיקי ההשקעה בתיק ביחס לסך הנכסים."
                 items={mainGroupAllocation}
                 styles={styles}
                 formatCurrency={formatCurrency}
@@ -1264,7 +1273,7 @@ export default function ReportPage({
                 </div>
               </div>
 
-              <div style={styles.summaryStatsGrid}>
+              <div className="summary-stats-print" style={styles.summaryStatsGrid}>
                 <div style={styles.statCard}>
                   <div style={styles.statLabel}>מוצרים</div>
                   <div style={styles.statValue}>{products.length}</div>
@@ -1286,22 +1295,24 @@ export default function ReportPage({
                 </div>
               </div>
 
-              <div style={styles.simpleInfoBox}>
-                <div style={styles.infoLabel}>יחס הלוואות לנכסים</div>
-                <div style={styles.infoValue}>{loanRatioToAssets.toFixed(1)}%</div>
-              </div>
-
-              <div style={{ ...styles.simpleInfoBox, marginTop: "12px" }}>
-                <div style={styles.infoLabel}>קצבה חודשית צפויה</div>
-                <div style={styles.infoValue}>
-                  {formatCurrency(family.monthlyPensionWithDeposits)}
+              <div className="summary-info-print" style={styles.simpleInfoGrid}>
+                <div style={styles.simpleInfoBox}>
+                  <div style={styles.infoLabel}>יחס הלוואות לנכסים</div>
+                  <div style={styles.infoValue}>{loanRatioToAssets.toFixed(1)}%</div>
                 </div>
-              </div>
 
-              <div style={{ ...styles.simpleInfoBox, marginTop: "12px" }}>
-                <div style={styles.infoLabel}>צבירה צפויה בגיל פרישה</div>
-                <div style={styles.infoValue}>
-                  {formatCurrency(family.projectedLumpSumWithDeposits)}
+                <div style={styles.simpleInfoBox}>
+                  <div style={styles.infoLabel}>קצבה חודשית צפויה</div>
+                  <div style={styles.infoValue}>
+                    {formatCurrency(family.monthlyPensionWithDeposits)}
+                  </div>
+                </div>
+
+                <div style={styles.simpleInfoBox}>
+                  <div style={styles.infoLabel}>צבירה צפויה בגיל פרישה</div>
+                  <div style={styles.infoValue}>
+                    {formatCurrency(family.projectedLumpSumWithDeposits)}
+                  </div>
                 </div>
               </div>
             </section>
@@ -1824,13 +1835,29 @@ function DonutSummaryCard({
   );
 }
 
-function DonutBreakdownCard({ items, styles, formatCurrency, colors }) {
+function DonutBreakdownCard({
+  title = "חלוקה עבור אפיקים ראשיים",
+  subtitle = "התרשים מציג את חלוקת אפיקי ההשקעה בתיק ביחס לסך הנכסים.",
+  items,
+  formatCurrency,
+  colors,
+}) {
   const safeItems = Array.isArray(items) ? items : [];
-  const total = safeItems.reduce((sum, item) => sum + (item.value || 0), 0) || 1;
+  const cleanItems = safeItems
+    .map((item) => ({
+      ...item,
+      name: item.name || "ללא שם",
+      value: Number(item.value || 0),
+    }))
+    .filter((item) => item.value > 0)
+    .sort((a, b) => b.value - a.value);
+
+  const total = cleanItems.reduce((sum, item) => sum + item.value, 0);
+  const safeTotal = total || 1;
 
   let current = 0;
-  const segments = safeItems.map((item, index) => {
-    const percent = ((item.value || 0) / total) * 100;
+  const segments = cleanItems.map((item, index) => {
+    const percent = (item.value / safeTotal) * 100;
     const start = current;
     const end = current + percent;
     current = end;
@@ -1838,117 +1865,151 @@ function DonutBreakdownCard({ items, styles, formatCurrency, colors }) {
     return {
       ...item,
       percent,
-      color: colors[index % colors.length],
       start,
       end,
+      color: colors[index % colors.length],
     };
   });
 
-  const gradient =
-    segments.length > 0
-      ? segments.map((seg) => `${seg.color} ${seg.start}% ${seg.end}%`).join(", ")
-      : "#D7DEE7 0% 100%";
+  const gradient = segments.length
+    ? segments.map((seg) => `${seg.color} ${seg.start}% ${seg.end}%`).join(", ")
+    : "#D7DEE7 0% 100%";
+
+  const percentText = (value) => {
+    const num = Number(value || 0);
+    if (num < 0.05) return "0.0%";
+    return `${num.toFixed(1)}%`;
+  };
 
   return (
     <div
       style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "18px",
-        alignItems: "center",
+        width: "100%",
+        direction: "rtl",
       }}
     >
       <div
         style={{
           display: "flex",
-          justifyContent: "center",
-          width: "100%",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: "16px",
+          marginBottom: "22px",
         }}
       >
+        <div style={{ minWidth: 0 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              marginBottom: "6px",
+            }}
+          >
+            <span
+              style={{
+                width: "18px",
+                height: "18px",
+                borderRadius: "50%",
+                background: `conic-gradient(${colors[0]} 0 25%, ${colors[1]} 25% 50%, ${colors[2]} 50% 75%, ${colors[3]} 75% 100%)`,
+                display: "inline-block",
+              }}
+            />
+            <h2
+              style={{
+                margin: 0,
+                fontSize: "20px",
+                lineHeight: 1.25,
+                color: "#00215D",
+                fontWeight: 800,
+              }}
+            >
+              {title}
+            </h2>
+          </div>
+
+          <div
+            style={{
+              fontSize: "13px",
+              color: "#627D98",
+              lineHeight: 1.7,
+            }}
+          >
+            {subtitle}
+          </div>
+        </div>
+      </div>
+
+      {segments.length ? (
         <div
+          className="main-breakdown-layout"
           style={{
-            width: "220px",
-            height: "220px",
-            borderRadius: "50%",
-            background: `conic-gradient(${gradient})`,
-            position: "relative",
-            flexShrink: 0,
+            display: "grid",
+            gridTemplateColumns: "0.95fr 1.05fr",
+            gap: "28px",
+            alignItems: "center",
           }}
         >
           <div
             style={{
-              position: "absolute",
-              inset: "40px",
-              background: "#fff",
-              borderRadius: "50%",
-              border: "1px solid #E5D9CB",
+              display: "flex",
+              flexDirection: "column",
+              gap: "0",
+              minWidth: 0,
             }}
-          />
-        </div>
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "10px",
-          width: "100%",
-        }}
-      >
-        {segments.length ? (
-          segments.map((seg, index) => (
-            <div
-              key={`${seg.id || seg.name || "group"}-${index}`}
-              style={{
-                background: "#fff",
-                border: "1px solid #E5D9CB",
-                borderRadius: "14px",
-                padding: "12px",
-                breakInside: "avoid",
-                pageBreakInside: "avoid",
-              }}
-            >
+          >
+            {segments.map((seg, index) => (
               <div
+                key={`${seg.id || seg.name}-${index}`}
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "auto 1fr auto",
-                  gap: "10px",
+                  gridTemplateColumns: "72px 1fr 132px 14px",
+                  gap: "12px",
                   alignItems: "center",
+                  padding: "12px 0",
+                  borderBottom:
+                    index === segments.length - 1 ? "none" : "1px solid #E8E1D7",
+                  minHeight: "44px",
                 }}
               >
                 <div
                   style={{
-                    fontWeight: 700,
-                    color: "#00215D",
+                    color: "#102A43",
+                    fontWeight: 800,
                     fontSize: "14px",
-                    minWidth: "64px",
-                    textAlign: "right",
+                    textAlign: "left",
+                    direction: "ltr",
                   }}
                 >
-                  {seg.percent.toFixed(1)}%
+                  {percentText(seg.percent)}
                 </div>
 
-                <div style={{ minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontWeight: 700,
-                      color: "#00215D",
-                      fontSize: "14px",
-                      textAlign: "right",
-                    }}
-                  >
-                    {seg.name}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "12px",
-                      color: "#627D98",
-                      marginTop: "2px",
-                      textAlign: "right",
-                    }}
-                  >
-                    {formatCurrency(seg.value)}
-                  </div>
+                <div
+                  style={{
+                    color: "#102A43",
+                    fontWeight: 800,
+                    fontSize: "14px",
+                    textAlign: "right",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                  title={seg.name}
+                >
+                  {seg.name}
+                </div>
+
+                <div
+                  style={{
+                    color: "#102A43",
+                    fontWeight: 700,
+                    fontSize: "14px",
+                    textAlign: "right",
+                    direction: "ltr",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {formatCurrency(seg.value)}
                 </div>
 
                 <span
@@ -1958,17 +2019,116 @@ function DonutBreakdownCard({ items, styles, formatCurrency, colors }) {
                     borderRadius: "50%",
                     background: seg.color,
                     display: "inline-block",
+                    boxShadow: "0 1px 3px rgba(16,42,67,0.15)",
                   }}
                 />
               </div>
-            </div>
-          ))
-        ) : (
-          <div style={{ color: "#627D98", fontSize: "12px" }}>
-            אין נתוני אפיקים להצגה
+            ))}
           </div>
-        )}
-      </div>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              minWidth: 0,
+            }}
+          >
+            <div
+              style={{
+                width: "min(430px, 100%)",
+                aspectRatio: "1 / 1",
+                borderRadius: "50%",
+                background: `conic-gradient(${gradient})`,
+                position: "relative",
+                boxShadow:
+                  "inset 0 0 0 3px rgba(255,255,255,0.95), 0 12px 28px rgba(0,33,93,0.08)",
+              }}
+            >
+              {segments.map((seg, index) => {
+                const mid = seg.start + seg.percent / 2;
+                const angle = mid * 3.6 - 90;
+                const radius = 36;
+                const x = 50 + radius * Math.cos((angle * Math.PI) / 180);
+                const y = 50 + radius * Math.sin((angle * Math.PI) / 180);
+
+                if (seg.percent < 1) return null;
+
+                return (
+                  <div
+                    key={`label-${seg.id || seg.name}-${index}`}
+                    style={{
+                      position: "absolute",
+                      left: `${x}%`,
+                      top: `${y}%`,
+                      transform: "translate(-50%, -50%)",
+                      color: "#fff",
+                      fontWeight: 800,
+                      fontSize: seg.percent >= 7 ? "20px" : "16px",
+                      textShadow: "0 1px 5px rgba(0,0,0,0.22)",
+                      direction: "ltr",
+                      pointerEvents: "none",
+                    }}
+                  >
+                    {percentText(seg.percent)}
+                  </div>
+                );
+              })}
+
+              <div
+                style={{
+                  position: "absolute",
+                  inset: "27%",
+                  background: "#fff",
+                  borderRadius: "50%",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  textAlign: "center",
+                  boxShadow: "0 0 0 2px rgba(255,255,255,0.92)",
+                }}
+              >
+                <div
+                  style={{
+                    color: "#627D98",
+                    fontSize: "15px",
+                    fontWeight: 700,
+                    marginBottom: "8px",
+                  }}
+                >
+                  סה"כ נכסים
+                </div>
+
+                <div
+                  style={{
+                    color: "#00215D",
+                    fontSize: "28px",
+                    fontWeight: 900,
+                    lineHeight: 1.1,
+                    direction: "ltr",
+                  }}
+                >
+                  {formatCurrency(total)}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div
+          style={{
+            border: "1px dashed #E2D1BF",
+            borderRadius: "16px",
+            padding: "18px",
+            color: "#627D98",
+            fontSize: "12px",
+            background: "#FCFBF8",
+          }}
+        >
+          אין נתוני אפיקים להצגה
+        </div>
+      )}
     </div>
   );
 }
