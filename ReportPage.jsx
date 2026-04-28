@@ -1260,9 +1260,7 @@ export default function ReportPage({
                 formatCurrency={formatCurrency}
                 colors={brandChartColors}
               />
-            </section>
-
-            </section>
+          </section>
 
           <section
             className="print-section members-section force-new-page-print"
@@ -1685,7 +1683,6 @@ function DonutSummaryCard({
         items={cleanItems}
         colors={colors}
         formatCurrency={formatCurrency}
-        centerLabel="סה\"כ"
       />
     </section>
   );
@@ -1697,7 +1694,6 @@ function MiniDonutPanel({
   items,
   colors,
   formatCurrency,
-  centerLabel = "סה\"כ",
 }) {
   const cleanItems = Array.isArray(items) ? items : [];
   const total = cleanItems.reduce((sum, item) => sum + Number(item.value || 0), 0);
@@ -1878,8 +1874,8 @@ function DonutBreakdownCard({
 
   const percentText = (value) => {
     const num = Number(value || 0);
-    if (num < 0.05) return "0.0%";
-    return `${num.toFixed(1)}%`;
+    if (num < 0.5) return "0%";
+    return `${Math.round(num)}%`;
   };
 
   return (
@@ -2126,7 +2122,6 @@ function PercentDonutCard({ title, subtitle, items, colors, styles }) {
         items={cleanItems}
         colors={colors}
         formatCurrency={(value) => `${Math.round(Number(value || 0))}%`}
-        centerLabel="סה\"כ"
       />
     </section>
   );
