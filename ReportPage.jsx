@@ -32,7 +32,7 @@ export default function ReportPage({
   };
 
   const formatCurrency = (value) =>
-    `₪${Math.round(Number(value || 0)).toLocaleString("en-US")}`;
+    `₪${Number(value || 0).toLocaleString("en-US")}`;
 
   const formatPercentLabel = (value) => `${Math.round(Number(value || 0))}%`;
 
@@ -1823,8 +1823,8 @@ function DonutBreakdownCard({
 
   const percentText = (value) => {
     const num = Number(value || 0);
-    if (num < 0.5) return "0%";
-    return `${Math.round(num)}%`;
+    if (num < 0.05) return "0.0%";
+    return `${num.toFixed(1)}%`;
   };
 
   return (
