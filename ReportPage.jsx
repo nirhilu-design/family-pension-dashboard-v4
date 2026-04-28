@@ -1262,61 +1262,7 @@ export default function ReportPage({
               />
             </section>
 
-            <section
-              className="summary-box-print avoid-break"
-              style={styles.sectionCard}
-            >
-              <div style={styles.sectionHeader}>
-                <div style={styles.titleWithIcon}>
-                  <span>🧾</span>
-                  <h2 style={styles.h2}>סיכום מהיר</h2>
-                </div>
-              </div>
-
-              <div className="summary-stats-print" style={styles.summaryStatsGrid}>
-                <div style={styles.statCard}>
-                  <div style={styles.statLabel}>מוצרים</div>
-                  <div style={styles.statValue}>{products.length}</div>
-                </div>
-
-                <div style={styles.statCard}>
-                  <div style={styles.statLabel}>גופים מנהלים</div>
-                  <div style={styles.statValue}>{managers.length}</div>
-                </div>
-
-                <div style={styles.statCard}>
-                  <div style={styles.statLabel}>בני משפחה</div>
-                  <div style={styles.statValue}>{members.length}</div>
-                </div>
-
-                <div style={styles.statCard}>
-                  <div style={styles.statLabel}>אפיקים ראשיים</div>
-                  <div style={styles.statValue}>{mainGroupAllocation.length}</div>
-                </div>
-              </div>
-
-              <div className="summary-info-print" style={styles.simpleInfoGrid}>
-                <div style={styles.simpleInfoBox}>
-                  <div style={styles.infoLabel}>יחס הלוואות לנכסים</div>
-                  <div style={styles.infoValue}>{loanRatioToAssets.toFixed(1)}%</div>
-                </div>
-
-                <div style={styles.simpleInfoBox}>
-                  <div style={styles.infoLabel}>קצבה חודשית צפויה</div>
-                  <div style={styles.infoValue}>
-                    {formatCurrency(family.monthlyPensionWithDeposits)}
-                  </div>
-                </div>
-
-                <div style={styles.simpleInfoBox}>
-                  <div style={styles.infoLabel}>צבירה צפויה בגיל פרישה</div>
-                  <div style={styles.infoValue}>
-                    {formatCurrency(family.projectedLumpSumWithDeposits)}
-                  </div>
-                </div>
-              </div>
             </section>
-          </section>
 
           <section
             className="print-section members-section force-new-page-print"
@@ -1882,12 +1828,7 @@ function DonutBreakdownCard({
   };
 
   return (
-    <div
-      style={{
-        width: "100%",
-        direction: "rtl",
-      }}
-    >
+    <div style={{ width: "100%", direction: "rtl" }}>
       <div
         style={{
           display: "flex",
@@ -1928,13 +1869,7 @@ function DonutBreakdownCard({
             </h2>
           </div>
 
-          <div
-            style={{
-              fontSize: "13px",
-              color: "#627D98",
-              lineHeight: 1.7,
-            }}
-          >
+          <div style={{ fontSize: "13px", color: "#627D98", lineHeight: 1.7 }}>
             {subtitle}
           </div>
         </div>
@@ -1950,14 +1885,7 @@ function DonutBreakdownCard({
             alignItems: "center",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "0",
-              minWidth: 0,
-            }}
-          >
+          <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
             {segments.map((seg, index) => (
               <div
                 key={`${seg.id || seg.name}-${index}`}
@@ -2036,44 +1964,26 @@ function DonutBreakdownCard({
           >
             <div
               style={{
-                width: "min(430px, 100%)",
+                width: "min(410px, 100%)",
                 aspectRatio: "1 / 1",
                 borderRadius: "50%",
                 background: `conic-gradient(${gradient})`,
                 position: "relative",
                 boxShadow:
-                  "inset 0 0 0 3px rgba(255,255,255,0.95), 0 12px 28px rgba(0,33,93,0.08)",
+                  "inset 0 0 0 3px rgba(255,255,255,0.95), inset 0 -12px 18px rgba(0,0,0,0.14), 0 10px 22px rgba(0,33,93,0.12)",
+                transform: "perspective(900px) rotateX(4deg)",
               }}
             >
-              {segments.map((seg, index) => {
-                const mid = seg.start + seg.percent / 2;
-                const angle = mid * 3.6 - 90;
-                const radius = 36;
-                const x = 50 + radius * Math.cos((angle * Math.PI) / 180);
-                const y = 50 + radius * Math.sin((angle * Math.PI) / 180);
-
-                if (seg.percent < 1) return null;
-
-                return (
-                  <div
-                    key={`label-${seg.id || seg.name}-${index}`}
-                    style={{
-                      position: "absolute",
-                      left: `${x}%`,
-                      top: `${y}%`,
-                      transform: "translate(-50%, -50%)",
-                      color: "#fff",
-                      fontWeight: 800,
-                      fontSize: seg.percent >= 7 ? "20px" : "16px",
-                      textShadow: "0 1px 5px rgba(0,0,0,0.22)",
-                      direction: "ltr",
-                      pointerEvents: "none",
-                    }}
-                  >
-                    {percentText(seg.percent)}
-                  </div>
-                );
-              })}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: "0",
+                  borderRadius: "50%",
+                  background:
+                    "linear-gradient(145deg, rgba(255,255,255,0.24), rgba(255,255,255,0) 38%, rgba(0,0,0,0.10) 100%)",
+                  pointerEvents: "none",
+                }}
+              />
 
               <div
                 style={{
@@ -2086,7 +1996,9 @@ function DonutBreakdownCard({
                   alignItems: "center",
                   justifyContent: "center",
                   textAlign: "center",
-                  boxShadow: "0 0 0 2px rgba(255,255,255,0.92)",
+                  boxShadow:
+                    "inset 0 7px 14px rgba(0,33,93,0.06), 0 0 0 2px rgba(255,255,255,0.92)",
+                  transform: "rotateX(-4deg)",
                 }}
               >
                 <div
