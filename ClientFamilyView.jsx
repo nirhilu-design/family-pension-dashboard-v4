@@ -15,9 +15,9 @@ function ClientFamilyView({ clientModel }) {
   const loanDetails = Array.isArray(loans.details) ? loans.details : [];
 
   const formatCurrency = (value) =>
-    `₪${Number(value || 0).toLocaleString("en-US")}`;
+    `₪${Math.round(Number(value || 0)).toLocaleString("en-US")}`;
 
-  const formatPercent = (value) => `${Number(value || 0).toFixed(1)}%`;
+  const formatPercent = (value) => `${Math.round(Number(value || 0))}%`;
 
   const totalLoansAmount = loanDetails.reduce(
     (sum, loan) => sum + Number(loan.amount || loan.balance || 0),
@@ -361,14 +361,12 @@ function DonutSummaryCard({ title, subtitle, items, formatCurrency }) {
       ) : (
         <div style={donutLayout}>
           <div style={{ display: "flex", justifyContent: "center" }}>
-            <div
-              style={{
-                ...smallDonut,
-                background: `conic-gradient(${data.gradient})`,
-              }}
-            >
-              <div style={smallDonutHole} />
-            </div>
+            <DonutVisual
+              gradient={data.gradient}
+              size={102}
+              holeInset="31%"
+              soft
+            />
           </div>
 
           <div style={legendList}>
@@ -395,19 +393,6 @@ function FullWidthDonutCard({ items, formatCurrency, emptyText }) {
 
   return (
     <div style={fullDonutLayout}>
-      <div style={donutRight}>
-        <div style={donut3dShadow}>
-          <div
-            style={{
-              ...donut3d,
-              background: `conic-gradient(${data.gradient})`,
-            }}
-          >
-            <div style={donut3dHole} />
-          </div>
-        </div>
-      </div>
-
       <div style={donutLegendLeft}>
         {data.segments.map((seg, index) => (
           <div key={`${seg.id || seg.name}-${index}`} style={breakdownItem}>
@@ -418,10 +403,55 @@ function FullWidthDonutCard({ items, formatCurrency, emptyText }) {
               <div style={breakdownSub}>{formatCurrency(seg.value)}</div>
             </div>
 
-            <div style={breakdownPercent}>{seg.percent.toFixed(1)}%</div>
+            <div style={breakdownPercent}>{Math.round(seg.percent)}%</div>
           </div>
         ))}
       </div>
+
+      <div style={donutRight}>
+        <div style={familyMainDonutWrap}>
+          <DonutVisual
+            gradient={data.gradient}
+            size={230}
+            holeInset="30%"
+            soft={false}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DonutVisual({ gradient, size = 110, holeInset = "31%", soft = true }) {
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        position: "relative",
+        flexShrink: 0,
+        background: `conic-gradient(${gradient})`,
+        boxShadow: soft
+          ? "inset 0 0 0 2px rgba(255,255,255,0.95), inset 0 -7px 10px rgba(0,0,0,0.12), 0 7px 14px rgba(0,33,93,0.10)"
+          : "inset 0 0 0 3px rgba(255,255,255,0.95), inset 0 -10px 16px rgba(0,0,0,0.13), 0 12px 22px rgba(0,33,93,0.12)",
+        transform: soft
+          ? "perspective(700px) rotateX(4deg)"
+          : "perspective(850px) rotateX(4deg)",
+      }}
+    >
+      <div style={donutGloss} />
+      <div
+        style={{
+          position: "absolute",
+          inset: holeInset,
+          background: "#fff",
+          borderRadius: "50%",
+          boxShadow:
+            "inset 0 5px 10px rgba(0,33,93,0.05), 0 0 0 2px rgba(255,255,255,0.9)",
+          transform: "rotateX(-4deg)",
+        }}
+      />
     </div>
   );
 }
@@ -474,7 +504,7 @@ function LegendRow({ seg, formatCurrency }) {
         <div style={legendName}>{seg.name}</div>
         <div style={legendSub}>{formatCurrency(seg.value)}</div>
       </div>
-      <div style={legendPercent}>{seg.percent.toFixed(1)}%</div>
+      <div style={legendPercent}>{Math.round(seg.percent)}%</div>
     </div>
   );
 }
@@ -530,7 +560,7 @@ function MemberCard({ member, formatCurrency }) {
           <div style={insuranceLabel}>🧍 אובדן כושר עבודה</div>
           <div style={insuranceValue}>
             {formatCurrency(insurance.disabilityValue)} (
-            {Number(insurance.disabilityPercent || 0).toFixed(1)}%)
+            {Math.round(Number(insurance.disabilityPercent || 0))}%)
           </div>
         </div>
       </div>
@@ -1007,22 +1037,6 @@ const donutLayout = {
   marginTop: 12,
 };
 
-const smallDonut = {
-  width: 96,
-  height: 96,
-  borderRadius: "50%",
-  position: "relative",
-  flexShrink: 0,
-};
-
-const smallDonutHole = {
-  position: "absolute",
-  inset: 15,
-  background: "#fff",
-  borderRadius: "50%",
-  border: "1px solid #E5D9CB",
-};
-
 const legendList = {
   display: "flex",
   flexDirection: "column",
@@ -1139,8 +1153,8 @@ const compareFillMuted = {
 
 const fullDonutLayout = {
   display: "grid",
-  gridTemplateColumns: "340px 1fr",
-  gap: 26,
+  gridTemplateColumns: "1fr 280px",
+  gap: 22,
   alignItems: "center",
   direction: "rtl",
 };
@@ -1151,43 +1165,26 @@ const donutRight = {
   alignItems: "center",
 };
 
-const donut3dShadow = {
+const familyMainDonutWrap = {
   width: 250,
   height: 250,
-  borderRadius: "50%",
-  background: "linear-gradient(180deg, rgba(0,33,93,0.18), rgba(0,0,0,0.05))",
-  padding: 10,
-  boxShadow: "0 18px 34px rgba(0,33,93,0.14)",
-};
-
-const donut3d = {
-  width: "100%",
-  height: "100%",
-  borderRadius: "50%",
-  position: "relative",
-  boxShadow:
-    "inset 0 12px 18px rgba(255,255,255,0.35), inset 0 -16px 24px rgba(0,0,0,0.12)",
-};
-
-const donut3dHole = {
-  position: "absolute",
-  inset: 58,
-  background: "#fff",
-  borderRadius: "50%",
-  border: `1px solid ${theme.divider}`,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
 };
 
 const donutLegendLeft = {
   display: "flex",
   flexDirection: "column",
-  gap: 10,
+  gap: 8,
+  minWidth: 0,
 };
 
 const breakdownItem = {
   background: "#fff",
   border: "1px solid #E5D9CB",
   borderRadius: 14,
-  padding: 12,
+  padding: "10px 12px",
   display: "grid",
   gridTemplateColumns: "14px 1fr auto",
   gap: 10,
@@ -1206,6 +1203,9 @@ const breakdownName = {
   color: theme.navy,
   fontSize: 14,
   textAlign: "right",
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
 };
 
 const breakdownSub = {
@@ -1219,8 +1219,17 @@ const breakdownPercent = {
   fontWeight: 700,
   color: theme.navy,
   fontSize: 14,
-  minWidth: 64,
+  minWidth: 48,
   textAlign: "left",
+};
+
+const donutGloss = {
+  position: "absolute",
+  inset: 0,
+  borderRadius: "50%",
+  background:
+    "linear-gradient(145deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 42%, rgba(0,0,0,0.10) 100%)",
+  pointerEvents: "none",
 };
 
 const equityValueWrap = {
