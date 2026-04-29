@@ -1232,21 +1232,10 @@ export default function ReportPage({
               className="main-group-print avoid-break"
               style={styles.sectionCard}
             >
-              <div style={styles.sectionHeader}>
-                <div style={styles.titleWithIcon}>
-                  <span>🥧</span>
-                  <h2 style={styles.h2}>חלוקה לפי אפיקים ראשיים</h2>
-                </div>
-              </div>
-
-              <div style={styles.explanation}>
-                התרשים מציג חלוקה משוקללת לפי צבירה של הקטגוריות הראשיות בכלל
-                המוצרים של שני הלקוחות.
-              </div>
-
               <DonutBreakdownCard
+                title="חלוקה עבור אפיקים ראשיים"
+                subtitle="התרשים מציג את חלוקת אפיקי ההשקעה בתיק ביחס לסך הנכסים."
                 items={mainGroupAllocation}
-                styles={styles}
                 formatCurrency={formatCurrency}
                 colors={brandChartColors}
               />
@@ -1701,6 +1690,86 @@ function EquityBarModern({ value }) {
   );
 }
 
+function buildDonutSegments(items, colors) {
+  const safeItems = Array.isArray(items) ? items : [];
+  const cleanItems = safeItems
+    .map((item) => ({
+      ...item,
+      name: item.name || "ללא שם",
+      value: Number(item.value || 0),
+    }))
+    .filter((item) => item.value > 0)
+    .sort((a, b) => b.value - a.value);
+
+  const total = cleanItems.reduce((sum, item) => sum + item.value, 0);
+  const safeTotal = total || 1;
+
+  let current = 0;
+  const segments = cleanItems.map((item, index) => {
+    const percent = (item.value / safeTotal) * 100;
+    const start = current;
+    const end = current + percent;
+    current = end;
+
+    return {
+      ...item,
+      percent,
+      start,
+      end,
+      color: colors[index % colors.length],
+    };
+  });
+
+  const gradient = segments.length
+    ? segments.map((seg) => `${seg.color} ${seg.start}% ${seg.end}%`).join(", ")
+    : "#D7DEE7 0% 100%";
+
+  return { segments, total, gradient };
+}
+
+function Donut3D({ gradient, size = 110, hole = "30%", soft = false }) {
+  return (
+    <div
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        borderRadius: "50%",
+        background: `conic-gradient(${gradient})`,
+        position: "relative",
+        flexShrink: 0,
+        boxShadow: soft
+          ? "inset 0 0 0 2px rgba(255,255,255,0.95), inset 0 -7px 10px rgba(0,0,0,0.12), 0 7px 14px rgba(0,33,93,0.10)"
+          : "inset 0 0 0 3px rgba(255,255,255,0.95), inset 0 -12px 18px rgba(0,0,0,0.14), 0 10px 22px rgba(0,33,93,0.12)",
+        transform: soft
+          ? "perspective(700px) rotateX(4deg)"
+          : "perspective(900px) rotateX(4deg)",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: "50%",
+          background:
+            "linear-gradient(145deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 42%, rgba(0,0,0,0.10) 100%)",
+          pointerEvents: "none",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          inset: hole,
+          background: "#fff",
+          borderRadius: "50%",
+          boxShadow:
+            "inset 0 5px 10px rgba(0,33,93,0.05), 0 0 0 2px rgba(255,255,255,0.9)",
+          transform: soft ? "rotateX(-4deg)" : "rotateX(-4deg)",
+        }}
+      />
+    </div>
+  );
+}
+
 function DonutSummaryCard({
   title,
   subtitle,
@@ -1709,30 +1778,7 @@ function DonutSummaryCard({
   styles,
   formatCurrency,
 }) {
-  const safeItems = Array.isArray(items) ? items : [];
-  const safeTotal =
-    safeItems.reduce((sum, item) => sum + (item.value || 0), 0) || 1;
-
-  let current = 0;
-  const segments = safeItems.map((item, index) => {
-    const percent = ((item.value || 0) / safeTotal) * 100;
-    const start = current;
-    const end = current + percent;
-    current = end;
-
-    return {
-      ...item,
-      percent: Math.round(percent),
-      start,
-      end,
-      color: colors[index % colors.length],
-    };
-  });
-
-  const gradient =
-    segments.length > 0
-      ? segments.map((seg) => `${seg.color} ${seg.start}% ${seg.end}%`).join(", ")
-      : "#D7DEE7 0% 100%";
+  const { segments, gradient } = buildDonutSegments(items, colors);
 
   return (
     <section style={styles.donutCard}>
@@ -1741,26 +1787,7 @@ function DonutSummaryCard({
 
       <div style={styles.donutLayout}>
         <div style={{ display: "flex", justifyContent: "center" }}>
-          <div
-            style={{
-              width: "96px",
-              height: "96px",
-              borderRadius: "50%",
-              background: `conic-gradient(${gradient})`,
-              position: "relative",
-              flexShrink: 0,
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                inset: "15px",
-                background: "#fff",
-                borderRadius: "50%",
-                border: "1px solid #E5D9CB",
-              }}
-            />
-          </div>
+          <Donut3D gradient={gradient} size={104} hole="31%" soft />
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -1783,6 +1810,7 @@ function DonutSummaryCard({
                     borderRadius: "50%",
                     background: seg.color,
                     display: "inline-block",
+                    boxShadow: "0 1px 3px rgba(16,42,67,0.15)",
                   }}
                 />
                 <div style={{ minWidth: 0 }}>
@@ -1794,6 +1822,7 @@ function DonutSummaryCard({
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                     }}
+                    title={seg.name}
                   >
                     {seg.name}
                   </div>
@@ -1808,7 +1837,7 @@ function DonutSummaryCard({
                   </div>
                 </div>
                 <div style={{ color: "#102A43", fontWeight: 700 }}>
-                  {seg.percent}%
+                  {Math.round(seg.percent)}%
                 </div>
               </div>
             ))
@@ -1823,131 +1852,126 @@ function DonutSummaryCard({
   );
 }
 
-function DonutBreakdownCard({ items, styles, formatCurrency, colors }) {
-  const safeItems = Array.isArray(items) ? items : [];
-  const total = safeItems.reduce((sum, item) => sum + (item.value || 0), 0) || 1;
-
-  let current = 0;
-  const segments = safeItems.map((item, index) => {
-    const percent = ((item.value || 0) / total) * 100;
-    const start = current;
-    const end = current + percent;
-    current = end;
-
-    return {
-      ...item,
-      percent,
-      color: colors[index % colors.length],
-      start,
-      end,
-    };
-  });
-
-  const gradient =
-    segments.length > 0
-      ? segments.map((seg) => `${seg.color} ${seg.start}% ${seg.end}%`).join(", ")
-      : "#D7DEE7 0% 100%";
+function DonutBreakdownCard({
+  title = "חלוקה עבור אפיקים ראשיים",
+  subtitle = "התרשים מציג את חלוקת אפיקי ההשקעה בתיק ביחס לסך הנכסים.",
+  items,
+  formatCurrency,
+  colors,
+}) {
+  const { segments, total, gradient } = buildDonutSegments(items, colors);
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "18px",
-        alignItems: "center",
-      }}
-    >
+    <div style={{ width: "100%", direction: "rtl" }}>
       <div
         style={{
           display: "flex",
-          justifyContent: "center",
-          width: "100%",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: "16px",
+          marginBottom: "22px",
         }}
       >
-        <div
-          style={{
-            width: "220px",
-            height: "220px",
-            borderRadius: "50%",
-            background: `conic-gradient(${gradient})`,
-            position: "relative",
-            flexShrink: 0,
-          }}
-        >
+        <div style={{ minWidth: 0 }}>
           <div
             style={{
-              position: "absolute",
-              inset: "40px",
-              background: "#fff",
-              borderRadius: "50%",
-              border: "1px solid #E5D9CB",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              marginBottom: "6px",
             }}
-          />
+          >
+            <span
+              style={{
+                width: "18px",
+                height: "18px",
+                borderRadius: "50%",
+                background: `conic-gradient(${colors[0]} 0 25%, ${colors[1]} 25% 50%, ${colors[2]} 50% 75%, ${colors[3]} 75% 100%)`,
+                display: "inline-block",
+              }}
+            />
+            <h2
+              style={{
+                margin: 0,
+                fontSize: "20px",
+                lineHeight: 1.25,
+                color: "#00215D",
+                fontWeight: 800,
+              }}
+            >
+              {title}
+            </h2>
+          </div>
+
+          <div style={{ fontSize: "13px", color: "#627D98", lineHeight: 1.7 }}>
+            {subtitle}
+          </div>
         </div>
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "10px",
-          width: "100%",
-        }}
-      >
-        {segments.length ? (
-          segments.map((seg, index) => (
-            <div
-              key={`${seg.id || seg.name || "group"}-${index}`}
-              style={{
-                background: "#fff",
-                border: "1px solid #E5D9CB",
-                borderRadius: "14px",
-                padding: "12px",
-                breakInside: "avoid",
-                pageBreakInside: "avoid",
-              }}
-            >
+      {segments.length ? (
+        <div
+          className="main-breakdown-layout"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "0.95fr 1.05fr",
+            gap: "28px",
+            alignItems: "center",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+            {segments.map((seg, index) => (
               <div
+                key={`${seg.id || seg.name}-${index}`}
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "auto 1fr auto",
-                  gap: "10px",
+                  gridTemplateColumns: "72px 1fr 132px 14px",
+                  gap: "12px",
                   alignItems: "center",
+                  padding: "12px 0",
+                  borderBottom:
+                    index === segments.length - 1 ? "none" : "1px solid #E8E1D7",
+                  minHeight: "44px",
                 }}
               >
                 <div
                   style={{
-                    fontWeight: 700,
-                    color: "#00215D",
+                    color: "#102A43",
+                    fontWeight: 800,
                     fontSize: "14px",
-                    minWidth: "64px",
-                    textAlign: "right",
+                    textAlign: "left",
+                    direction: "ltr",
                   }}
                 >
                   {Math.round(seg.percent)}%
                 </div>
 
-                <div style={{ minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontWeight: 700,
-                      color: "#00215D",
-                      fontSize: "14px",
-                      textAlign: "right",
-                    }}
-                  >
-                    {seg.name}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "12px",
-                      color: "#627D98",
-                      marginTop: "2px",
-                      textAlign: "right",
-                    }}
-                  >
-                    {formatCurrency(seg.value)}
-                  </div>
+                <div
+                  style={{
+                    color: "#102A43",
+                    fontWeight: 800,
+                    fontSize: "14px",
+                    textAlign: "right",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                  title={seg.name}
+                >
+                  {seg.name}
+                </div>
+
+                <div
+                  style={{
+                    color: "#102A43",
+                    fontWeight: 700,
+                    fontSize: "14px",
+                    textAlign: "right",
+                    direction: "ltr",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {formatCurrency(seg.value)}
                 </div>
 
                 <span
@@ -1957,46 +1981,91 @@ function DonutBreakdownCard({ items, styles, formatCurrency, colors }) {
                     borderRadius: "50%",
                     background: seg.color,
                     display: "inline-block",
+                    boxShadow: "0 1px 3px rgba(16,42,67,0.15)",
                   }}
                 />
               </div>
-            </div>
-          ))
-        ) : (
-          <div style={{ color: "#627D98", fontSize: "12px" }}>
-            אין נתוני אפיקים להצגה
+            ))}
           </div>
-        )}
-      </div>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              minWidth: 0,
+            }}
+          >
+            <div style={{ position: "relative", width: "min(410px, 100%)" }}>
+              <div style={{ width: "100%", aspectRatio: "1 / 1", position: "relative" }}>
+                <Donut3D gradient={gradient} size={410} hole="27%" />
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: "27%",
+                    borderRadius: "50%",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    textAlign: "center",
+                    pointerEvents: "none",
+                  }}
+                >
+                  <div
+                    style={{
+                      color: "#627D98",
+                      fontSize: "15px",
+                      fontWeight: 700,
+                      marginBottom: "8px",
+                    }}
+                  >
+                    סה"כ נכסים
+                  </div>
+
+                  <div
+                    style={{
+                      color: "#00215D",
+                      fontSize: "28px",
+                      fontWeight: 900,
+                      lineHeight: 1.1,
+                      direction: "ltr",
+                    }}
+                  >
+                    {formatCurrency(total)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div
+          style={{
+            border: "1px dashed #E2D1BF",
+            borderRadius: "16px",
+            padding: "18px",
+            color: "#627D98",
+            fontSize: "12px",
+            background: "#FCFBF8",
+          }}
+        >
+          אין נתוני אפיקים להצגה
+        </div>
+      )}
     </div>
   );
 }
 
 function PercentDonutCard({ title, subtitle, items, colors, styles }) {
   const safeItems = Array.isArray(items) ? items : [];
-  const total =
-    safeItems.reduce((sum, item) => sum + (item.value || 0), 0) || 100;
-
-  let current = 0;
-  const segments = safeItems.map((item, index) => {
-    const percent = ((item.value || 0) / total) * 100;
-    const start = current;
-    const end = current + percent;
-    current = end;
-
-    return {
+  const { segments, gradient } = buildDonutSegments(
+    safeItems.map((item) => ({
       ...item,
-      percent,
-      color: colors[index % colors.length],
-      start,
-      end,
-    };
-  });
-
-  const gradient =
-    segments.length > 0
-      ? segments.map((seg) => `${seg.color} ${seg.start}% ${seg.end}%`).join(", ")
-      : "#D7DEE7 0% 100%";
+      value: Number(item.value || item.percent || 0),
+    })),
+    colors
+  );
 
   return (
     <section
@@ -2015,26 +2084,7 @@ function PercentDonutCard({ title, subtitle, items, colors, styles }) {
 
       <div style={styles.donutLayout}>
         <div style={{ display: "flex", justifyContent: "center" }}>
-          <div
-            style={{
-              width: "110px",
-              height: "110px",
-              borderRadius: "50%",
-              background: `conic-gradient(${gradient})`,
-              position: "relative",
-              flexShrink: 0,
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                inset: "18px",
-                background: "#fff",
-                borderRadius: "50%",
-                border: "1px solid #E5D9CB",
-              }}
-            />
-          </div>
+          <Donut3D gradient={gradient} size={110} hole="31%" soft />
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -2057,6 +2107,7 @@ function PercentDonutCard({ title, subtitle, items, colors, styles }) {
                     borderRadius: "50%",
                     background: seg.color,
                     display: "inline-block",
+                    boxShadow: "0 1px 3px rgba(16,42,67,0.15)",
                   }}
                 />
                 <div style={{ minWidth: 0 }}>
@@ -2068,12 +2119,13 @@ function PercentDonutCard({ title, subtitle, items, colors, styles }) {
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                     }}
+                    title={seg.name}
                   >
                     {seg.name}
                   </div>
                 </div>
                 <div style={{ color: "#102A43", fontWeight: 700 }}>
-                  {seg.percent.toFixed(1)}%
+                  {Math.round(seg.percent)}%
                 </div>
               </div>
             ))
