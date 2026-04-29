@@ -361,15 +361,7 @@ function DonutSummaryCard({ title, subtitle, items, formatCurrency }) {
 
       <div style={donutLayout}>
         <div style={{ display: "flex", justifyContent: "center" }}>
-          <div
-            style={{
-              ...donutCircle,
-              background: `conic-gradient(${data.gradient})`,
-            }}
-          >
-            <div style={donutGloss} />
-            <div style={donutHole} />
-          </div>
+          <ExplodedDonutChart segments={data.segments} size={150} />
         </div>
 
         <div style={legendList}>
@@ -384,6 +376,125 @@ function DonutSummaryCard({ title, subtitle, items, formatCurrency }) {
       </div>
     </section>
   );
+}
+
+function ExplodedDonutChart({ segments, size = 150 }) {
+  const center = size / 2;
+  const outerRadius = size * 0.34;
+  const innerRadius = size * 0.21;
+  const explode = size * 0.035;
+  const gapDegrees = 1.2;
+  const depthOffset = size * 0.035;
+  const filterId = `donutShadow_${size}`;
+
+  const arcSegments = segments.map((seg) => {
+    const startAngle = (seg.start / 100) * 360 - 90 + gapDegrees / 2;
+    const endAngle = (seg.end / 100) * 360 - 90 - gapDegrees / 2;
+    const midAngle = (startAngle + endAngle) / 2;
+    const offsetX = Math.cos(toRad(midAngle)) * explode;
+    const offsetY = Math.sin(toRad(midAngle)) * explode;
+
+    return {
+      ...seg,
+      path: describeDonutArc(center, center, outerRadius, innerRadius, startAngle, endAngle),
+      depthPath: describeDonutArc(
+        center,
+        center + depthOffset,
+        outerRadius,
+        innerRadius,
+        startAngle,
+        endAngle
+      ),
+      offsetX,
+      offsetY,
+    };
+  });
+
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      style={{ display: "block", overflow: "visible" }}
+    >
+      <defs>
+        <filter id={filterId} x="-30%" y="-30%" width="160%" height="160%">
+          <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#00215D" floodOpacity="0.16" />
+        </filter>
+      </defs>
+
+      {arcSegments.map((seg, index) => (
+        <path
+          key={`depth-${seg.name}-${index}`}
+          d={seg.depthPath}
+          fill={darkenColor(seg.color, 0.72)}
+          transform={`translate(${seg.offsetX} ${seg.offsetY})`}
+          opacity="0.95"
+        />
+      ))}
+
+      {arcSegments.map((seg, index) => (
+        <g
+          key={`top-${seg.name}-${index}`}
+          transform={`translate(${seg.offsetX} ${seg.offsetY})`}
+          filter={`url(#${filterId})`}
+        >
+          <path d={seg.path} fill={seg.color} stroke="rgba(255,255,255,0.88)" strokeWidth="1.2" />
+          <path d={seg.path} fill="rgba(255,255,255,0.12)" />
+        </g>
+      ))}
+
+      <circle
+        cx={center}
+        cy={center}
+        r={innerRadius - 1}
+        fill="#fff"
+        filter={`url(#${filterId})`}
+      />
+    </svg>
+  );
+}
+
+function describeDonutArc(cx, cy, outerR, innerR, startAngle, endAngle) {
+  const largeArcFlag = endAngle - startAngle <= 180 ? 0 : 1;
+
+  const p1 = polarToCartesian(cx, cy, outerR, endAngle);
+  const p2 = polarToCartesian(cx, cy, outerR, startAngle);
+  const p3 = polarToCartesian(cx, cy, innerR, startAngle);
+  const p4 = polarToCartesian(cx, cy, innerR, endAngle);
+
+  return [
+    `M ${p1.x} ${p1.y}`,
+    `A ${outerR} ${outerR} 0 ${largeArcFlag} 0 ${p2.x} ${p2.y}`,
+    `L ${p3.x} ${p3.y}`,
+    `A ${innerR} ${innerR} 0 ${largeArcFlag} 1 ${p4.x} ${p4.y}`,
+    "Z",
+  ].join(" ");
+}
+
+function polarToCartesian(cx, cy, radius, angleInDegrees) {
+  const angleInRadians = toRad(angleInDegrees);
+  return {
+    x: cx + radius * Math.cos(angleInRadians),
+    y: cy + radius * Math.sin(angleInRadians),
+  };
+}
+
+function toRad(degrees) {
+  return (degrees * Math.PI) / 180;
+}
+
+function darkenColor(hex, factor = 0.75) {
+  const normalized = String(hex || "#00215D").replace("#", "");
+  const full = normalized.length === 3
+    ? normalized.split("").map((c) => c + c).join("")
+    : normalized;
+
+  const r = Math.max(0, Math.min(255, Math.round(parseInt(full.slice(0, 2), 16) * factor)));
+  const g = Math.max(0, Math.min(255, Math.round(parseInt(full.slice(2, 4), 16) * factor)));
+  const b = Math.max(0, Math.min(255, Math.round(parseInt(full.slice(4, 6), 16) * factor)));
+
+  return `rgb(${r}, ${g}, ${b})`;
 }
 
 function buildSegments(items) {
@@ -752,7 +863,7 @@ const exposureDescription = {
 };
 
 const exposureValue = {
-  fontSize: 34,
+  fontSize: 30,
   color: theme.navy,
   fontWeight: 700,
   lineHeight: 1.1,
@@ -806,39 +917,10 @@ const smallText = {
 
 const donutLayout = {
   display: "grid",
-  gridTemplateColumns: "160px 1fr",
+  gridTemplateColumns: "150px 1fr",
   gap: 18,
   alignItems: "center",
   marginTop: 12,
-};
-
-const donutCircle = {
-  width: 145,
-  height: 145,
-  borderRadius: "50%",
-  position: "relative",
-  flexShrink: 0,
-  boxShadow:
-    "inset 0 0 0 2px rgba(255,255,255,0.95), inset 0 -8px 12px rgba(0,0,0,0.13), 0 8px 16px rgba(0,33,93,0.10)",
-  transform: "perspective(700px) rotateX(4deg)",
-};
-
-const donutGloss = {
-  position: "absolute",
-  inset: 0,
-  borderRadius: "50%",
-  background:
-    "linear-gradient(145deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 42%, rgba(0,0,0,0.10) 100%)",
-  pointerEvents: "none",
-};
-
-const donutHole = {
-  position: "absolute",
-  inset: "31%",
-  background: "#fff",
-  borderRadius: "50%",
-  boxShadow:
-    "inset 0 5px 10px rgba(0,33,93,0.05), 0 0 0 2px rgba(255,255,255,0.9)",
 };
 
 const legendList = {
@@ -879,6 +961,7 @@ const legendSub = {
 const legendPercent = {
   color: theme.navy,
   fontWeight: 700,
+  fontSize: 11,
 };
 
 const productsHeaderRow = {
