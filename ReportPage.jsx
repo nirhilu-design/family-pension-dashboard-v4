@@ -1996,9 +1996,9 @@ function DonutBreakdownCard({
               minWidth: 0,
             }}
           >
-            <div style={{ position: "relative", width: "min(410px, 100%)" }}>
+            <div style={{ position: "relative", width: "min(340px, 100%)" }}>
               <div style={{ width: "100%", aspectRatio: "1 / 1", position: "relative" }}>
-                <Donut3D gradient={gradient} size={410} hole="27%" />
+                <Donut3D gradient={gradient} size={340} hole="27%" />
                 <div
                   style={{
                     position: "absolute",
