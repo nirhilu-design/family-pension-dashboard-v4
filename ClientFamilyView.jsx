@@ -391,32 +391,78 @@ function FullWidthDonutCard({ items, formatCurrency, emptyText }) {
     return <EmptyText>{emptyText}</EmptyText>;
   }
 
+  const total = data.segments.reduce((sum, seg) => sum + Number(seg.value || 0), 0);
+
   return (
-    <div style={fullDonutLayout}>
-      <div style={donutLegendLeft}>
-        {data.segments.map((seg, index) => (
-          <div key={`${seg.id || seg.name}-${index}`} style={breakdownItem}>
-            <span style={{ ...breakdownDot, background: seg.color }} />
-
-            <div style={{ minWidth: 0 }}>
-              <div style={breakdownName}>{seg.name}</div>
-              <div style={breakdownSub}>{formatCurrency(seg.value)}</div>
+    <div style={mainBreakdownCardLayout}>
+      <div style={mainDonutWrap}>
+        <div
+          style={{
+            width: 285,
+            height: 285,
+            borderRadius: "50%",
+            background: `conic-gradient(${data.gradient})`,
+            position: "relative",
+            flexShrink: 0,
+            boxShadow:
+              "inset 0 0 0 3px rgba(255,255,255,0.95), inset 0 -10px 16px rgba(0,0,0,0.10), 0 12px 24px rgba(0,33,93,0.10)",
+          }}
+        >
+          <div style={donutGloss} />
+          <div
+            style={{
+              position: "absolute",
+              inset: "30%",
+              background: "#fff",
+              borderRadius: "50%",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              textAlign: "center",
+              boxShadow:
+                "inset 0 5px 10px rgba(0,33,93,0.05), 0 0 0 2px rgba(255,255,255,0.9)",
+            }}
+          >
+            <div
+              style={{
+                color: theme.textSoft,
+                fontSize: 12,
+                fontWeight: 700,
+                marginBottom: 6,
+              }}
+            >
+              סה"כ נכסים
             </div>
-
-            <div style={breakdownPercent}>{Math.round(seg.percent)}%</div>
+            <div
+              style={{
+                color: theme.navy,
+                fontSize: 24,
+                fontWeight: 900,
+                lineHeight: 1.1,
+                direction: "ltr",
+              }}
+            >
+              {formatCurrency(total)}
+            </div>
           </div>
-        ))}
+        </div>
       </div>
 
-      <div style={donutRight}>
-        <div style={familyMainDonutWrap}>
-          <DonutVisual
-            gradient={data.gradient}
-            size={230}
-            holeInset="30%"
-            soft={false}
-          />
-        </div>
+      <div style={mainLegendWrap}>
+        {data.segments.map((seg, index) => (
+          <div key={`${seg.id || seg.name}-${index}`} style={mainLegendRow}>
+            <span style={{ ...mainLegendDot, background: seg.color }} />
+
+            <div style={mainLegendName} title={seg.name}>
+              {seg.name}
+            </div>
+
+            <div style={mainLegendValue}>{formatCurrency(seg.value)}</div>
+
+            <div style={mainLegendPercent}>{Math.round(seg.percent)}%</div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -1151,76 +1197,72 @@ const compareFillMuted = {
   background: theme.mutedBar,
 };
 
-const fullDonutLayout = {
+const mainBreakdownCardLayout = {
   display: "grid",
-  gridTemplateColumns: "1fr 280px",
-  gap: 22,
+  gridTemplateColumns: "minmax(260px, 0.9fr) minmax(360px, 1.1fr)",
+  gap: 28,
   alignItems: "center",
-  direction: "rtl",
+  direction: "ltr",
 };
 
-const donutRight = {
+const mainDonutWrap = {
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
-};
-
-const familyMainDonutWrap = {
-  width: 250,
-  height: 250,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-};
-
-const donutLegendLeft = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 8,
   minWidth: 0,
 };
 
-const breakdownItem = {
-  background: "#fff",
-  border: "1px solid #E5D9CB",
-  borderRadius: 14,
-  padding: "10px 12px",
-  display: "grid",
-  gridTemplateColumns: "14px 1fr auto",
-  gap: 10,
-  alignItems: "center",
+const mainLegendWrap = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 0,
+  minWidth: 0,
+  direction: "rtl",
 };
 
-const breakdownDot = {
+const mainLegendRow = {
+  display: "grid",
+  gridTemplateColumns: "14px 1fr 96px 46px",
+  gap: 10,
+  alignItems: "center",
+  minHeight: 44,
+  padding: "9px 0",
+  borderBottom: "1px solid #E8E1D7",
+};
+
+const mainLegendDot = {
   width: 14,
   height: 14,
   borderRadius: "50%",
   display: "inline-block",
+  boxShadow: "0 1px 3px rgba(16,42,67,0.15)",
 };
 
-const breakdownName = {
-  fontWeight: 700,
+const mainLegendName = {
   color: theme.navy,
-  fontSize: 14,
+  fontWeight: 800,
+  fontSize: 13,
   textAlign: "right",
   whiteSpace: "nowrap",
   overflow: "hidden",
   textOverflow: "ellipsis",
 };
 
-const breakdownSub = {
+const mainLegendValue = {
+  color: theme.navy,
+  fontWeight: 800,
   fontSize: 12,
-  color: theme.textSoft,
-  marginTop: 2,
   textAlign: "right",
+  direction: "ltr",
+  whiteSpace: "nowrap",
 };
 
-const breakdownPercent = {
-  fontWeight: 700,
+const mainLegendPercent = {
   color: theme.navy,
-  fontSize: 14,
-  minWidth: 48,
+  fontWeight: 800,
+  fontSize: 13,
   textAlign: "left",
+  direction: "ltr",
 };
 
 const donutGloss = {
