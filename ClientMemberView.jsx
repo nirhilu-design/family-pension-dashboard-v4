@@ -5,9 +5,9 @@ function ClientMemberView({ member }) {
   const [filterOpen, setFilterOpen] = useState(false);
 
   const formatCurrency = (value) =>
-    `₪${Number(value || 0).toLocaleString("en-US")}`;
+    `₪${Math.round(Number(value || 0)).toLocaleString("en-US")}`;
 
-  const formatPercent = (value) => `${Number(value || 0).toFixed(1)}%`;
+  const formatPercent = (value) => `${Math.round(Number(value || 0))}%`;
 
   if (!member) {
     return <div style={{ direction: "rtl" }}>לא נמצא בן משפחה</div>;
@@ -367,6 +367,7 @@ function DonutSummaryCard({ title, subtitle, items, formatCurrency }) {
               background: `conic-gradient(${data.gradient})`,
             }}
           >
+            <div style={donutGloss} />
             <div style={donutHole} />
           </div>
         </div>
@@ -433,7 +434,7 @@ function LegendRow({ seg, formatCurrency }) {
         <div style={legendName}>{seg.name}</div>
         <div style={legendSub}>{formatCurrency(seg.value)}</div>
       </div>
-      <div style={legendPercent}>{seg.percent.toFixed(1)}%</div>
+      <div style={legendPercent}>{Math.round(seg.percent)}%</div>
     </div>
   );
 }
@@ -444,7 +445,7 @@ function ExposureBadge({ value }) {
 
   return (
     <span style={{ color, fontWeight: 800 }}>
-      {num > 0 ? `${num.toFixed(1)}%` : "—"}
+      {num > 0 ? `${Math.round(num)}%` : "—"}
     </span>
   );
 }
@@ -805,26 +806,39 @@ const smallText = {
 
 const donutLayout = {
   display: "grid",
-  gridTemplateColumns: "180px 1fr",
-  gap: 20,
+  gridTemplateColumns: "160px 1fr",
+  gap: 18,
   alignItems: "center",
   marginTop: 12,
 };
 
 const donutCircle = {
-  width: 170,
-  height: 170,
+  width: 145,
+  height: 145,
   borderRadius: "50%",
   position: "relative",
   flexShrink: 0,
+  boxShadow:
+    "inset 0 0 0 2px rgba(255,255,255,0.95), inset 0 -8px 12px rgba(0,0,0,0.13), 0 8px 16px rgba(0,33,93,0.10)",
+  transform: "perspective(700px) rotateX(4deg)",
+};
+
+const donutGloss = {
+  position: "absolute",
+  inset: 0,
+  borderRadius: "50%",
+  background:
+    "linear-gradient(145deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 42%, rgba(0,0,0,0.10) 100%)",
+  pointerEvents: "none",
 };
 
 const donutHole = {
   position: "absolute",
-  inset: 34,
+  inset: "31%",
   background: "#fff",
   borderRadius: "50%",
-  border: `1px solid ${theme.divider}`,
+  boxShadow:
+    "inset 0 5px 10px rgba(0,33,93,0.05), 0 0 0 2px rgba(255,255,255,0.9)",
 };
 
 const legendList = {
