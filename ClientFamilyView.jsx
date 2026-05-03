@@ -42,191 +42,374 @@ function ClientFamilyView({ clientModel }) {
   );
 
   return (
-    <div style={page}>
-      <Header
-        title="דוח פנסיוני משפחתי מאוחד"
-        eyebrow="מסך לקוח · דוח משפחתי מאוחד"
-        subtitle="ריכזנו עבורך תמונת מצב משפחתית אחת הכוללת את כלל הנכסים הפנסיוניים, תחזית פרישה, פיזור בין מוצרים וגופים מנהלים, חשיפות ומידע מרכזי לכל אחד מבני המשפחה."
-        lastUpdated={clientModel.lastUpdated}
-      />
+    <div className="client-family-root" style={page}>
+      <style>
+        {`
+          @media print {
+            @page {
+              size: A4 portrait;
+              margin: 7mm;
+            }
 
-      <section style={topGrid}>
-        <DonutSummaryCard
-          title="חלוקה לפי גופים מנהלים"
-          subtitle="התפלגות הניהול בין החברות והגופים המנהלים."
-          items={managers}
-          formatCurrency={formatCurrency}
+            html,
+            body {
+              width: 210mm !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              background: #ffffff !important;
+              overflow: visible !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+
+            body {
+              zoom: 0.72;
+            }
+
+            .client-family-root {
+              width: 100% !important;
+              max-width: 100% !important;
+              background: #ffffff !important;
+              direction: rtl !important;
+            }
+
+            .family-print-page {
+              width: 196mm !important;
+              max-width: 196mm !important;
+              margin: 0 auto !important;
+              padding: 0 !important;
+              page-break-after: always !important;
+              break-after: page !important;
+              overflow: visible !important;
+              background: #ffffff !important;
+            }
+
+            .family-print-page:last-child {
+              page-break-after: auto !important;
+              break-after: auto !important;
+            }
+
+            .family-print-page-1 .family-hero {
+              margin-bottom: 10px !important;
+              padding: 18px 20px !important;
+              border-radius: 18px !important;
+            }
+
+            .family-print-page-1 .family-top-grid {
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 10px !important;
+              margin-bottom: 10px !important;
+            }
+
+            .family-print-page-1 .family-compare-grid {
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 10px !important;
+              margin-bottom: 0 !important;
+            }
+
+            .family-lower-grid {
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 10px !important;
+              margin-bottom: 10px !important;
+            }
+
+            .family-section-card,
+            .family-kpi-card,
+            .family-donut-card,
+            .family-compare-card,
+            .family-member-card {
+              box-shadow: none !important;
+              break-inside: avoid !important;
+              page-break-inside: avoid !important;
+            }
+
+            .family-section-card {
+              padding: 14px !important;
+              margin-bottom: 10px !important;
+              border-radius: 16px !important;
+            }
+
+            .family-kpi-card {
+              min-height: 135px !important;
+              padding: 14px !important;
+              border-radius: 16px !important;
+            }
+
+            .family-donut-card {
+              min-height: 170px !important;
+              padding: 14px !important;
+              border-radius: 16px !important;
+            }
+
+            .family-compare-card {
+              min-height: 150px !important;
+              padding: 14px !important;
+              border-radius: 16px !important;
+            }
+
+            .family-members-grid {
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 10px !important;
+            }
+
+            .family-member-card {
+              padding: 13px !important;
+              border-radius: 16px !important;
+            }
+
+            .family-main-breakdown {
+              grid-template-columns: 240px 1fr !important;
+              gap: 14px !important;
+            }
+
+            .family-main-donut {
+              transform: scale(0.82);
+              transform-origin: center;
+            }
+
+            .family-main-legend-row {
+              min-height: 31px !important;
+              padding: 5px 0 !important;
+            }
+
+            .family-summary-grid {
+              grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+              gap: 8px !important;
+            }
+
+            h1 {
+              font-size: 22px !important;
+            }
+
+            h2,
+            h3 {
+              font-size: 12px !important;
+            }
+
+            .family-kpi-value {
+              font-size: 25px !important;
+            }
+
+            .family-center-value {
+              font-size: 20px !important;
+            }
+
+            .family-text-small,
+            .family-explanation,
+            p,
+            span,
+            div {
+              font-size: 10.5px;
+            }
+
+            table,
+            tr,
+            td,
+            th,
+            svg,
+            canvas,
+            img {
+              break-inside: avoid !important;
+              page-break-inside: avoid !important;
+            }
+          }
+        `}
+      </style>
+
+      <div className="family-print-page family-print-page-1">
+        <Header
+          title="דוח פנסיוני משפחתי מאוחד"
+          eyebrow="מסך לקוח · דוח משפחתי מאוחד"
+          subtitle="ריכזנו עבורך תמונת מצב משפחתית אחת הכוללת את כלל הנכסים הפנסיוניים, תחזית פרישה, פיזור בין מוצרים וגופים מנהלים, חשיפות ומידע מרכזי לכל אחד מבני המשפחה."
+          lastUpdated={clientModel.lastUpdated}
         />
 
-        <DonutSummaryCard
-          title="חלוקה לפי מוצרים"
-          subtitle="התפלגות הנכסים בין סוגי החיסכון הקיימים בתיק."
-          items={products}
-          formatCurrency={formatCurrency}
-        />
-
-        <KpiCard
-          icon={<DepositIcon />}
-          title="הפקדה חודשית"
-          value={formatCurrency(summary.monthlyDeposits)}
-          subtext="סך ההפקדות החודשיות של בני המשפחה"
-        />
-
-        <KpiCard
-          icon={<GiftIcon />}
-          title="סך נכסים"
-          value={formatCurrency(summary.totalAssets)}
-          subtext="סך הצבירה הכולל של התא המשפחתי"
-        />
-      </section>
-
-      <section style={compareGrid}>
-        <ComparisonChartCard
-          title="קצבה חודשית בגיל פרישה"
-          explanation="השוואה בין קצבה צפויה עם המשך הפקדות לבין ללא המשך הפקדות."
-          bars={pensionBars}
-        />
-
-        <ComparisonChartCard
-          title="צבירה צפויה בגיל פרישה"
-          explanation="השוואה בין סכום חד פעמי צפוי עם המשך הפקדות לבין ללא המשך הפקדות."
-          bars={lumpBars}
-        />
-      </section>
-
-      <section style={lowerTwoGrid}>
-        <SectionCard title='חשיפה לחו"ל' icon="🌍">
-          <ExposureMetricBlock
-            value={exposures.foreign}
-            valueText={formatPercent(exposures.foreign)}
-            label={getForeignExposureLabel(exposures.foreign)}
-            explanationText='התרשים מציג את החשיפה המשפחתית לחו"ל לפי הנתונים שעובדו מהקבצים.'
+        <section className="family-top-grid" style={topGrid}>
+          <DonutSummaryCard
+            title="חלוקה לפי גופים מנהלים"
+            subtitle="התפלגות הניהול בין החברות והגופים המנהלים."
+            items={managers}
+            formatCurrency={formatCurrency}
           />
-        </SectionCard>
 
-        <SectionCard title="חשיפה מנייתית משוקללת" icon="📊">
-          <ExposureMetricBlock
-            value={exposures.equity}
-            valueText={formatPercent(exposures.equity)}
-            label={getExposureLabel(exposures.equity)}
-            explanationText="המדד מציג את רמת החשיפה למניות ברמת התא המשפחתי."
+          <DonutSummaryCard
+            title="חלוקה לפי מוצרים"
+            subtitle="התפלגות הנכסים בין סוגי החיסכון הקיימים בתיק."
+            items={products}
+            formatCurrency={formatCurrency}
           />
-        </SectionCard>
-      </section>
 
-      <SectionCard title="חלוקה לפי אפיקים ראשיים" icon="🥧">
-        <div style={explanation}>
-          התרשים מציג חלוקה משוקללת לפי צבירה של הקטגוריות הראשיות בכלל המוצרים.
-        </div>
+          <KpiCard
+            icon={<DepositIcon />}
+            title="הפקדה חודשית"
+            value={formatCurrency(summary.monthlyDeposits)}
+            subtext="סך ההפקדות החודשיות של בני המשפחה"
+          />
 
-        <FullWidthDonutCard
-          items={mainGroups.length ? mainGroups : products}
-          formatCurrency={formatCurrency}
-          emptyText="אין נתוני אפיקים להצגה"
-        />
-      </SectionCard>
+          <KpiCard
+            icon={<GiftIcon />}
+            title="סך נכסים"
+            value={formatCurrency(summary.totalAssets)}
+            subtext="סך הצבירה הכולל של התא המשפחתי"
+          />
+        </section>
 
-      <SectionCard title="פירוט לפי בני משפחה" icon="👨‍👩‍👧‍👦">
-        <div style={explanation}>
-          מוצגת תמונת מצב אישית לכל אחד מבני המשפחה, כולל צבירה, הפקדה, קצבה
-          צפויה, סכום חד הוני וכיסויים ביטוחיים.
-        </div>
+        <section className="family-compare-grid" style={compareGrid}>
+          <ComparisonChartCard
+            title="קצבה חודשית בגיל פרישה"
+            explanation="השוואה בין קצבה צפויה עם המשך הפקדות לבין ללא המשך הפקדות."
+            bars={pensionBars}
+          />
 
-        {members.length ? (
-          <div style={membersGrid}>
-            {members.map((member) => (
-              <MemberCard
-                key={member.id || member.name}
-                member={member}
-                formatCurrency={formatCurrency}
-              />
-            ))}
+          <ComparisonChartCard
+            title="צבירה צפויה בגיל פרישה"
+            explanation="השוואה בין סכום חד פעמי צפוי עם המשך הפקדות לבין ללא המשך הפקדות."
+            bars={lumpBars}
+          />
+        </section>
+      </div>
+
+      <div className="family-print-page family-print-page-2">
+        <section className="family-lower-grid" style={lowerTwoGrid}>
+          <SectionCard title='חשיפה לחו"ל' icon="🌍">
+            <ExposureMetricBlock
+              value={exposures.foreign}
+              valueText={formatPercent(exposures.foreign)}
+              label={getForeignExposureLabel(exposures.foreign)}
+              explanationText='התרשים מציג את החשיפה המשפחתית לחו"ל לפי הנתונים שעובדו מהקבצים.'
+            />
+          </SectionCard>
+
+          <SectionCard title="חשיפה מנייתית משוקללת" icon="📊">
+            <ExposureMetricBlock
+              value={exposures.equity}
+              valueText={formatPercent(exposures.equity)}
+              label={getExposureLabel(exposures.equity)}
+              explanationText="המדד מציג את רמת החשיפה למניות ברמת התא המשפחתי."
+            />
+          </SectionCard>
+        </section>
+
+        <SectionCard title="חלוקה לפי אפיקים ראשיים" icon="🥧">
+          <div className="family-explanation" style={explanation}>
+            התרשים מציג חלוקה משוקללת לפי צבירה של הקטגוריות הראשיות בכלל המוצרים.
           </div>
-        ) : (
-          <EmptyText>אין בני משפחה להצגה</EmptyText>
-        )}
-      </SectionCard>
 
-      <SectionCard title="הלוואות על חשבון מוצרים פנסיוניים" icon="💳">
-        <div style={explanation}>
-          פירוט הלוואות לפי אדם עם סיכום כולל ויחס לנכסים.
-        </div>
-
-        {loanDetails.length ? (
-          <>
-            <div style={summaryStatsGrid}>
-              <SmallStat
-                title="סה״כ הלוואות"
-                value={formatCurrency(totalLoansAmount)}
-              />
-              <SmallStat
-                title="יחס לנכסים"
-                value={`${loanRatioToAssets.toFixed(1)}%`}
-              />
-            </div>
-
-            <div style={tableWrap}>
-              <table style={table}>
-                <thead>
-                  <tr>
-                    <th style={th}>שם</th>
-                    <th style={th}>סכום הלוואה</th>
-                    <th style={th}>יתרה</th>
-                    <th style={th}>תדירות החזר</th>
-                    <th style={th}>תאריך סיום</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loanDetails.map((loan, index) => (
-                    <tr key={loan.id || index}>
-                      <td style={td}>
-                        {[loan.firstName, loan.familyName]
-                          .filter(Boolean)
-                          .join(" ") ||
-                          loan.name ||
-                          "—"}
-                      </td>
-                      <td style={td}>{formatCurrency(loan.amount)}</td>
-                      <td style={td}>{formatCurrency(loan.balance)}</td>
-                      <td style={td}>{loan.repaymentFrequency || "—"}</td>
-                      <td style={td}>{formatDate(loan.endDate)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        ) : (
-          <EmptyText>לא התקבל מידע על הלוואות להצגה.</EmptyText>
-        )}
-      </SectionCard>
-
-      <SectionCard title="סיכום מהיר" icon="🧾">
-        <div style={summaryStatsGrid}>
-          <SmallStat title="מוצרים" value={products.length} />
-          <SmallStat title="גופים מנהלים" value={managers.length} />
-          <SmallStat title="בני משפחה" value={members.length} />
-          <SmallStat
-            title="חשיפה מנייתית"
-            value={formatPercent(exposures.equity)}
+          <FullWidthDonutCard
+            items={mainGroups.length ? mainGroups : products}
+            formatCurrency={formatCurrency}
+            emptyText="אין נתוני אפיקים להצגה"
           />
-        </div>
+        </SectionCard>
 
-        <InfoBox
-          label="קצבה חודשית צפויה"
-          value={formatCurrency(summary.monthlyPensionWithDeposits)}
-        />
+        <SectionCard title="פירוט לפי בני משפחה" icon="👨‍👩‍👧‍👦">
+          <div className="family-explanation" style={explanation}>
+            מוצגת תמונת מצב אישית לכל אחד מבני המשפחה, כולל צבירה, הפקדה, קצבה
+            צפויה, סכום חד הוני וכיסויים ביטוחיים.
+          </div>
 
-        <InfoBox
-          label="צבירה צפויה בגיל פרישה"
-          value={formatCurrency(summary.projectedLumpSumWithDeposits)}
-        />
+          {members.length ? (
+            <div className="family-members-grid" style={membersGrid}>
+              {members.map((member) => (
+                <MemberCard
+                  key={member.id || member.name}
+                  member={member}
+                  formatCurrency={formatCurrency}
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptyText>אין בני משפחה להצגה</EmptyText>
+          )}
+        </SectionCard>
+      </div>
 
-        <InfoBox
-          label="יחס הלוואות לנכסים"
-          value={`${loanRatioToAssets.toFixed(1)}%`}
-        />
-      </SectionCard>
+      <div className="family-print-page family-print-page-3">
+        <SectionCard title="הלוואות על חשבון מוצרים פנסיוניים" icon="💳">
+          <div className="family-explanation" style={explanation}>
+            פירוט הלוואות לפי אדם עם סיכום כולל ויחס לנכסים.
+          </div>
+
+          {loanDetails.length ? (
+            <>
+              <div className="family-summary-grid" style={summaryStatsGrid}>
+                <SmallStat
+                  title="סה״כ הלוואות"
+                  value={formatCurrency(totalLoansAmount)}
+                />
+                <SmallStat
+                  title="יחס לנכסים"
+                  value={`${loanRatioToAssets.toFixed(1)}%`}
+                />
+              </div>
+
+              <div style={tableWrap}>
+                <table style={table}>
+                  <thead>
+                    <tr>
+                      <th style={th}>שם</th>
+                      <th style={th}>סכום הלוואה</th>
+                      <th style={th}>יתרה</th>
+                      <th style={th}>תדירות החזר</th>
+                      <th style={th}>תאריך סיום</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loanDetails.map((loan, index) => (
+                      <tr key={loan.id || index}>
+                        <td style={td}>
+                          {[loan.firstName, loan.familyName]
+                            .filter(Boolean)
+                            .join(" ") ||
+                            loan.name ||
+                            "—"}
+                        </td>
+                        <td style={td}>{formatCurrency(loan.amount)}</td>
+                        <td style={td}>{formatCurrency(loan.balance)}</td>
+                        <td style={td}>{loan.repaymentFrequency || "—"}</td>
+                        <td style={td}>{formatDate(loan.endDate)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          ) : (
+            <EmptyText>לא התקבל מידע על הלוואות להצגה.</EmptyText>
+          )}
+        </SectionCard>
+
+        <SectionCard title="סיכום מהיר" icon="🧾">
+          <div className="family-summary-grid" style={summaryStatsGrid}>
+            <SmallStat title="מוצרים" value={products.length} />
+            <SmallStat title="גופים מנהלים" value={managers.length} />
+            <SmallStat title="בני משפחה" value={members.length} />
+            <SmallStat
+              title="חשיפה מנייתית"
+              value={formatPercent(exposures.equity)}
+            />
+          </div>
+
+          <InfoBox
+            label="קצבה חודשית צפויה"
+            value={formatCurrency(summary.monthlyPensionWithDeposits)}
+          />
+
+          <InfoBox
+            label="צבירה צפויה בגיל פרישה"
+            value={formatCurrency(summary.projectedLumpSumWithDeposits)}
+          />
+
+          <InfoBox
+            label="יחס הלוואות לנכסים"
+            value={`${loanRatioToAssets.toFixed(1)}%`}
+          />
+        </SectionCard>
+      </div>
     </div>
   );
 }
@@ -256,7 +439,7 @@ function buildCompareBars(withDeposits, withoutDeposits, formatCurrency) {
 
 function Header({ eyebrow, title, subtitle, lastUpdated }) {
   return (
-    <section style={heroHeader}>
+    <section className="family-hero" style={heroHeader}>
       <div style={heroLogoWrap}>
         <ZviranLogo light />
       </div>
@@ -279,10 +462,12 @@ function Header({ eyebrow, title, subtitle, lastUpdated }) {
 
 function KpiCard({ icon, title, value, subtext }) {
   return (
-    <div style={kpiCard}>
+    <div className="family-kpi-card" style={kpiCard}>
       <div style={kpiIconWrap}>{icon}</div>
       <div style={kpiTitle}>{title}</div>
-      <div style={kpiValue}>{value}</div>
+      <div className="family-kpi-value" style={kpiValue}>
+        {value}
+      </div>
       <div style={kpiSub}>{subtext}</div>
     </div>
   );
@@ -290,7 +475,7 @@ function KpiCard({ icon, title, value, subtext }) {
 
 function SectionCard({ title, icon, children }) {
   return (
-    <section style={sectionCard}>
+    <section className="family-section-card" style={sectionCard}>
       <div style={sectionHeader}>
         <div style={titleWithIcon}>
           {icon ? <span>{icon}</span> : null}
@@ -305,7 +490,9 @@ function SectionCard({ title, icon, children }) {
 function ExposureMetricBlock({ value, valueText, label, explanationText }) {
   return (
     <>
-      <div style={explanation}>{explanationText}</div>
+      <div className="family-explanation" style={explanation}>
+        {explanationText}
+      </div>
 
       <div style={equityValueWrap}>
         <div style={equityValue}>{valueText}</div>
@@ -319,7 +506,7 @@ function ExposureMetricBlock({ value, valueText, label, explanationText }) {
 
 function ComparisonChartCard({ title, explanation, bars }) {
   return (
-    <section style={compareCard}>
+    <section className="family-compare-card" style={compareCard}>
       <div style={compareTitle}>{title}</div>
       <div style={compareDesc}>{explanation}</div>
 
@@ -352,7 +539,7 @@ function DonutSummaryCard({ title, subtitle, items, formatCurrency }) {
   const data = buildSegments(items);
 
   return (
-    <section style={donutCard}>
+    <section className="family-donut-card" style={donutCard}>
       <h3 style={donutTitle}>{title}</h3>
       <div style={{ ...smallText, marginTop: 6 }}>{subtitle}</div>
 
@@ -391,12 +578,16 @@ function FullWidthDonutCard({ items, formatCurrency, emptyText }) {
     return <EmptyText>{emptyText}</EmptyText>;
   }
 
-  const total = data.segments.reduce((sum, seg) => sum + Number(seg.value || 0), 0);
+  const total = data.segments.reduce(
+    (sum, seg) => sum + Number(seg.value || 0),
+    0
+  );
 
   return (
-    <div style={mainBreakdownCardLayout}>
+    <div className="family-main-breakdown" style={mainBreakdownCardLayout}>
       <div style={mainDonutWrap}>
         <div
+          className="family-main-donut"
           style={{
             width: 285,
             height: 285,
@@ -451,7 +642,11 @@ function FullWidthDonutCard({ items, formatCurrency, emptyText }) {
 
       <div style={mainLegendWrap}>
         {data.segments.map((seg, index) => (
-          <div key={`${seg.id || seg.name}-${index}`} style={mainLegendRow}>
+          <div
+            className="family-main-legend-row"
+            key={`${seg.id || seg.name}-${index}`}
+            style={mainLegendRow}
+          >
             <span style={{ ...mainLegendDot, background: seg.color }} />
 
             <div style={mainLegendName} title={seg.name}>
@@ -560,7 +755,7 @@ function MemberCard({ member, formatCurrency }) {
   const insurance = member.insurance || {};
 
   return (
-    <div style={memberCard}>
+    <div className="family-member-card" style={memberCard}>
       <div style={memberTop}>
         <div>
           <div style={memberName}>{member.name}</div>
@@ -573,7 +768,9 @@ function MemberCard({ member, formatCurrency }) {
 
       <div style={centerCard}>
         <div style={centerLabel}>סך צבירה</div>
-        <div style={centerValue}>{formatCurrency(summary.totalAssets)}</div>
+        <div className="family-center-value" style={centerValue}>
+          {formatCurrency(summary.totalAssets)}
+        </div>
       </div>
 
       <div style={miniGrid}>
