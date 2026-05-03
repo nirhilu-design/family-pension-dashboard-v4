@@ -742,14 +742,10 @@ export function buildLegacyReportData(parsedFiles) {
       )
     );
 
-    const salaryBase = Math.max(
-      0,
-      ...memberPolicies.map((p) => p.salary || 0),
-      file.member.income || 0
-    );
+    const incomeBase = Number(file.member.income || 0);
 
     const disabilityPercent =
-      salaryBase > 0 ? Math.round((disabilityValue / salaryBase) * 100) : 0;
+      incomeBase > 0 ? Math.round((disabilityValue / incomeBase) * 100) : 0;
 
     return {
       name: file.member.fullName || "ללא שם",
