@@ -58,12 +58,9 @@ function ClientFamilyView({ clientModel }) {
               padding: 0 !important;
               background: #ffffff !important;
               overflow: visible !important;
+              direction: rtl !important;
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
-            }
-
-            body {
-              zoom: 0.72;
             }
 
             .client-family-root {
@@ -71,17 +68,21 @@ function ClientFamilyView({ clientModel }) {
               max-width: 100% !important;
               background: #ffffff !important;
               direction: rtl !important;
+              overflow: visible !important;
             }
 
             .family-print-page {
               width: 196mm !important;
+              height: 283mm !important;
               max-width: 196mm !important;
+              max-height: 283mm !important;
               margin: 0 auto !important;
               padding: 0 !important;
               page-break-after: always !important;
               break-after: page !important;
-              overflow: visible !important;
+              overflow: hidden !important;
               background: #ffffff !important;
+              box-sizing: border-box !important;
             }
 
             .family-print-page:last-child {
@@ -89,31 +90,43 @@ function ClientFamilyView({ clientModel }) {
               break-after: auto !important;
             }
 
+            .family-print-page,
+            .family-print-page * {
+              break-inside: avoid !important;
+              page-break-inside: avoid !important;
+              box-sizing: border-box !important;
+            }
+
+            .family-hero {
+              break-inside: avoid !important;
+              page-break-inside: avoid !important;
+            }
+
             .family-print-page-1 .family-hero {
-              margin-bottom: 10px !important;
-              padding: 18px 20px !important;
+              margin-bottom: 8px !important;
+              padding: 15px 18px !important;
               border-radius: 18px !important;
             }
 
             .family-print-page-1 .family-top-grid {
               display: grid !important;
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-              gap: 10px !important;
-              margin-bottom: 10px !important;
+              gap: 8px !important;
+              margin-bottom: 8px !important;
             }
 
             .family-print-page-1 .family-compare-grid {
               display: grid !important;
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-              gap: 10px !important;
+              gap: 8px !important;
               margin-bottom: 0 !important;
             }
 
             .family-lower-grid {
               display: grid !important;
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-              gap: 10px !important;
-              margin-bottom: 10px !important;
+              gap: 8px !important;
+              margin-bottom: 8px !important;
             }
 
             .family-section-card,
@@ -127,53 +140,54 @@ function ClientFamilyView({ clientModel }) {
             }
 
             .family-section-card {
-              padding: 14px !important;
-              margin-bottom: 10px !important;
-              border-radius: 16px !important;
+              padding: 12px !important;
+              margin-bottom: 8px !important;
+              border-radius: 15px !important;
             }
 
             .family-kpi-card {
-              min-height: 135px !important;
-              padding: 14px !important;
-              border-radius: 16px !important;
+              min-height: 122px !important;
+              padding: 12px !important;
+              border-radius: 15px !important;
             }
 
             .family-donut-card {
-              min-height: 170px !important;
-              padding: 14px !important;
-              border-radius: 16px !important;
+              min-height: 158px !important;
+              padding: 12px !important;
+              border-radius: 15px !important;
             }
 
             .family-compare-card {
-              min-height: 150px !important;
-              padding: 14px !important;
-              border-radius: 16px !important;
+              min-height: 135px !important;
+              padding: 12px !important;
+              border-radius: 15px !important;
             }
 
             .family-members-grid {
               display: grid !important;
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-              gap: 10px !important;
+              gap: 8px !important;
             }
 
             .family-member-card {
-              padding: 13px !important;
-              border-radius: 16px !important;
+              padding: 11px !important;
+              border-radius: 15px !important;
             }
 
             .family-main-breakdown {
-              grid-template-columns: 240px 1fr !important;
-              gap: 14px !important;
+              grid-template-columns: 215px 1fr !important;
+              gap: 10px !important;
             }
 
             .family-main-donut {
-              transform: scale(0.82);
-              transform-origin: center;
+              width: 220px !important;
+              height: 220px !important;
+              transform: none !important;
             }
 
             .family-main-legend-row {
-              min-height: 31px !important;
-              padding: 5px 0 !important;
+              min-height: 27px !important;
+              padding: 4px 0 !important;
             }
 
             .family-summary-grid {
@@ -182,28 +196,33 @@ function ClientFamilyView({ clientModel }) {
             }
 
             h1 {
-              font-size: 22px !important;
+              font-size: 20px !important;
+              line-height: 1.15 !important;
             }
 
             h2,
             h3 {
               font-size: 12px !important;
+              line-height: 1.25 !important;
             }
 
             .family-kpi-value {
-              font-size: 25px !important;
+              font-size: 23px !important;
             }
 
             .family-center-value {
-              font-size: 20px !important;
+              font-size: 19px !important;
             }
 
-            .family-text-small,
-            .family-explanation,
+            .family-explanation {
+              margin-bottom: 8px !important;
+              line-height: 1.45 !important;
+            }
+
             p,
             span,
             div {
-              font-size: 10.5px;
+              font-size: 10px;
             }
 
             table,
