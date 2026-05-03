@@ -359,7 +359,7 @@ function parseSummary(doc) {
         getText(brutoSave || doc, "PensionRetire")
       ),
       withoutDepositsMonthlyPensionField: parseNumber(
-        getText(netoSave || brutoSave || doc, "RetireCurrBalancePension")
+        getText(brutoSave || doc, "RetireCurrBalancePension")
       ),
       projectedRetirementBalance: parseNumber(
         getText(brutoSave || doc, "RetireCurrBalance")
