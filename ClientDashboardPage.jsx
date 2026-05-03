@@ -181,33 +181,163 @@ function ClientDashboardPage({
           }
 
           @media print {
-            .client-no-print {
-              display: none !important;
+            @page {
+              size: A4 portrait;
+              margin: 7mm;
             }
 
-            .client-print-main {
-              height: auto !important;
-              overflow: visible !important;
+            html,
+            body {
+              width: 210mm !important;
+              margin: 0 !important;
               padding: 0 !important;
-            }
-
-            .client-print-page {
-              display: block !important;
-              min-height: auto !important;
+              background: #ffffff !important;
               overflow: visible !important;
-              background: white !important;
+              direction: rtl !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
             }
 
             body {
-              background: white !important;
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
+              zoom: 0.74;
             }
 
-            @page {
-              size: A4 landscape;
-              margin: 10mm;
+            .client-no-print,
+            button,
+            input,
+            select,
+            textarea {
+              display: none !important;
             }
+
+            .client-print-page {
+              min-height: auto !important;
+              background: #ffffff !important;
+              overflow: visible !important;
+              direction: rtl !important;
+            }
+
+            .client-print-main {
+              width: 100% !important;
+              max-width: none !important;
+              height: auto !important;
+              overflow: visible !important;
+              padding: 0 !important;
+              margin: 0 !important;
+              background: #ffffff !important;
+            }
+
+            .client-print-container {
+              width: 196mm !important;
+              max-width: 196mm !important;
+              min-width: 0 !important;
+              margin: 0 auto !important;
+              padding: 0 !important;
+              overflow: visible !important;
+            }
+
+            .client-print-container > * {
+              width: 100% !important;
+              max-width: 100% !important;
+              min-width: 0 !important;
+              overflow: visible !important;
+            }
+
+            .client-print-container > * > * {
+              max-width: 100% !important;
+            }
+
+            section,
+            article,
+            main,
+            div {
+              max-width: 100% !important;
+            }
+
+            .print-page,
+            .client-print-section {
+              width: 196mm !important;
+              max-width: 196mm !important;
+              min-height: 282mm !important;
+              page-break-after: always !important;
+              break-after: page !important;
+              overflow: hidden !important;
+            }
+
+            .print-page:last-child,
+            .client-print-section:last-child {
+              page-break-after: auto !important;
+              break-after: auto !important;
+            }
+
+            .report-block,
+            .dashboard-card,
+            .member-card,
+            .chart-card,
+            .table-card,
+            .family-card,
+            .summary-card,
+            .card,
+            .box,
+            .section,
+            table,
+            tr,
+            td,
+            th,
+            svg,
+            canvas,
+            img {
+              break-inside: avoid !important;
+              page-break-inside: avoid !important;
+            }
+
+            .report-block,
+            .dashboard-card,
+            .member-card,
+            .chart-card,
+            .table-card,
+            .family-card,
+            .summary-card,
+            .card,
+            .box,
+            .section {
+              box-shadow: none !important;
+            }
+
+            /* דחיסה קלה כדי שהדוח ייכנס ל־3 עמודים */
+            h1 {
+              font-size: 18px !important;
+            }
+
+            h2 {
+              font-size: 15px !important;
+            }
+
+            h3 {
+              font-size: 13px !important;
+            }
+
+            p,
+            span,
+            div {
+              font-size: 11px;
+            }
+
+            /* גריד הדפסה לאורך */
+            [style*="grid-template-columns"] {
+              gap: 8px !important;
+            }
+
+            /* שלא יפתח עמוד לכל ריבוע */
+            .client-print-container .member-card,
+            .client-print-container .dashboard-card,
+            .client-print-container .chart-card {
+              page-break-after: auto !important;
+              break-after: auto !important;
+            }
+
+            /* הסתרת כותרות דפדפן לא בשליטתנו לא אפשרית בקוד;
+               צריך בהדפסה לכבות Headers and footers בדפדפן */
           }
 
           @media (max-width: 900px) {
@@ -375,6 +505,7 @@ function ClientDashboardPage({
           }}
         >
           <div
+            className="client-print-container"
             style={{
               width: "100%",
               maxWidth: "1240px",
