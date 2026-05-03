@@ -489,46 +489,27 @@ function isPensionFundPolicy(policy) {
   );
 }
 
-function isLifeInsurancePolicy(policy) {
-  const text = getPolicyText(policy).toLowerCase();
-
-  if (isPensionFundPolicy(policy)) return false;
-
-  return (
-    text.includes("ביטוח חיים") ||
-    text.includes("ריסק") ||
-    text.includes("risk")
-  );
-}
-
 function isNoCoeffPolicy(policy) {
   const coeff = policy?.savings?.hCoeff;
   return coeff === null || coeff === undefined || coeff === 0;
 }
 
-function getLifeInsuranceAmount(policy) {
-  if (!isLifeInsurancePolicy(policy)) return 0;
+/**
+ * סכום למוטבים / פטירה להצגה:
+ * לפי הדוח המקורי, יש לכלול את עמודת TotalBituah מכל מוצר שאינו קרן פנסיה.
+ * כלומר: ביטוחי מנהלים, קופות גמל, קרנות השתלמות, ריסק וכל מוצר אחר שאינו קרן פנסיה.
+ * קרן פנסיה לא נכנסת לחישוב הזה.
+ */
+function getBeneficiaryDeathAmount(policy) {
+  if (isPensionFundPolicy(policy)) return 0;
   return Number(policy?.coverage?.totalInsurance || 0);
 }
 
-function getNoCoeffPidionsAmount(policy) {
-  if (!isNoCoeffPolicy(policy)) return 0;
-  return Number(policy?.savings?.totalPidions || 0);
-}
-
-/**
- * כלל ביטוח חיים להצגה:
- * 1. TotalPidions לכל מוצר שאין לו HCoff
- * 2. ועוד TotalBituah למוצר שנקרא ביטוח חיים / ריסק
- */
 function buildLifeCoverageDisplayAmount(policies) {
   const safePolicies = Array.isArray(policies) ? policies : [];
   const unique = uniquePolicies(safePolicies);
 
-  const noCoeffPidions = sumNullable(unique.map(getNoCoeffPidionsAmount));
-  const actualLifeInsurance = sumNullable(unique.map(getLifeInsuranceAmount));
-
-  return noCoeffPidions + actualLifeInsurance;
+  return sumNullable(unique.map(getBeneficiaryDeathAmount));
 }
 
 function buildTracks(flatPolicies) {
@@ -894,7 +875,7 @@ export function buildLegacyReportData(parsedFiles) {
       coverageAmount: totalInsurance,
       summary:
         totalInsurance > 0
-          ? "סכום ביטוח חיים כולל TotalPidions במוצרים ללא HCoff ובנוסף TotalBituah במוצרי ביטוח חיים / ריסק"
+          ? 'סכום למוטבים / פטירה מחושב לפי TotalBituah מכל מוצר שאינו קרן פנסיה'
           : "לא התקבל מידע",
     },
     weightedEquityExposure,
@@ -913,3 +894,4 @@ export function buildLegacyReportData(parsedFiles) {
     })),
   };
 }
+
