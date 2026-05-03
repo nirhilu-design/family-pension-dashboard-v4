@@ -57,8 +57,8 @@ function ClientFamilyView({ clientModel }) {
               margin: 0 !important;
               padding: 0 !important;
               background: #ffffff !important;
-              overflow: visible !important;
               direction: rtl !important;
+              overflow: visible !important;
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
             }
@@ -80,10 +80,10 @@ function ClientFamilyView({ clientModel }) {
               margin: 0 auto !important;
               padding: 0 !important;
               background: #ffffff !important;
-              box-sizing: border-box !important;
               page-break-after: always !important;
               break-after: page !important;
               overflow: visible !important;
+              box-sizing: border-box !important;
             }
 
             .family-print-page:last-child {
@@ -91,47 +91,24 @@ function ClientFamilyView({ clientModel }) {
               break-after: auto !important;
             }
 
-            .family-hero,
-            .family-section-card,
-            .family-kpi-card,
-            .family-donut-card,
-            .family-compare-card,
-            .family-member-card,
-            table,
-            tr,
-            svg,
-            canvas,
-            img {
+            .family-hero {
+              margin-bottom: 6px !important;
+              padding: 10px 14px !important;
+              border-radius: 14px !important;
+              box-shadow: none !important;
               break-inside: avoid !important;
               page-break-inside: avoid !important;
             }
 
-            .family-print-page-1 .family-hero {
-              margin-bottom: 7px !important;
-              padding: 12px 16px !important;
-              border-radius: 16px !important;
-              box-shadow: none !important;
-            }
-
-            .family-print-page-1 .family-top-grid {
+            .family-top-grid,
+            .family-compare-grid,
+            .family-lower-grid,
+            .family-members-grid {
               display: grid !important;
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-              gap: 7px !important;
-              margin-bottom: 7px !important;
-            }
-
-            .family-print-page-1 .family-compare-grid {
-              display: grid !important;
-              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-              gap: 7px !important;
-              margin-bottom: 0 !important;
-            }
-
-            .family-lower-grid {
-              display: grid !important;
-              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-              gap: 7px !important;
-              margin-bottom: 7px !important;
+              gap: 6px !important;
+              margin-bottom: 6px !important;
+              align-items: stretch !important;
             }
 
             .family-section-card,
@@ -140,104 +117,137 @@ function ClientFamilyView({ clientModel }) {
             .family-compare-card,
             .family-member-card {
               box-shadow: none !important;
-              border-radius: 14px !important;
+              border-radius: 13px !important;
+              box-sizing: border-box !important;
+              break-inside: avoid !important;
+              page-break-inside: avoid !important;
             }
 
             .family-section-card {
-              padding: 10px !important;
-              margin-bottom: 7px !important;
+              padding: 8px !important;
+              margin-bottom: 6px !important;
             }
 
             .family-kpi-card {
-              min-height: 92px !important;
-              padding: 9px !important;
+              height: 78px !important;
+              min-height: 78px !important;
+              padding: 6px !important;
             }
 
             .family-donut-card {
-              min-height: 150px !important;
-              padding: 10px !important;
+              height: 135px !important;
+              min-height: 135px !important;
+              padding: 7px !important;
             }
 
             .family-compare-card {
-              min-height: 118px !important;
-              padding: 10px !important;
-            }
-
-            .family-members-grid {
-              display: grid !important;
-              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-              gap: 7px !important;
+              height: 115px !important;
+              min-height: 115px !important;
+              padding: 7px !important;
             }
 
             .family-member-card {
-              padding: 9px !important;
+              padding: 7px !important;
+            }
+
+            .family-donut-card [style*="grid-template-columns"] {
+              grid-template-columns: 78px 1fr !important;
+              gap: 6px !important;
+              margin-top: 5px !important;
+            }
+
+            .family-donut-card [style*="width: 102px"],
+            .family-donut-card [style*="width:102px"] {
+              width: 76px !important;
+              height: 76px !important;
             }
 
             .family-main-breakdown {
-              grid-template-columns: 190px 1fr !important;
+              display: grid !important;
+              grid-template-columns: 165px 1fr !important;
               gap: 8px !important;
+              align-items: center !important;
             }
 
             .family-main-donut {
-              width: 190px !important;
-              height: 190px !important;
+              width: 165px !important;
+              height: 165px !important;
               transform: none !important;
             }
 
             .family-main-legend-row {
-              min-height: 23px !important;
-              padding: 3px 0 !important;
+              min-height: 21px !important;
+              padding: 2px 0 !important;
+              grid-template-columns: 9px 1fr 72px 32px !important;
+              gap: 5px !important;
             }
 
             .family-summary-grid {
+              display: grid !important;
               grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-              gap: 7px !important;
+              gap: 6px !important;
+              margin-bottom: 6px !important;
             }
 
-            .family-explanation {
-              margin-bottom: 7px !important;
-              line-height: 1.35 !important;
+            table {
+              width: 100% !important;
+              min-width: 100% !important;
+              break-inside: avoid !important;
+              page-break-inside: avoid !important;
+            }
+
+            th,
+            td {
+              font-size: 8.5px !important;
+              padding: 5px !important;
             }
 
             h1 {
-              font-size: 18px !important;
-              line-height: 1.15 !important;
+              font-size: 17px !important;
+              line-height: 1.1 !important;
             }
 
             h2,
             h3 {
-              font-size: 11px !important;
+              font-size: 10px !important;
               line-height: 1.2 !important;
             }
 
             p,
             span,
             div {
-              font-size: 9px !important;
+              font-size: 8.5px !important;
             }
 
             .family-kpi-value {
-              font-size: 19px !important;
-              line-height: 1.1 !important;
+              font-size: 18px !important;
+              line-height: 1 !important;
+              margin-bottom: 2px !important;
             }
 
             .family-center-value {
-              font-size: 17px !important;
+              font-size: 15px !important;
             }
 
-            .family-main-legend-row div,
-            .family-main-legend-row span {
-              font-size: 9px !important;
+            .family-explanation {
+              margin-bottom: 5px !important;
+              line-height: 1.3 !important;
             }
 
-            table {
-              min-width: 100% !important;
+            .family-kpi-card svg {
+              width: 18px !important;
+              height: 18px !important;
             }
 
-            th,
-            td {
-              font-size: 9px !important;
-              padding: 6px !important;
+            .family-kpi-card > div:first-child {
+              width: 32px !important;
+              height: 32px !important;
+              border-radius: 10px !important;
+              margin-bottom: 3px !important;
+            }
+
+            .no-print {
+              display: none !important;
             }
           }
         `}
