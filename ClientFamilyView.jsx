@@ -64,8 +64,10 @@ function ClientFamilyView({ clientModel }) {
             }
 
             .client-family-root {
-              width: 100% !important;
-              max-width: 100% !important;
+              width: 196mm !important;
+              max-width: 196mm !important;
+              margin: 0 auto !important;
+              padding: 0 !important;
               background: #ffffff !important;
               direction: rtl !important;
               overflow: visible !important;
@@ -73,16 +75,15 @@ function ClientFamilyView({ clientModel }) {
 
             .family-print-page {
               width: 196mm !important;
-              height: 283mm !important;
-              max-width: 196mm !important;
-              max-height: 283mm !important;
+              min-height: 283mm !important;
+              height: auto !important;
               margin: 0 auto !important;
               padding: 0 !important;
-              page-break-after: always !important;
-              break-after: page !important;
-              overflow: hidden !important;
               background: #ffffff !important;
               box-sizing: border-box !important;
+              page-break-after: always !important;
+              break-after: page !important;
+              overflow: visible !important;
             }
 
             .family-print-page:last-child {
@@ -90,43 +91,47 @@ function ClientFamilyView({ clientModel }) {
               break-after: auto !important;
             }
 
-            .family-print-page,
-            .family-print-page * {
-              break-inside: avoid !important;
-              page-break-inside: avoid !important;
-              box-sizing: border-box !important;
-            }
-
-            .family-hero {
+            .family-hero,
+            .family-section-card,
+            .family-kpi-card,
+            .family-donut-card,
+            .family-compare-card,
+            .family-member-card,
+            table,
+            tr,
+            svg,
+            canvas,
+            img {
               break-inside: avoid !important;
               page-break-inside: avoid !important;
             }
 
             .family-print-page-1 .family-hero {
-              margin-bottom: 8px !important;
-              padding: 15px 18px !important;
-              border-radius: 18px !important;
+              margin-bottom: 7px !important;
+              padding: 12px 16px !important;
+              border-radius: 16px !important;
+              box-shadow: none !important;
             }
 
             .family-print-page-1 .family-top-grid {
               display: grid !important;
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-              gap: 8px !important;
-              margin-bottom: 8px !important;
+              gap: 7px !important;
+              margin-bottom: 7px !important;
             }
 
             .family-print-page-1 .family-compare-grid {
               display: grid !important;
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-              gap: 8px !important;
+              gap: 7px !important;
               margin-bottom: 0 !important;
             }
 
             .family-lower-grid {
               display: grid !important;
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-              gap: 8px !important;
-              margin-bottom: 8px !important;
+              gap: 7px !important;
+              margin-bottom: 7px !important;
             }
 
             .family-section-card,
@@ -135,105 +140,104 @@ function ClientFamilyView({ clientModel }) {
             .family-compare-card,
             .family-member-card {
               box-shadow: none !important;
-              break-inside: avoid !important;
-              page-break-inside: avoid !important;
+              border-radius: 14px !important;
             }
 
             .family-section-card {
-              padding: 12px !important;
-              margin-bottom: 8px !important;
-              border-radius: 15px !important;
+              padding: 10px !important;
+              margin-bottom: 7px !important;
             }
 
             .family-kpi-card {
-              min-height: 122px !important;
-              padding: 12px !important;
-              border-radius: 15px !important;
+              min-height: 92px !important;
+              padding: 9px !important;
             }
 
             .family-donut-card {
-              min-height: 158px !important;
-              padding: 12px !important;
-              border-radius: 15px !important;
+              min-height: 150px !important;
+              padding: 10px !important;
             }
 
             .family-compare-card {
-              min-height: 135px !important;
-              padding: 12px !important;
-              border-radius: 15px !important;
+              min-height: 118px !important;
+              padding: 10px !important;
             }
 
             .family-members-grid {
               display: grid !important;
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-              gap: 8px !important;
+              gap: 7px !important;
             }
 
             .family-member-card {
-              padding: 11px !important;
-              border-radius: 15px !important;
+              padding: 9px !important;
             }
 
             .family-main-breakdown {
-              grid-template-columns: 215px 1fr !important;
-              gap: 10px !important;
+              grid-template-columns: 190px 1fr !important;
+              gap: 8px !important;
             }
 
             .family-main-donut {
-              width: 220px !important;
-              height: 220px !important;
+              width: 190px !important;
+              height: 190px !important;
               transform: none !important;
             }
 
             .family-main-legend-row {
-              min-height: 27px !important;
-              padding: 4px 0 !important;
+              min-height: 23px !important;
+              padding: 3px 0 !important;
             }
 
             .family-summary-grid {
               grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-              gap: 8px !important;
+              gap: 7px !important;
+            }
+
+            .family-explanation {
+              margin-bottom: 7px !important;
+              line-height: 1.35 !important;
             }
 
             h1 {
-              font-size: 20px !important;
+              font-size: 18px !important;
               line-height: 1.15 !important;
             }
 
             h2,
             h3 {
-              font-size: 12px !important;
-              line-height: 1.25 !important;
-            }
-
-            .family-kpi-value {
-              font-size: 23px !important;
-            }
-
-            .family-center-value {
-              font-size: 19px !important;
-            }
-
-            .family-explanation {
-              margin-bottom: 8px !important;
-              line-height: 1.45 !important;
+              font-size: 11px !important;
+              line-height: 1.2 !important;
             }
 
             p,
             span,
             div {
-              font-size: 10px;
+              font-size: 9px !important;
             }
 
-            table,
-            tr,
-            td,
+            .family-kpi-value {
+              font-size: 19px !important;
+              line-height: 1.1 !important;
+            }
+
+            .family-center-value {
+              font-size: 17px !important;
+            }
+
+            .family-main-legend-row div,
+            .family-main-legend-row span {
+              font-size: 9px !important;
+            }
+
+            table {
+              min-width: 100% !important;
+            }
+
             th,
-            svg,
-            canvas,
-            img {
-              break-inside: avoid !important;
-              page-break-inside: avoid !important;
+            td {
+              font-size: 9px !important;
+              padding: 6px !important;
             }
           }
         `}
@@ -248,18 +252,11 @@ function ClientFamilyView({ clientModel }) {
         />
 
         <section className="family-top-grid" style={topGrid}>
-          <DonutSummaryCard
-            title="חלוקה לפי גופים מנהלים"
-            subtitle="התפלגות הניהול בין החברות והגופים המנהלים."
-            items={managers}
-            formatCurrency={formatCurrency}
-          />
-
-          <DonutSummaryCard
-            title="חלוקה לפי מוצרים"
-            subtitle="התפלגות הנכסים בין סוגי החיסכון הקיימים בתיק."
-            items={products}
-            formatCurrency={formatCurrency}
+          <KpiCard
+            icon={<GiftIcon />}
+            title="סך נכסים"
+            value={formatCurrency(summary.totalAssets)}
+            subtext="סך הצבירה הכולל של התא המשפחתי"
           />
 
           <KpiCard
@@ -269,25 +266,32 @@ function ClientFamilyView({ clientModel }) {
             subtext="סך ההפקדות החודשיות של בני המשפחה"
           />
 
-          <KpiCard
-            icon={<GiftIcon />}
-            title="סך נכסים"
-            value={formatCurrency(summary.totalAssets)}
-            subtext="סך הצבירה הכולל של התא המשפחתי"
+          <DonutSummaryCard
+            title="חלוקה לפי מוצרים"
+            subtitle="התפלגות הנכסים בין סוגי החיסכון הקיימים בתיק."
+            items={products}
+            formatCurrency={formatCurrency}
+          />
+
+          <DonutSummaryCard
+            title="חלוקה לפי גופים מנהלים"
+            subtitle="התפלגות הניהול בין החברות והגופים המנהלים."
+            items={managers}
+            formatCurrency={formatCurrency}
           />
         </section>
 
         <section className="family-compare-grid" style={compareGrid}>
           <ComparisonChartCard
-            title="קצבה חודשית בגיל פרישה"
-            explanation="השוואה בין קצבה צפויה עם המשך הפקדות לבין ללא המשך הפקדות."
-            bars={pensionBars}
-          />
-
-          <ComparisonChartCard
             title="צבירה צפויה בגיל פרישה"
             explanation="השוואה בין סכום חד פעמי צפוי עם המשך הפקדות לבין ללא המשך הפקדות."
             bars={lumpBars}
+          />
+
+          <ComparisonChartCard
+            title="קצבה חודשית בגיל פרישה"
+            explanation="השוואה בין קצבה צפויה עם המשך הפקדות לבין ללא המשך הפקדות."
+            bars={pensionBars}
           />
         </section>
       </div>
