@@ -16,41 +16,51 @@ function PrintStyles() {
         @media print {
           @page {
             size: A4 portrait;
-            margin: 10mm;
+            margin: 6mm;
           }
 
           html,
           body {
-            width: 210mm;
-            min-height: 297mm;
-            direction: rtl;
+            width: 210mm !important;
+            min-height: 297mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            direction: rtl !important;
             background: #ffffff !important;
             font-family: Calibri, Arial, sans-serif !important;
+            overflow: visible !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
 
           body {
-            margin: 0 !important;
-            padding: 0 !important;
-            zoom: 0.78;
+            zoom: 1 !important;
           }
 
           * {
-            box-sizing: border-box;
+            box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
 
-          /* לא להדפיס כפתורים/פקדים */
           button,
           input,
           select,
           textarea,
           .no-print,
-          .print-hide {
+          .print-hide,
+          .client-no-print,
+          .member-filter-print-hide {
             display: none !important;
           }
 
-          /* מניעת חיתוך ריבועים/כרטיסים */
+          main,
+          section,
+          article {
+            max-width: 100% !important;
+            overflow: visible !important;
+          }
+
           .card,
           .box,
           .section,
@@ -60,12 +70,20 @@ function PrintStyles() {
           .chart-card,
           .table-card,
           .dashboard-card,
-          .family-card {
+          .family-card,
+          .family-section-card,
+          .family-kpi-card,
+          .family-donut-card,
+          .family-compare-card,
+          .family-member-card,
+          .member-section-card,
+          .member-kpi-card,
+          .member-donut-card {
             break-inside: avoid !important;
             page-break-inside: avoid !important;
+            box-shadow: none !important;
           }
 
-          /* מניעת חיתוך טבלאות/גרפים */
           table,
           thead,
           tbody,
@@ -79,63 +97,11 @@ function PrintStyles() {
             page-break-inside: avoid !important;
           }
 
-          /* אם יש אזורים שאתה רוצה שיתחילו בעמוד חדש */
-          .print-page {
-            page-break-after: always !important;
-            break-after: page !important;
-          }
-
-          .print-page:last-child {
+          .print-page:last-child,
+          .client-print-section:last-child,
+          .family-print-page:last-child {
             page-break-after: auto !important;
             break-after: auto !important;
-          }
-
-          /* שלא יהיה רוחב גדול מדי */
-          main,
-          section,
-          article,
-          .container,
-          .dashboard,
-          .report-container,
-          .client-dashboard,
-          .client-dashboard-page {
-            max-width: 100% !important;
-            width: 100% !important;
-            overflow: visible !important;
-          }
-
-          /* ביטול גלילות פנימיות בהדפסה */
-          div {
-            overflow: visible !important;
-          }
-
-          /* ריווח עדין בין בלוקים */
-          .report-block,
-          .section,
-          .card,
-          .member-card,
-          .dashboard-card {
-            margin-bottom: 10px !important;
-          }
-
-          /* הורדת צללים כדי שלא יעמיס על PDF */
-          .card,
-          .box,
-          .section,
-          .report-block,
-          .summary-card,
-          .member-card,
-          .chart-card,
-          .table-card,
-          .dashboard-card,
-          .family-card {
-            box-shadow: none !important;
-          }
-
-          /* שמירה על צבעים בהדפסה */
-          * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
           }
         }
       `}
