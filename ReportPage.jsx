@@ -967,8 +967,8 @@ export default function ReportPage({
             }
 
             @page {
-              size: A4 landscape;
-              margin: 10mm;
+              size: A4 portrait;
+              margin: 7mm;
             }
 
             .print-section {
@@ -1017,6 +1017,75 @@ export default function ReportPage({
             .loans-section {
               break-before: page !important;
               page-break-before: always !important;
+            }
+
+
+            html,
+            body {
+              width: 210mm !important;
+              min-height: 297mm !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              overflow: visible !important;
+              background: #ffffff !important;
+              direction: rtl !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+
+            body {
+              zoom: 1 !important;
+            }
+
+            .responsive-grid-4 {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 8px !important;
+            }
+
+            .responsive-grid-2,
+            .responsive-lower-two,
+            .responsive-bottom-grid,
+            .responsive-members-grid,
+            .responsive-loans-grid,
+            .responsive-mini-grid,
+            .responsive-insurance-grid,
+            .responsive-loan-summary {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 8px !important;
+            }
+
+            .print-section,
+            .avoid-break,
+            .member-card-print,
+            .loan-group-print,
+            .recommendations-print,
+            .summary-box-print,
+            .foreign-exposure-print,
+            .equity-print,
+            .main-group-print {
+              max-width: 100% !important;
+              overflow: visible !important;
+              box-shadow: none !important;
+              break-inside: avoid !important;
+              page-break-inside: avoid !important;
+            }
+
+            .force-new-page-print,
+            .members-section,
+            .loans-section {
+              break-before: auto !important;
+              page-break-before: auto !important;
+            }
+
+            table {
+              width: 100% !important;
+              min-width: 100% !important;
+            }
+
+            th,
+            td {
+              font-size: 9px !important;
+              padding: 6px !important;
             }
           }
 
