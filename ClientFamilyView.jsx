@@ -92,18 +92,19 @@ function ClientFamilyView({ clientModel }) {
               margin: 0 auto !important;
               padding: 0 !important;
               background: #ffffff !important;
-              page-break-after: always !important;
-              break-after: page !important;
               overflow: visible !important;
               box-sizing: border-box !important;
-            }
-
-            .family-print-page:last-child {
               page-break-after: auto !important;
               break-after: auto !important;
             }
 
+            .family-print-page + .family-print-page {
+              margin-top: 7px !important;
+            }
+
             .family-hero {
+              width: 100% !important;
+              max-width: 100% !important;
               margin-bottom: 7px !important;
               padding: 9px 12px !important;
               border-radius: 13px !important;
@@ -116,18 +117,40 @@ function ClientFamilyView({ clientModel }) {
             .family-compare-grid,
             .family-lower-grid,
             .family-members-grid {
-              display: grid !important;
-              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              display: flex !important;
+              flex-wrap: wrap !important;
               gap: 7px !important;
               margin-bottom: 7px !important;
               align-items: stretch !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              min-width: 0 !important;
+            }
+
+            .family-top-grid > .family-kpi-card,
+            .family-top-grid > .family-donut-card,
+            .family-compare-grid > .family-compare-card,
+            .family-lower-grid > .family-section-card,
+            .family-members-grid > .family-member-card {
+              flex: 0 0 calc(50% - 3.5px) !important;
+              width: calc(50% - 3.5px) !important;
+              max-width: calc(50% - 3.5px) !important;
+              min-width: 0 !important;
             }
 
             .family-summary-grid {
-              display: grid !important;
-              grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+              display: flex !important;
+              flex-wrap: wrap !important;
               gap: 7px !important;
               margin-bottom: 7px !important;
+              width: 100% !important;
+            }
+
+            .family-summary-grid > * {
+              flex: 0 0 calc(25% - 5.25px) !important;
+              width: calc(25% - 5.25px) !important;
+              max-width: calc(25% - 5.25px) !important;
+              min-width: 0 !important;
             }
 
             .family-section-card,
@@ -135,35 +158,36 @@ function ClientFamilyView({ clientModel }) {
             .family-donut-card,
             .family-compare-card,
             .family-member-card {
-              width: auto !important;
-              max-width: 100% !important;
               box-shadow: none !important;
               border-radius: 12px !important;
               box-sizing: border-box !important;
               break-inside: avoid !important;
               page-break-inside: avoid !important;
               overflow: hidden !important;
+              min-width: 0 !important;
             }
 
             .family-section-card {
               padding: 8px !important;
               margin-bottom: 7px !important;
+              width: 100% !important;
+              max-width: 100% !important;
             }
 
             .family-kpi-card {
-              min-height: 78px !important;
+              min-height: 74px !important;
               height: auto !important;
               padding: 7px !important;
             }
 
             .family-donut-card {
-              min-height: 132px !important;
+              min-height: 122px !important;
               height: auto !important;
               padding: 7px !important;
             }
 
             .family-compare-card {
-              min-height: 112px !important;
+              min-height: 102px !important;
               height: auto !important;
               padding: 7px !important;
             }
@@ -173,35 +197,38 @@ function ClientFamilyView({ clientModel }) {
             }
 
             .family-donut-card [style*="grid-template-columns"] {
-              grid-template-columns: 78px 1fr !important;
+              display: grid !important;
+              grid-template-columns: 72px minmax(0, 1fr) !important;
               gap: 6px !important;
               margin-top: 5px !important;
             }
 
             .family-donut-card [style*="width: 102px"],
             .family-donut-card [style*="width:102px"] {
-              width: 76px !important;
-              height: 76px !important;
+              width: 70px !important;
+              height: 70px !important;
             }
 
             .family-main-breakdown {
               display: grid !important;
-              grid-template-columns: 165px minmax(0, 1fr) !important;
+              grid-template-columns: 150px minmax(0, 1fr) !important;
               gap: 8px !important;
               align-items: center !important;
               overflow: visible !important;
+              width: 100% !important;
+              max-width: 100% !important;
             }
 
             .family-main-donut {
-              width: 165px !important;
-              height: 165px !important;
+              width: 150px !important;
+              height: 150px !important;
               transform: none !important;
             }
 
             .family-main-legend-row {
-              min-height: 21px !important;
+              min-height: 20px !important;
               padding: 2px 0 !important;
-              grid-template-columns: 9px minmax(0, 1fr) 72px 32px !important;
+              grid-template-columns: 9px minmax(0, 1fr) 68px 30px !important;
               gap: 5px !important;
             }
 
@@ -209,15 +236,17 @@ function ClientFamilyView({ clientModel }) {
               width: 100% !important;
               min-width: 100% !important;
               max-width: 100% !important;
+              table-layout: fixed !important;
               break-inside: avoid !important;
               page-break-inside: avoid !important;
             }
 
             th,
             td {
-              font-size: 8.5px !important;
-              padding: 5px !important;
+              font-size: 8px !important;
+              padding: 4px !important;
               white-space: normal !important;
+              word-break: break-word !important;
             }
 
             h1 {
