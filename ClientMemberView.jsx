@@ -67,14 +67,212 @@ function ClientMemberView({ member }) {
   };
 
   return (
-    <div style={page}>
+    <div className="client-member-root" style={page}>
+      <style>
+        {`
+          @media print {
+            @page {
+              size: A4 portrait;
+              margin: 6mm;
+            }
+
+            html,
+            body {
+              width: 210mm !important;
+              min-height: 297mm !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              background: #ffffff !important;
+              direction: rtl !important;
+              overflow: visible !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+
+            body {
+              zoom: 1 !important;
+            }
+
+            .client-member-root {
+              width: 198mm !important;
+              max-width: 198mm !important;
+              margin: 0 auto !important;
+              padding: 0 !important;
+              background: #ffffff !important;
+              direction: rtl !important;
+              overflow: visible !important;
+              box-sizing: border-box !important;
+            }
+
+            .client-member-root,
+            .client-member-root * {
+              box-sizing: border-box !important;
+            }
+
+            .member-hero {
+              margin-bottom: 7px !important;
+              padding: 10px 12px !important;
+              border-radius: 13px !important;
+              box-shadow: none !important;
+              break-inside: avoid !important;
+              page-break-inside: avoid !important;
+            }
+
+            .member-top-grid,
+            .member-lower-grid,
+            .member-compare-grid {
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 7px !important;
+              margin-bottom: 7px !important;
+              align-items: stretch !important;
+            }
+
+            .member-section-card,
+            .member-kpi-card,
+            .member-donut-card {
+              width: auto !important;
+              max-width: 100% !important;
+              box-shadow: none !important;
+              border-radius: 12px !important;
+              box-sizing: border-box !important;
+              break-inside: avoid !important;
+              page-break-inside: avoid !important;
+              overflow: hidden !important;
+            }
+
+            .member-section-card {
+              padding: 8px !important;
+              margin-bottom: 7px !important;
+            }
+
+            .member-kpi-card {
+              min-height: 78px !important;
+              height: auto !important;
+              padding: 7px !important;
+            }
+
+            .member-donut-card {
+              min-height: auto !important;
+              height: auto !important;
+              padding: 0 !important;
+            }
+
+            .member-donut-layout {
+              display: grid !important;
+              grid-template-columns: 95px minmax(0, 1fr) !important;
+              gap: 7px !important;
+              margin-top: 5px !important;
+              align-items: center !important;
+            }
+
+            .member-donut-chart svg {
+              width: 92px !important;
+              height: 92px !important;
+              max-width: 92px !important;
+              max-height: 92px !important;
+            }
+
+            .member-products-header {
+              margin-bottom: 7px !important;
+            }
+
+            .member-filter-print-hide,
+            .member-filter-print-hide * {
+              display: none !important;
+            }
+
+            .member-table-wrap {
+              width: 100% !important;
+              max-width: 100% !important;
+              overflow: visible !important;
+              border-radius: 10px !important;
+              break-inside: auto !important;
+              page-break-inside: auto !important;
+            }
+
+            .member-products-table {
+              width: 100% !important;
+              min-width: 100% !important;
+              max-width: 100% !important;
+              table-layout: fixed !important;
+              border-collapse: collapse !important;
+              break-inside: auto !important;
+              page-break-inside: auto !important;
+            }
+
+            .member-products-table thead,
+            .member-products-table tbody,
+            .member-products-table tr {
+              break-inside: avoid !important;
+              page-break-inside: avoid !important;
+            }
+
+            .member-products-table th,
+            .member-products-table td {
+              font-size: 7px !important;
+              line-height: 1.2 !important;
+              padding: 4px 3px !important;
+              white-space: normal !important;
+              word-break: break-word !important;
+              overflow-wrap: anywhere !important;
+            }
+
+            h1 {
+              font-size: 17px !important;
+              line-height: 1.1 !important;
+            }
+
+            h2,
+            h3 {
+              font-size: 10px !important;
+              line-height: 1.2 !important;
+            }
+
+            p,
+            span,
+            div {
+              font-size: 8.5px !important;
+            }
+
+            .member-kpi-value {
+              font-size: 18px !important;
+              line-height: 1 !important;
+              margin-bottom: 2px !important;
+            }
+
+            .member-exposure-value {
+              font-size: 18px !important;
+              line-height: 1 !important;
+            }
+
+            .member-explanation {
+              margin-bottom: 5px !important;
+              line-height: 1.3 !important;
+            }
+
+            .member-kpi-card svg {
+              width: 18px !important;
+              height: 18px !important;
+            }
+
+            .member-kpi-card > div:first-child {
+              width: 32px !important;
+              height: 32px !important;
+              border-radius: 10px !important;
+              margin-bottom: 3px !important;
+            }
+          }
+        `}
+      </style>
+
       <Header
         title={member.name}
         eyebrow="מסך לקוח · מבט אישי"
         subtitle="תצוגה אישית מתוך הדוח הפנסיוני המשפחתי המאוחד."
       />
 
-      <section style={topGrid}>
+      <section className="member-top-grid" style={topGrid}>
         <KpiCard
           icon={<AssetsIcon />}
           title="סך נכסים"
@@ -104,9 +302,9 @@ function ClientMemberView({ member }) {
         />
       </section>
 
-      <section style={lowerTwoGrid}>
+      <section className="member-lower-grid" style={lowerTwoGrid}>
         <SectionCard title="חשיפות אישיות" icon="📊">
-          <div style={explanation}>
+          <div className="member-explanation" style={explanation}>
             הצגת רמות החשיפה האישיות למניות ולחו"ל לפי המוצרים המשויכים לבן המשפחה.
           </div>
 
@@ -128,7 +326,7 @@ function ClientMemberView({ member }) {
         </SectionCard>
 
         <SectionCard title="כיסויים ביטוחיים" icon="🛡️">
-          <div style={explanation}>
+          <div className="member-explanation" style={explanation}>
             ריכוז הכיסויים הביטוחיים האישיים שנמצאו בקבצים.
           </div>
 
@@ -147,7 +345,7 @@ function ClientMemberView({ member }) {
         </SectionCard>
       </section>
 
-      <section style={compareGrid}>
+      <section className="member-compare-grid" style={compareGrid}>
         <SectionCard title="חלוקה לפי גופים מנהלים" icon="🏦">
           <DonutSummaryCard
             title="חלוקה לפי גופים מנהלים"
@@ -168,13 +366,13 @@ function ClientMemberView({ member }) {
       </section>
 
       <SectionCard title="מוצרים / תוכניות" icon="📄">
-        <div style={productsHeaderRow}>
+        <div className="member-products-header" style={productsHeaderRow}>
           <div>
             <div style={productsHeaderTitle}>פירוט מוצרים / תוכניות</div>
             <div style={productsHeaderSub}>ניתן לסנן לפי סוג מוצר.</div>
           </div>
 
-          <div style={filterWrap}>
+          <div className="member-filter-print-hide" style={filterWrap}>
             <button
               type="button"
               onClick={() => setFilterOpen((prev) => !prev)}
@@ -203,8 +401,8 @@ function ClientMemberView({ member }) {
         </div>
 
         {filteredProducts.length ? (
-          <div style={tableWrap}>
-            <table style={table}>
+          <div className="member-table-wrap" style={tableWrap}>
+            <table className="member-products-table" style={table}>
               <thead>
                 <tr>
                   <th style={th}>מוצר</th>
@@ -256,7 +454,7 @@ function ClientMemberView({ member }) {
 
 function Header({ eyebrow, title, subtitle }) {
   return (
-    <section style={heroHeader}>
+    <section className="member-hero" style={heroHeader}>
       <div style={heroCenter}>
         <div style={heroEyebrow}>{eyebrow}</div>
         <h1 style={heroTitle}>{title}</h1>
@@ -268,10 +466,10 @@ function Header({ eyebrow, title, subtitle }) {
 
 function KpiCard({ icon, title, value, subtext }) {
   return (
-    <div style={kpiCard}>
+    <div className="member-kpi-card" style={kpiCard}>
       <div style={kpiIconWrap}>{icon}</div>
       <div style={kpiTitle}>{title}</div>
-      <div style={kpiValue}>{value}</div>
+      <div className="member-kpi-value" style={kpiValue}>{value}</div>
       <div style={kpiSub}>{subtext}</div>
     </div>
   );
@@ -279,7 +477,7 @@ function KpiCard({ icon, title, value, subtext }) {
 
 function SectionCard({ title, icon, children }) {
   return (
-    <section style={sectionCard}>
+    <section className="member-section-card" style={sectionCard}>
       <div style={sectionHeader}>
         <div style={titleWithIcon}>
           {icon ? <span>{icon}</span> : null}
@@ -300,7 +498,7 @@ function ExposureMetricBlock({ label, value, valueText, description }) {
           <div style={exposureDescription}>{description}</div>
         </div>
 
-        <div style={exposureValue}>{valueText}</div>
+        <div className="member-exposure-value" style={exposureValue}>{valueText}</div>
       </div>
 
       <ModernBar value={value} />
@@ -346,7 +544,7 @@ function DonutSummaryCard({ title, subtitle, items, formatCurrency }) {
 
   if (!data.segments.length) {
     return (
-      <section style={{ ...donutCard, border: "none", boxShadow: "none" }}>
+      <section className="member-donut-card" style={{ ...donutCard, border: "none", boxShadow: "none" }}>
         <h3 style={donutTitle}>{title}</h3>
         <div style={{ ...smallText, marginTop: 6 }}>{subtitle}</div>
         <EmptyText>אין נתונים להצגה</EmptyText>
@@ -355,12 +553,12 @@ function DonutSummaryCard({ title, subtitle, items, formatCurrency }) {
   }
 
   return (
-    <section style={{ ...donutCard, border: "none", boxShadow: "none" }}>
+    <section className="member-donut-card" style={{ ...donutCard, border: "none", boxShadow: "none" }}>
       <h3 style={donutTitle}>{title}</h3>
       <div style={{ ...smallText, marginTop: 6 }}>{subtitle}</div>
 
-      <div style={donutLayout}>
-        <div style={{ display: "flex", justifyContent: "center" }}>
+      <div className="member-donut-layout" style={donutLayout}>
+        <div className="member-donut-chart" style={{ display: "flex", justifyContent: "center" }}>
           <ExplodedDonutChart segments={data.segments} size={150} />
         </div>
 
