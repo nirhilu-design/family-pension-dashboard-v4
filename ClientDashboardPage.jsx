@@ -183,12 +183,13 @@ function ClientDashboardPage({
           @media print {
             @page {
               size: A4 portrait;
-              margin: 7mm;
+              margin: 6mm;
             }
 
             html,
             body {
               width: 210mm !important;
+              min-height: 297mm !important;
               margin: 0 !important;
               padding: 0 !important;
               background: #ffffff !important;
@@ -199,7 +200,7 @@ function ClientDashboardPage({
             }
 
             body {
-              zoom: 0.74;
+              zoom: 1 !important;
             }
 
             .client-no-print,
@@ -211,6 +212,7 @@ function ClientDashboardPage({
             }
 
             .client-print-page {
+              width: 100% !important;
               min-height: auto !important;
               background: #ffffff !important;
               overflow: visible !important;
@@ -219,7 +221,7 @@ function ClientDashboardPage({
 
             .client-print-main {
               width: 100% !important;
-              max-width: none !important;
+              max-width: 100% !important;
               height: auto !important;
               overflow: visible !important;
               padding: 0 !important;
@@ -228,12 +230,18 @@ function ClientDashboardPage({
             }
 
             .client-print-container {
-              width: 196mm !important;
-              max-width: 196mm !important;
+              width: 198mm !important;
+              max-width: 198mm !important;
               min-width: 0 !important;
               margin: 0 auto !important;
               padding: 0 !important;
               overflow: visible !important;
+              box-sizing: border-box !important;
+            }
+
+            .client-print-container,
+            .client-print-container * {
+              box-sizing: border-box !important;
             }
 
             .client-print-container > * {
@@ -249,25 +257,23 @@ function ClientDashboardPage({
 
             section,
             article,
-            main,
+            main {
+              max-width: 100% !important;
+              overflow: visible !important;
+            }
+
             div {
               max-width: 100% !important;
             }
 
             .print-page,
             .client-print-section {
-              width: 196mm !important;
-              max-width: 196mm !important;
-              min-height: 282mm !important;
-              page-break-after: always !important;
-              break-after: page !important;
-              overflow: hidden !important;
-            }
-
-            .print-page:last-child,
-            .client-print-section:last-child {
+              width: 100% !important;
+              max-width: 100% !important;
+              min-height: auto !important;
               page-break-after: auto !important;
               break-after: auto !important;
+              overflow: visible !important;
             }
 
             .report-block,
@@ -304,17 +310,19 @@ function ClientDashboardPage({
               box-shadow: none !important;
             }
 
-            /* דחיסה קלה כדי שהדוח ייכנס ל־3 עמודים */
             h1 {
               font-size: 18px !important;
+              line-height: 1.2 !important;
             }
 
             h2 {
               font-size: 15px !important;
+              line-height: 1.25 !important;
             }
 
             h3 {
               font-size: 13px !important;
+              line-height: 1.25 !important;
             }
 
             p,
@@ -323,21 +331,16 @@ function ClientDashboardPage({
               font-size: 11px;
             }
 
-            /* גריד הדפסה לאורך */
             [style*="grid-template-columns"] {
               gap: 8px !important;
             }
 
-            /* שלא יפתח עמוד לכל ריבוע */
             .client-print-container .member-card,
             .client-print-container .dashboard-card,
             .client-print-container .chart-card {
               page-break-after: auto !important;
               break-after: auto !important;
             }
-
-            /* הסתרת כותרות דפדפן לא בשליטתנו לא אפשרית בקוד;
-               צריך בהדפסה לכבות Headers and footers בדפדפן */
           }
 
           @media (max-width: 900px) {
