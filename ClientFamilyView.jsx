@@ -48,237 +48,196 @@ function ClientFamilyView({ clientModel }) {
           @media print {
             @page {
               size: A4 portrait;
-              margin: 6mm;
+              margin: 8mm;
             }
 
-            html,
-            body {
+            html, body {
               width: 210mm !important;
-              min-height: 297mm !important;
               margin: 0 !important;
               padding: 0 !important;
               background: #ffffff !important;
               direction: rtl !important;
-              overflow: visible !important;
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
             }
 
-            body {
-              zoom: 1 !important;
-            }
-
             .client-family-root {
-              width: 198mm !important;
-              max-width: 198mm !important;
+              width: 194mm !important;
+              max-width: 194mm !important;
               margin: 0 auto !important;
               padding: 0 !important;
               background: #ffffff !important;
               direction: rtl !important;
-              overflow: visible !important;
               box-sizing: border-box !important;
             }
 
-            .client-family-root,
             .client-family-root * {
               box-sizing: border-box !important;
             }
 
+            /* Pages */
             .family-print-page {
-              width: 198mm !important;
-              max-width: 198mm !important;
-              min-height: auto !important;
-              height: auto !important;
+              width: 194mm !important;
+              max-width: 194mm !important;
               margin: 0 auto !important;
               padding: 0 !important;
               background: #ffffff !important;
-              overflow: visible !important;
-              box-sizing: border-box !important;
-              page-break-after: auto !important;
-              break-after: auto !important;
+              page-break-after: always !important;
+              break-after: page !important;
             }
 
-            .family-print-page + .family-print-page {
-              margin-top: 7px !important;
+            .family-print-page:last-child {
+              page-break-after: avoid !important;
+              break-after: avoid !important;
             }
 
+            /* Hero */
             .family-hero {
+              display: grid !important;
+              grid-template-columns: 1fr 2fr 1fr !important;
+              gap: 10px !important;
               width: 100% !important;
-              max-width: 100% !important;
-              margin-bottom: 7px !important;
-              padding: 9px 12px !important;
-              border-radius: 13px !important;
+              margin-bottom: 8px !important;
+              padding: 10px 14px !important;
+              border-radius: 14px !important;
               box-shadow: none !important;
               break-inside: avoid !important;
-              page-break-inside: avoid !important;
             }
 
-            .family-top-grid,
-            .family-compare-grid,
-            .family-lower-grid,
+            /* Top 4-column grid */
+            .family-top-grid {
+              display: grid !important;
+              grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+              gap: 7px !important;
+              margin-bottom: 8px !important;
+              width: 100% !important;
+            }
+
+            /* Compare grid - 2 columns */
+            .family-compare-grid {
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 7px !important;
+              margin-bottom: 8px !important;
+              width: 100% !important;
+            }
+
+            /* Lower 2-column grid */
+            .family-lower-grid {
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 7px !important;
+              margin-bottom: 8px !important;
+              width: 100% !important;
+            }
+
+            /* Members grid */
             .family-members-grid {
-              display: flex !important;
-              flex-wrap: wrap !important;
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
               gap: 7px !important;
-              margin-bottom: 7px !important;
-              align-items: stretch !important;
               width: 100% !important;
-              max-width: 100% !important;
-              min-width: 0 !important;
             }
 
-            .family-top-grid > .family-kpi-card,
-            .family-top-grid > .family-donut-card,
-            .family-compare-grid > .family-compare-card,
-            .family-lower-grid > .family-section-card,
-            .family-members-grid > .family-member-card {
-              flex: 0 0 calc(50% - 3.5px) !important;
-              width: calc(50% - 3.5px) !important;
-              max-width: calc(50% - 3.5px) !important;
-              min-width: 0 !important;
-            }
-
+            /* Summary stats grid */
             .family-summary-grid {
-              display: flex !important;
-              flex-wrap: wrap !important;
+              display: grid !important;
+              grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
               gap: 7px !important;
-              margin-bottom: 7px !important;
+              margin-bottom: 8px !important;
               width: 100% !important;
             }
 
-            .family-summary-grid > * {
-              flex: 0 0 calc(25% - 5.25px) !important;
-              width: calc(25% - 5.25px) !important;
-              max-width: calc(25% - 5.25px) !important;
-              min-width: 0 !important;
-            }
-
-            .family-section-card,
+            /* Cards common */
             .family-kpi-card,
             .family-donut-card,
             .family-compare-card,
+            .family-section-card,
             .family-member-card {
               box-shadow: none !important;
-              border-radius: 12px !important;
-              box-sizing: border-box !important;
               break-inside: avoid !important;
               page-break-inside: avoid !important;
-              overflow: hidden !important;
               min-width: 0 !important;
-            }
-
-            .family-section-card {
-              padding: 8px !important;
-              margin-bottom: 7px !important;
               width: 100% !important;
-              max-width: 100% !important;
             }
 
             .family-kpi-card {
-              min-height: 74px !important;
-              height: auto !important;
-              padding: 7px !important;
+              padding: 8px !important;
+              border-radius: 12px !important;
+              min-height: 80px !important;
             }
 
             .family-donut-card {
-              min-height: 122px !important;
-              height: auto !important;
-              padding: 7px !important;
+              padding: 8px !important;
+              border-radius: 12px !important;
+              min-height: 120px !important;
             }
 
             .family-compare-card {
-              min-height: 102px !important;
-              height: auto !important;
-              padding: 7px !important;
+              padding: 8px !important;
+              border-radius: 12px !important;
+              min-height: 100px !important;
+            }
+
+            .family-section-card {
+              padding: 10px !important;
+              border-radius: 12px !important;
+              margin-bottom: 8px !important;
+              width: 100% !important;
             }
 
             .family-member-card {
-              padding: 7px !important;
+              padding: 8px !important;
+              border-radius: 12px !important;
             }
 
+            /* Donut inner layout */
             .family-donut-card [style*="grid-template-columns"] {
               display: grid !important;
-              grid-template-columns: 72px minmax(0, 1fr) !important;
+              grid-template-columns: 70px minmax(0, 1fr) !important;
               gap: 6px !important;
               margin-top: 5px !important;
             }
 
-            .family-donut-card [style*="width: 102px"],
-            .family-donut-card [style*="width:102px"] {
-              width: 70px !important;
-              height: 70px !important;
-            }
-
+            /* Main breakdown full-width donut */
             .family-main-breakdown {
               display: grid !important;
-              grid-template-columns: 150px minmax(0, 1fr) !important;
-              gap: 8px !important;
+              grid-template-columns: 160px minmax(0, 1fr) !important;
+              gap: 10px !important;
               align-items: center !important;
-              overflow: visible !important;
               width: 100% !important;
-              max-width: 100% !important;
             }
 
             .family-main-donut {
               width: 150px !important;
               height: 150px !important;
-              transform: none !important;
             }
 
             .family-main-legend-row {
-              min-height: 20px !important;
-              padding: 2px 0 !important;
-              grid-template-columns: 9px minmax(0, 1fr) 68px 30px !important;
+              display: grid !important;
+              grid-template-columns: 10px minmax(0, 1fr) 72px 32px !important;
               gap: 5px !important;
+              min-height: 20px !important;
+              padding: 3px 0 !important;
             }
 
-            table {
-              width: 100% !important;
-              min-width: 100% !important;
-              max-width: 100% !important;
-              table-layout: fixed !important;
-              break-inside: avoid !important;
-              page-break-inside: avoid !important;
-            }
-
-            th,
-            td {
-              font-size: 8px !important;
-              padding: 4px !important;
-              white-space: normal !important;
-              word-break: break-word !important;
-            }
-
-            h1 {
-              font-size: 17px !important;
-              line-height: 1.1 !important;
-            }
-
-            h2,
-            h3 {
-              font-size: 10px !important;
-              line-height: 1.2 !important;
-            }
-
-            p,
-            span,
-            div {
-              font-size: 8.5px !important;
-            }
+            /* Typography */
+            h1 { font-size: 16px !important; line-height: 1.2 !important; }
+            h2, h3 { font-size: 9px !important; line-height: 1.3 !important; }
+            p, span, div { font-size: 8px !important; }
 
             .family-kpi-value {
-              font-size: 18px !important;
+              font-size: 16px !important;
               line-height: 1 !important;
               margin-bottom: 2px !important;
             }
 
-            .family-center-value {
-              font-size: 15px !important;
-            }
+            .family-center-value { font-size: 14px !important; }
 
             .family-explanation {
-              margin-bottom: 5px !important;
-              line-height: 1.3 !important;
+              font-size: 7.5px !important;
+              margin-bottom: 6px !important;
+              line-height: 1.4 !important;
             }
 
             .family-kpi-card svg {
@@ -287,15 +246,27 @@ function ClientFamilyView({ clientModel }) {
             }
 
             .family-kpi-card > div:first-child {
-              width: 32px !important;
-              height: 32px !important;
+              width: 36px !important;
+              height: 36px !important;
               border-radius: 10px !important;
-              margin-bottom: 3px !important;
+              margin-bottom: 4px !important;
             }
 
-            .no-print {
-              display: none !important;
+            /* Table */
+            table {
+              width: 100% !important;
+              table-layout: fixed !important;
+              break-inside: avoid !important;
             }
+
+            th, td {
+              font-size: 7.5px !important;
+              padding: 4px !important;
+              white-space: normal !important;
+              word-break: break-word !important;
+            }
+
+            .no-print { display: none !important; }
           }
         `}
       </style>
@@ -1064,27 +1035,11 @@ function ZviranLogo({ light = false }) {
 function GiftIcon() {
   return (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-      <rect
-        x="4"
-        y="7"
-        width="16"
-        height="13"
-        rx="2"
-        stroke="#00215D"
-        strokeWidth="2"
-      />
+      <rect x="4" y="7" width="16" height="13" rx="2" stroke="#00215D" strokeWidth="2" />
       <path d="M12 7V20" stroke="#00215D" strokeWidth="2" />
       <path d="M4 11H20" stroke="#00215D" strokeWidth="2" />
-      <path
-        d="M9 7C7.8 7 7 6.2 7 5C7 3.8 7.8 3 9 3C10.8 3 12 5 12 7"
-        stroke="#00215D"
-        strokeWidth="2"
-      />
-      <path
-        d="M15 7C16.2 7 17 6.2 17 5C17 3.8 16.2 3 15 3C13.2 3 12 5 12 7"
-        stroke="#00215D"
-        strokeWidth="2"
-      />
+      <path d="M9 7C7.8 7 7 6.2 7 5C7 3.8 7.8 3 9 3C10.8 3 12 5 12 7" stroke="#00215D" strokeWidth="2" />
+      <path d="M15 7C16.2 7 17 6.2 17 5C17 3.8 16.2 3 15 3C13.2 3 12 5 12 7" stroke="#00215D" strokeWidth="2" />
     </svg>
   );
 }
@@ -1092,31 +1047,14 @@ function GiftIcon() {
 function DepositIcon() {
   return (
     <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M12 3V14"
-        stroke="#FF2756"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M8.5 6.5L12 3L15.5 6.5"
-        stroke="#FF2756"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <rect
-        x="4"
-        y="14"
-        width="16"
-        height="6"
-        rx="2"
-        stroke="#FF2756"
-        strokeWidth="2.2"
-      />
+      <path d="M12 3V14" stroke="#FF2756" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M8.5 6.5L12 3L15.5 6.5" stroke="#FF2756" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="4" y="14" width="16" height="6" rx="2" stroke="#FF2756" strokeWidth="2.2" />
     </svg>
   );
 }
+
+// ─── Theme ───────────────────────────────────────────────────────────────────
 
 const theme = {
   pageBg: "#F9F7F3",
@@ -1134,17 +1072,11 @@ const theme = {
 };
 
 const chartColors = [
-  "#00215D",
-  "#FF2756",
-  "#1F77B4",
-  "#43B5D9",
-  "#8F63C9",
-  "#F0B43C",
-  "#9FD0E6",
-  "#8FB996",
-  "#C08497",
-  "#7B8CBF",
+  "#00215D", "#FF2756", "#1F77B4", "#43B5D9", "#8F63C9",
+  "#F0B43C", "#9FD0E6", "#8FB996", "#C08497", "#7B8CBF",
 ];
+
+// ─── Styles ──────────────────────────────────────────────────────────────────
 
 const page = {
   direction: "rtl",
@@ -1168,58 +1100,17 @@ const heroHeader = {
   direction: "ltr",
 };
 
-const heroLogoWrap = {
-  justifySelf: "start",
-  direction: "ltr",
-};
-
-const heroCenter = {
-  textAlign: "center",
-  direction: "rtl",
-};
-
+const heroLogoWrap = { justifySelf: "start", direction: "ltr" };
+const heroCenter = { textAlign: "center", direction: "rtl" };
 const heroMeta = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 4,
-  alignItems: "flex-end",
-  justifySelf: "end",
-  direction: "rtl",
+  display: "flex", flexDirection: "column", gap: 4,
+  alignItems: "flex-end", justifySelf: "end", direction: "rtl",
 };
-
-const heroMetaLabel = {
-  fontSize: 12,
-  color: "rgba(255,255,255,0.75)",
-};
-
-const heroMetaValue = {
-  fontSize: 14,
-  fontWeight: 700,
-  color: "#fff",
-};
-
-const heroEyebrow = {
-  fontSize: 12,
-  color: "rgba(255,255,255,0.78)",
-  marginBottom: 8,
-  fontWeight: 700,
-};
-
-const heroTitle = {
-  margin: 0,
-  fontSize: 30,
-  fontWeight: 700,
-  lineHeight: 1.2,
-  color: "#fff",
-};
-
-const heroSubtitle = {
-  margin: "12px auto 0",
-  maxWidth: 760,
-  fontSize: 12,
-  lineHeight: 1.8,
-  color: "rgba(255,255,255,0.9)",
-};
+const heroMetaLabel = { fontSize: 12, color: "rgba(255,255,255,0.75)" };
+const heroMetaValue = { fontSize: 14, fontWeight: 700, color: "#fff" };
+const heroEyebrow = { fontSize: 12, color: "rgba(255,255,255,0.78)", marginBottom: 8, fontWeight: 700 };
+const heroTitle = { margin: 0, fontSize: 30, fontWeight: 700, lineHeight: 1.2, color: "#fff" };
+const heroSubtitle = { margin: "12px auto 0", maxWidth: 760, fontSize: 12, lineHeight: 1.8, color: "rgba(255,255,255,0.9)" };
 
 const topGrid = {
   display: "grid",
@@ -1257,39 +1148,15 @@ const kpiCard = {
 };
 
 const kpiIconWrap = {
-  width: 74,
-  height: 74,
-  borderRadius: 22,
+  width: 74, height: 74, borderRadius: 22,
   background: "#F4F7FB",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  flexShrink: 0,
-  marginBottom: 14,
+  display: "flex", alignItems: "center", justifyContent: "center",
+  flexShrink: 0, marginBottom: 14,
 };
 
-const kpiTitle = {
-  fontSize: 14,
-  color: theme.textSoft,
-  fontWeight: 700,
-  marginBottom: 10,
-};
-
-const kpiValue = {
-  fontSize: 34,
-  lineHeight: 1.1,
-  fontWeight: 700,
-  color: theme.navy,
-  marginBottom: 10,
-};
-
-const kpiSub = {
-  fontSize: 12,
-  color: "#7A8CA8",
-  lineHeight: 1.7,
-  maxWidth: 260,
-  margin: "0 auto",
-};
+const kpiTitle = { fontSize: 14, color: theme.textSoft, fontWeight: 700, marginBottom: 10 };
+const kpiValue = { fontSize: 34, lineHeight: 1.1, fontWeight: 700, color: theme.navy, marginBottom: 10 };
+const kpiSub = { fontSize: 12, color: "#7A8CA8", lineHeight: 1.7, maxWidth: 260, margin: "0 auto" };
 
 const sectionCard = {
   background: theme.surface,
@@ -1301,34 +1168,13 @@ const sectionCard = {
 };
 
 const sectionHeader = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  gap: 12,
-  flexWrap: "wrap",
-  marginBottom: 10,
+  display: "flex", justifyContent: "space-between",
+  alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 10,
 };
 
-const titleWithIcon = {
-  display: "flex",
-  alignItems: "center",
-  gap: 10,
-};
-
-const h2 = {
-  margin: 0,
-  fontSize: 14,
-  color: theme.navy,
-  fontWeight: 700,
-  lineHeight: 1.4,
-};
-
-const explanation = {
-  fontSize: 12,
-  color: theme.textSoft,
-  lineHeight: 1.7,
-  marginBottom: 16,
-};
+const titleWithIcon = { display: "flex", alignItems: "center", gap: 10 };
+const h2 = { margin: 0, fontSize: 14, color: theme.navy, fontWeight: 700, lineHeight: 1.4 };
+const explanation = { fontSize: 12, color: theme.textSoft, lineHeight: 1.7, marginBottom: 16 };
 
 const donutCard = {
   background: theme.surface,
@@ -1339,66 +1185,19 @@ const donutCard = {
   boxShadow: "0 2px 10px rgba(16,42,67,0.05)",
 };
 
-const donutTitle = {
-  margin: 0,
-  color: theme.navy,
-  fontSize: 14,
-  fontWeight: 700,
-};
-
-const smallText = {
-  fontSize: 12,
-  color: theme.textSoft,
-  lineHeight: 1.6,
-};
-
+const donutTitle = { margin: 0, color: theme.navy, fontSize: 14, fontWeight: 700 };
+const smallText = { fontSize: 12, color: theme.textSoft, lineHeight: 1.6 };
 const donutLayout = {
-  display: "grid",
-  gridTemplateColumns: "110px 1fr",
-  gap: 14,
-  alignItems: "center",
-  marginTop: 12,
+  display: "grid", gridTemplateColumns: "110px 1fr",
+  gap: 14, alignItems: "center", marginTop: 12,
 };
 
-const legendList = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 8,
-};
-
-const legendRow = {
-  display: "grid",
-  gridTemplateColumns: "10px 1fr auto",
-  gap: 8,
-  alignItems: "center",
-  fontSize: 12,
-};
-
-const legendDot = {
-  width: 10,
-  height: 10,
-  borderRadius: "50%",
-  display: "inline-block",
-};
-
-const legendName = {
-  color: theme.text,
-  fontWeight: 700,
-  whiteSpace: "nowrap",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-};
-
-const legendSub = {
-  color: theme.textSoft,
-  fontSize: 11,
-  marginTop: 2,
-};
-
-const legendPercent = {
-  color: theme.text,
-  fontWeight: 700,
-};
+const legendList = { display: "flex", flexDirection: "column", gap: 8 };
+const legendRow = { display: "grid", gridTemplateColumns: "10px 1fr auto", gap: 8, alignItems: "center", fontSize: 12 };
+const legendDot = { width: 10, height: 10, borderRadius: "50%", display: "inline-block" };
+const legendName = { color: theme.text, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+const legendSub = { color: theme.textSoft, fontSize: 11, marginTop: 2 };
+const legendPercent = { color: theme.text, fontWeight: 700 };
 
 const compareCard = {
   background: theme.surface,
@@ -1409,70 +1208,16 @@ const compareCard = {
   boxShadow: "0 2px 10px rgba(16,42,67,0.05)",
 };
 
-const compareTitle = {
-  fontSize: 14,
-  fontWeight: 700,
-  color: theme.navy,
-  marginBottom: 8,
-};
-
-const compareDesc = {
-  fontSize: 12,
-  color: theme.textSoft,
-  lineHeight: 1.7,
-  marginBottom: 18,
-};
-
-const compareBarList = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 18,
-};
-
-const compareBarItem = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 8,
-};
-
-const compareBarTop = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  gap: 8,
-};
-
-const compareBarLabel = {
-  fontSize: 12,
-  color: "#4A5D7A",
-  fontWeight: 700,
-};
-
-const compareBarValue = {
-  fontSize: 18,
-  color: theme.navy,
-  fontWeight: 700,
-};
-
-const compareTrack = {
-  width: "100%",
-  height: 18,
-  borderRadius: 999,
-  background: theme.softBlue,
-  overflow: "hidden",
-};
-
-const compareFillPrimary = {
-  height: "100%",
-  borderRadius: 999,
-  background: `linear-gradient(90deg, ${theme.accent}, ${theme.navy})`,
-};
-
-const compareFillMuted = {
-  height: "100%",
-  borderRadius: 999,
-  background: theme.mutedBar,
-};
+const compareTitle = { fontSize: 14, fontWeight: 700, color: theme.navy, marginBottom: 8 };
+const compareDesc = { fontSize: 12, color: theme.textSoft, lineHeight: 1.7, marginBottom: 18 };
+const compareBarList = { display: "flex", flexDirection: "column", gap: 18 };
+const compareBarItem = { display: "flex", flexDirection: "column", gap: 8 };
+const compareBarTop = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 };
+const compareBarLabel = { fontSize: 12, color: "#4A5D7A", fontWeight: 700 };
+const compareBarValue = { fontSize: 18, color: theme.navy, fontWeight: 700 };
+const compareTrack = { width: "100%", height: 18, borderRadius: 999, background: theme.softBlue, overflow: "hidden" };
+const compareFillPrimary = { height: "100%", borderRadius: 999, background: `linear-gradient(90deg, ${theme.accent}, ${theme.navy})` };
+const compareFillMuted = { height: "100%", borderRadius: 999, background: theme.mutedBar };
 
 const mainBreakdownCardLayout = {
   display: "grid",
@@ -1482,21 +1227,8 @@ const mainBreakdownCardLayout = {
   direction: "ltr",
 };
 
-const mainDonutWrap = {
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  minWidth: 0,
-};
-
-const mainLegendWrap = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 0,
-  minWidth: 0,
-  direction: "rtl",
-};
-
+const mainDonutWrap = { display: "flex", justifyContent: "center", alignItems: "center", minWidth: 0 };
+const mainLegendWrap = { display: "flex", flexDirection: "column", gap: 0, minWidth: 0, direction: "rtl" };
 const mainLegendRow = {
   display: "grid",
   gridTemplateColumns: "14px 1fr 96px 46px",
@@ -1507,95 +1239,31 @@ const mainLegendRow = {
   borderBottom: "1px solid #E8E1D7",
 };
 
-const mainLegendDot = {
-  width: 14,
-  height: 14,
-  borderRadius: "50%",
-  display: "inline-block",
-  boxShadow: "0 1px 3px rgba(16,42,67,0.15)",
-};
-
-const mainLegendName = {
-  color: theme.navy,
-  fontWeight: 800,
-  fontSize: 13,
-  textAlign: "right",
-  whiteSpace: "nowrap",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-};
-
-const mainLegendValue = {
-  color: theme.navy,
-  fontWeight: 800,
-  fontSize: 12,
-  textAlign: "right",
-  direction: "ltr",
-  whiteSpace: "nowrap",
-};
-
-const mainLegendPercent = {
-  color: theme.navy,
-  fontWeight: 800,
-  fontSize: 13,
-  textAlign: "left",
-  direction: "ltr",
-};
+const mainLegendDot = { width: 14, height: 14, borderRadius: "50%", display: "inline-block", boxShadow: "0 1px 3px rgba(16,42,67,0.15)" };
+const mainLegendName = { color: theme.navy, fontWeight: 800, fontSize: 13, textAlign: "right", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+const mainLegendValue = { color: theme.navy, fontWeight: 800, fontSize: 12, textAlign: "right", direction: "ltr", whiteSpace: "nowrap" };
+const mainLegendPercent = { color: theme.navy, fontWeight: 800, fontSize: 13, textAlign: "left", direction: "ltr" };
 
 const donutGloss = {
-  position: "absolute",
-  inset: 0,
-  borderRadius: "50%",
-  background:
-    "linear-gradient(145deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 42%, rgba(0,0,0,0.10) 100%)",
+  position: "absolute", inset: 0, borderRadius: "50%",
+  background: "linear-gradient(145deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 42%, rgba(0,0,0,0.10) 100%)",
   pointerEvents: "none",
 };
 
 const equityValueWrap = {
-  display: "flex",
-  alignItems: "baseline",
-  justifyContent: "space-between",
-  gap: 12,
-  flexWrap: "wrap",
-  marginBottom: 18,
+  display: "flex", alignItems: "baseline", justifyContent: "space-between",
+  gap: 12, flexWrap: "wrap", marginBottom: 18,
 };
-
-const equityValue = {
-  fontSize: 34,
-  lineHeight: 1.1,
-  fontWeight: 700,
-  color: theme.navy,
-};
-
-const equityLabel = {
-  fontSize: 14,
-  fontWeight: 700,
-  color: theme.textSoft,
-};
+const equityValue = { fontSize: 34, lineHeight: 1.1, fontWeight: 700, color: theme.navy };
+const equityLabel = { fontSize: 14, fontWeight: 700, color: theme.textSoft };
 
 const modernTrack = {
-  position: "relative",
-  height: 16,
-  borderRadius: 999,
-  background:
-    "linear-gradient(90deg, #F9F7F3 0%, #EAF1FB 45%, #E2D1BF 75%, #00215D 100%)",
+  position: "relative", height: 16, borderRadius: 999,
+  background: "linear-gradient(90deg, #F9F7F3 0%, #EAF1FB 45%, #E2D1BF 75%, #00215D 100%)",
   overflow: "hidden",
 };
-
-const modernFill = {
-  height: "100%",
-  borderRadius: 999,
-  background: `linear-gradient(90deg, ${theme.accent} 0%, ${theme.navy} 100%)`,
-};
-
-const barScale = {
-  display: "flex",
-  justifyContent: "space-between",
-  marginTop: 10,
-  fontSize: 12,
-  color: theme.textSoft,
-  direction: "ltr",
-};
+const modernFill = { height: "100%", borderRadius: 999, background: `linear-gradient(90deg, ${theme.accent} 0%, ${theme.navy} 100%)` };
+const barScale = { display: "flex", justifyContent: "space-between", marginTop: 10, fontSize: 12, color: theme.textSoft, direction: "ltr" };
 
 const membersGrid = {
   display: "grid",
@@ -1612,213 +1280,40 @@ const memberCard = {
   boxShadow: "0 2px 10px rgba(16,42,67,0.05)",
 };
 
-const memberTop = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "flex-start",
-  gap: 12,
-  flexWrap: "wrap",
-  marginBottom: 14,
-};
+const memberTop = { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap", marginBottom: 14 };
+const memberName = { fontSize: 18, fontWeight: 700, color: theme.navy };
+const chip = { display: "inline-block", padding: "8px 12px", border: `1px solid ${theme.divider}`, borderRadius: 999, background: theme.surfaceAlt, fontSize: 12, color: "#486581", fontWeight: 700 };
+const centerCard = { background: theme.surfaceAlt, border: `1px solid ${theme.divider}`, borderRadius: 16, padding: 18, textAlign: "center", marginBottom: 12 };
+const centerLabel = { fontSize: 12, color: theme.textSoft, marginBottom: 8 };
+const centerValue = { fontSize: 24, fontWeight: 700, color: theme.navy };
 
-const memberName = {
-  fontSize: 18,
-  fontWeight: 700,
-  color: theme.navy,
-};
+const miniGrid = { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginBottom: 12 };
+const compareMiniCard = { background: theme.surfaceAlt, border: `1px solid ${theme.divider}`, borderRadius: 16, padding: 14 };
+const compareMiniTitle = { fontSize: 12, color: theme.textSoft, marginBottom: 10, fontWeight: 700 };
+const compareMiniInner = { display: "grid", gridTemplateColumns: "1fr 1px 1fr", gap: 10 };
+const dividerLine = { background: theme.divider, width: 1 };
+const compareMiniSide = { textAlign: "center" };
+const compareMiniSideLabel = { fontSize: 11, color: theme.textSoft, marginBottom: 6 };
+const compareMiniSideValue = { fontSize: 16, fontWeight: 700, color: theme.navy };
 
-const chip = {
-  display: "inline-block",
-  padding: "8px 12px",
-  border: `1px solid ${theme.divider}`,
-  borderRadius: 999,
-  background: theme.surfaceAlt,
-  fontSize: 12,
-  color: "#486581",
-  fontWeight: 700,
-};
+const insuranceGrid = { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 };
+const insuranceCard = { background: theme.surfaceAlt, border: `1px solid ${theme.divider}`, borderRadius: 14, padding: 12 };
+const insuranceLabel = { fontSize: 12, color: theme.textSoft, marginBottom: 6 };
+const insuranceValue = { fontSize: 16, fontWeight: 700, color: theme.navy };
 
-const centerCard = {
-  background: theme.surfaceAlt,
-  border: `1px solid ${theme.divider}`,
-  borderRadius: 16,
-  padding: 18,
-  textAlign: "center",
-  marginBottom: 12,
-};
+const summaryStatsGrid = { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginBottom: 14 };
+const statCard = { background: theme.surfaceAlt, border: `1px solid ${theme.divider}`, borderRadius: 14, padding: 14 };
+const statLabel = { fontSize: 12, color: theme.textSoft, marginBottom: 8 };
+const statValue = { fontSize: 18, fontWeight: 700, color: theme.navy };
 
-const centerLabel = {
-  fontSize: 12,
-  color: theme.textSoft,
-  marginBottom: 8,
-};
+const simpleInfoBox = { background: theme.surfaceAlt, border: `1px solid ${theme.divider}`, borderRadius: 14, padding: 16, marginTop: 12 };
+const infoLabel = { fontSize: 12, color: theme.textSoft, marginBottom: 8 };
+const infoValue = { fontSize: 16, fontWeight: 700, color: theme.navy };
 
-const centerValue = {
-  fontSize: 24,
-  fontWeight: 700,
-  color: theme.navy,
-};
-
-const miniGrid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-  gap: 12,
-  marginBottom: 12,
-};
-
-const compareMiniCard = {
-  background: theme.surfaceAlt,
-  border: `1px solid ${theme.divider}`,
-  borderRadius: 16,
-  padding: 14,
-};
-
-const compareMiniTitle = {
-  fontSize: 12,
-  color: theme.textSoft,
-  marginBottom: 10,
-  fontWeight: 700,
-};
-
-const compareMiniInner = {
-  display: "grid",
-  gridTemplateColumns: "1fr 1px 1fr",
-  gap: 10,
-};
-
-const dividerLine = {
-  background: theme.divider,
-  width: 1,
-};
-
-const compareMiniSide = {
-  textAlign: "center",
-};
-
-const compareMiniSideLabel = {
-  fontSize: 11,
-  color: theme.textSoft,
-  marginBottom: 6,
-};
-
-const compareMiniSideValue = {
-  fontSize: 16,
-  fontWeight: 700,
-  color: theme.navy,
-};
-
-const insuranceGrid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-  gap: 12,
-};
-
-const insuranceCard = {
-  background: theme.surfaceAlt,
-  border: `1px solid ${theme.divider}`,
-  borderRadius: 14,
-  padding: 12,
-};
-
-const insuranceLabel = {
-  fontSize: 12,
-  color: theme.textSoft,
-  marginBottom: 6,
-};
-
-const insuranceValue = {
-  fontSize: 16,
-  fontWeight: 700,
-  color: theme.navy,
-};
-
-const summaryStatsGrid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-  gap: 12,
-  marginBottom: 14,
-};
-
-const statCard = {
-  background: theme.surfaceAlt,
-  border: `1px solid ${theme.divider}`,
-  borderRadius: 14,
-  padding: 14,
-};
-
-const statLabel = {
-  fontSize: 12,
-  color: theme.textSoft,
-  marginBottom: 8,
-};
-
-const statValue = {
-  fontSize: 18,
-  fontWeight: 700,
-  color: theme.navy,
-};
-
-const simpleInfoBox = {
-  background: theme.surfaceAlt,
-  border: `1px solid ${theme.divider}`,
-  borderRadius: 14,
-  padding: 16,
-  marginTop: 12,
-};
-
-const infoLabel = {
-  fontSize: 12,
-  color: theme.textSoft,
-  marginBottom: 8,
-};
-
-const infoValue = {
-  fontSize: 16,
-  fontWeight: 700,
-  color: theme.navy,
-};
-
-const tableWrap = {
-  overflowX: "auto",
-  borderRadius: 14,
-  border: `1px solid ${theme.divider}`,
-  background: "#fff",
-};
-
-const table = {
-  width: "100%",
-  borderCollapse: "collapse",
-  minWidth: 760,
-  background: "#fff",
-};
-
-const th = {
-  textAlign: "right",
-  padding: 12,
-  fontSize: 12,
-  color: theme.textSoft,
-  borderBottom: `1px solid ${theme.divider}`,
-  whiteSpace: "nowrap",
-  fontWeight: 700,
-  background: "#FAF8F4",
-};
-
-const td = {
-  textAlign: "right",
-  padding: 12,
-  fontSize: 12,
-  color: theme.text,
-  borderBottom: "1px solid #F0E6DA",
-  whiteSpace: "nowrap",
-};
-
-const emptyState = {
-  background: theme.surfaceAlt,
-  border: `1px dashed ${theme.border}`,
-  borderRadius: 14,
-  padding: 18,
-  fontSize: 12,
-  color: theme.textSoft,
-};
+const tableWrap = { overflowX: "auto", borderRadius: 14, border: `1px solid ${theme.divider}`, background: "#fff" };
+const table = { width: "100%", borderCollapse: "collapse", minWidth: 760, background: "#fff" };
+const th = { textAlign: "right", padding: 12, fontSize: 12, color: theme.textSoft, borderBottom: `1px solid ${theme.divider}`, whiteSpace: "nowrap", fontWeight: 700, background: "#FAF8F4" };
+const td = { textAlign: "right", padding: 12, fontSize: 12, color: theme.text, borderBottom: "1px solid #F0E6DA", whiteSpace: "nowrap" };
+const emptyState = { background: theme.surfaceAlt, border: `1px dashed ${theme.border}`, borderRadius: 14, padding: 18, fontSize: 12, color: theme.textSoft };
 
 export default ClientFamilyView;
