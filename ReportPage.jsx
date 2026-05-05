@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 const STORAGE_CLIENT_MODEL_KEY = "familyPensionClientModel";
 const STORAGE_REPORT_DATA_KEY = "familyPensionReportData";
@@ -112,6 +112,27 @@ export default function ReportPage({
   );
 
   const [isClientMenuOpen, setIsClientMenuOpen] = useState(false);
+  const [isClientLinkCopied, setIsClientLinkCopied] = useState(false);
+  const clientMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (
+        clientMenuRef.current &&
+        !clientMenuRef.current.contains(event.target)
+      ) {
+        setIsClientMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("touchstart", handleOutsideClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("touchstart", handleOutsideClick);
+    };
+  }, []);
 
   const safeReportData = reportData || {};
 
@@ -171,10 +192,13 @@ export default function ReportPage({
 
     try {
       await copyTextToClipboard(clientUrl);
-      alert(`הלינק ללקוח נוצר והועתק ללוח:\n${clientUrl}`);
+      setIsClientLinkCopied(true);
+      window.setTimeout(() => setIsClientLinkCopied(false), 3500);
     } catch (error) {
       console.error("Failed to copy client link", error);
       window.prompt("העתק את הלינק ללקוח:", clientUrl);
+      setIsClientLinkCopied(true);
+      window.setTimeout(() => setIsClientLinkCopied(false), 3500);
     }
   };
 
@@ -423,6 +447,8 @@ export default function ReportPage({
       gap: "12px",
       flexWrap: "wrap",
       justifyContent: "flex-start",
+      direction: "rtl",
+      alignItems: "center",
     },
     container: {
       maxWidth: "1280px",
@@ -1171,7 +1197,7 @@ export default function ReportPage({
             position: absolute;
             top: 52px;
             right: 0;
-            width: 360px;
+            width: 300px;
             max-width: calc(100vw - 32px);
             background: #ffffff;
             border: 1px solid #E2D1BF;
@@ -1241,6 +1267,31 @@ export default function ReportPage({
           .client-menu-mini-button:hover {
             border-color: #00215D;
             background: #F4F7FB;
+          }
+
+          .client-link-button-wrap {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+          }
+
+          .client-link-success-check {
+            position: absolute;
+            right: -10px;
+            top: -8px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #20B26B;
+            color: #ffffff;
+            border: 2px solid #ffffff;
+            box-shadow: 0 4px 10px rgba(32,178,107,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 900;
+            line-height: 1;
           }
 
           .kpi-card-hover:hover {
@@ -1439,91 +1490,85 @@ export default function ReportPage({
 
       <div style={styles.page}>
         <div className="no-print" style={styles.actionsBar}>
-          <button onClick={onBack} className="action-button">
-            חזרה למסך העלאה
-          </button>
-
-          <button onClick={handleCreateClientLink} className="action-button accent">
-            יצירת לינק ללקוח
-          </button>
-
-          <div className="client-menu-wrap">
+          <div className="client-menu-wrap" ref={clientMenuRef}>
             <button
               type="button"
               onClick={() => setIsClientMenuOpen((value) => !value)}
               className="action-button hamburger-button"
-              aria-label="תפריט דוחות לקוח"
-              title="תפריט דוחות לקוח"
+              aria-label="בחירת דוח פרט"
+              title="בחירת דוח פרט"
             >
               ☰
             </button>
 
             {isClientMenuOpen ? (
               <div className="client-menu-panel">
-                <div className="client-menu-title">דוחות לקוח ופרט</div>
+                <div className="client-menu-title">בחירת דוח פרט</div>
                 <div className="client-menu-subtitle">
-                  מכאן אפשר ליצור לינק ללקוח או לפתוח דוחות פרט ישירות מתוך מסך
-                  ה־REPORT.
+                  בחר אחד מבני הזוג לפתיחת דוח פרט או להעתקת לינק.
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleOpenClientLink}
-                  className="client-menu-mini-button"
-                  style={{ width: "100%" }}
-                >
-                  פתיחת דוח לקוח מלא
-                </button>
-
-                <div className="client-menu-section">
-                  <div className="client-menu-title">דוחות פרט</div>
-
-                  {members.length ? (
-                    members.map((member, index) => (
+                {members.length ? (
+                  members.map((member, index) => (
+                    <div
+                      key={member?.id || member?.name || index}
+                      className="client-menu-member-row"
+                    >
                       <div
-                        key={member?.id || member?.name || index}
-                        className="client-menu-member-row"
+                        className="client-menu-member-name"
+                        title={member?.name || "ללא שם"}
                       >
-                        <div
-                          className="client-menu-member-name"
-                          title={member?.name || "ללא שם"}
-                        >
-                          {member?.name || "ללא שם"}
-                        </div>
-
-                        <button
-                          type="button"
-                          className="client-menu-mini-button"
-                          onClick={() => handleOpenMemberReport(member, index)}
-                        >
-                          פתיחה
-                        </button>
-
-                        <button
-                          type="button"
-                          className="client-menu-mini-button"
-                          onClick={() => handleCopyMemberReportLink(member, index)}
-                        >
-                          לינק
-                        </button>
+                        {member?.name || "ללא שם"}
                       </div>
-                    ))
-                  ) : (
-                    <div style={{ color: "#627D98", fontSize: 12 }}>
-                      אין בני משפחה להצגה.
+
+                      <button
+                        type="button"
+                        className="client-menu-mini-button"
+                        onClick={() => handleOpenMemberReport(member, index)}
+                      >
+                        פתיחה
+                      </button>
+
+                      <button
+                        type="button"
+                        className="client-menu-mini-button"
+                        onClick={() => handleCopyMemberReportLink(member, index)}
+                      >
+                        לינק
+                      </button>
                     </div>
-                  )}
-                </div>
+                  ))
+                ) : (
+                  <div style={{ color: "#627D98", fontSize: 12 }}>
+                    אין בני משפחה להצגה.
+                  </div>
+                )}
               </div>
             ) : null}
           </div>
+
+          <button onClick={handleExportPdf} className="action-button primary">
+            ייצוא ל־PDF
+          </button>
 
           <button onClick={onResetAll} className="action-button danger">
             איפוס מלא
           </button>
 
-          <button onClick={handleExportPdf} className="action-button primary">
-            ייצוא ל־PDF
+          <div className="client-link-button-wrap">
+            <button onClick={handleCreateClientLink} className="action-button accent">
+              יצירת לינק ללקוח
+            </button>
+
+            {isClientLinkCopied ? (
+              <span className="client-link-success-check" title="הלינק הועתק">
+                ✓
+              </span>
+            ) : null}
+          </div>
+
+          <button onClick={onBack} className="action-button">
+            חזרה למסך העלאה
           </button>
         </div>
 
