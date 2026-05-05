@@ -442,18 +442,22 @@ export default function ReportPage({
       padding: "24px 26px",
       boxShadow: "0 8px 28px rgba(0,33,93,0.14)",
       display: "grid",
-      gridTemplateColumns: "1fr 2fr 1fr",
+      gridTemplateColumns: "1.05fr 2fr 1.05fr",
       alignItems: "center",
       gap: "16px",
+      direction: "ltr",
+      overflow: "hidden",
       breakInside: "avoid",
       pageBreakInside: "avoid",
     },
     heroMeta: {
       display: "flex",
       flexDirection: "column",
-      gap: "4px",
-      alignItems: "flex-start",
-      justifySelf: "start",
+      gap: "8px",
+      alignItems: "flex-end",
+      justifySelf: "end",
+      direction: "rtl",
+      minWidth: 0,
     },
     heroMetaLabel: {
       fontSize: "12px",
@@ -466,6 +470,8 @@ export default function ReportPage({
     },
     heroCenter: {
       textAlign: "center",
+      direction: "rtl",
+      minWidth: 0,
     },
     heroEyebrow: {
       fontSize: "12px",
@@ -488,7 +494,42 @@ export default function ReportPage({
       color: "rgba(255,255,255,0.9)",
     },
     heroLogoWrap: {
-      justifySelf: "end",
+      justifySelf: "start",
+      direction: "ltr",
+      minWidth: 0,
+    },
+    heroClientLogoBox: {
+      width: "178px",
+      height: "64px",
+      borderRadius: "16px",
+      background: "rgba(255,255,255,0.11)",
+      border: "1px solid rgba(255,255,255,0.18)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      overflow: "hidden",
+      padding: "8px",
+      boxSizing: "border-box",
+    },
+    heroClientLogoImage: {
+      display: "block",
+      maxWidth: "100%",
+      maxHeight: "100%",
+      width: "auto",
+      height: "auto",
+      objectFit: "contain",
+    },
+    heroClientLogoPlaceholder: {
+      width: "100%",
+      height: "100%",
+      borderRadius: "12px",
+      background: "rgba(255,255,255,0.13)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "rgba(255,255,255,0.58)",
+      fontSize: "11px",
+      fontWeight: 700,
     },
     topGrid: {
       display: "grid",
@@ -1925,6 +1966,14 @@ export default function ReportPage({
             line-height: 1 !important;
           }
 
+
+          .responsive-hero-logo img,
+          .responsive-hero-meta img {
+            max-width: 100% !important;
+            max-height: 100% !important;
+            object-fit: contain !important;
+          }
+
           @media print {
             .no-print,
             .client-menu-panel {
@@ -2097,6 +2146,7 @@ export default function ReportPage({
             .responsive-hero {
               grid-template-columns: 1fr !important;
               text-align: center !important;
+              direction: rtl !important;
             }
 
             .responsive-hero-meta,
@@ -2202,9 +2252,8 @@ export default function ReportPage({
             className="print-section responsive-hero avoid-break"
             style={styles.heroHeader}
           >
-            <div className="responsive-hero-meta" style={styles.heroMeta}>
-              <div style={styles.heroMetaLabel}>תאריך עדכון</div>
-              <div style={styles.heroMetaValue}>{family.lastUpdated || "—"}</div>
+            <div className="responsive-hero-logo" style={styles.heroLogoWrap}>
+              <ZviranLogo light />
             </div>
 
             <div style={styles.heroCenter}>
@@ -2217,26 +2266,23 @@ export default function ReportPage({
               </div>
             </div>
 
-            <div className="responsive-hero-logo" style={styles.heroLogoWrap}>
-              
-<div style={{
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  marginBottom: 24,
-  direction: "rtl"
-}}>
-  <div style={{ width: 140 }}>
-    {reportData?.clientLogo ? (
-      <img src={reportData.clientLogo} style={{ height: 50, objectFit: "contain" }} />
-    ) : (
-      <div style={{ width:120,height:50,background:"#eef2fa",borderRadius:10 }} />
-    )}
-  </div>
+            <div className="responsive-hero-meta" style={styles.heroMeta}>
+              <div style={styles.heroClientLogoBox}>
+                {reportData?.clientLogo ? (
+                  <img
+                    src={reportData.clientLogo}
+                    alt="לוגו חברה"
+                    style={styles.heroClientLogoImage}
+                  />
+                ) : (
+                  <div style={styles.heroClientLogoPlaceholder}>לוגו חברה</div>
+                )}
+              </div>
 
-  <ZviranLogo />
-</div>
-
+              <div>
+                <div style={styles.heroMetaLabel}>תאריך עדכון</div>
+                <div style={styles.heroMetaValue}>{family.lastUpdated || "—"}</div>
+              </div>
             </div>
           </section>
 
