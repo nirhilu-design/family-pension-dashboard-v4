@@ -1,18 +1,80 @@
 function ClientFamilyView({ clientModel }) {
-  const summary = clientModel.summary || {};
-  const exposures = clientModel.exposures || {};
-  const members = clientModel.members || [];
-  const managers = clientModel.distributions?.managers || [];
-  const products = clientModel.distributions?.products || [];
-  const mainGroups =
-    clientModel.distributions?.mainGroups ||
-    clientModel.distributions?.mainGroupAllocation ||
-    clientModel.mainGroupAllocation ||
-    clientModel.distributions?.assetClasses ||
+  const hasClientModel =
+    clientModel && typeof clientModel === "object" && !Array.isArray(clientModel);
+
+  if (!hasClientModel) {
+    return (
+      <div
+        className="client-family-root"
+        style={{
+          direction: "rtl",
+          fontFamily: 'Calibri, "Arial", sans-serif',
+          minHeight: "100vh",
+          padding: 32,
+          background: "#F9F7F3",
+          color: "#102A43",
+          boxSizing: "border-box",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 760,
+            margin: "80px auto",
+            background: "#FFFFFF",
+            border: "1px solid #E2D1BF",
+            borderRadius: 20,
+            padding: 28,
+            boxShadow: "0 2px 10px rgba(16,42,67,0.05)",
+            textAlign: "center",
+          }}
+        >
+          <h1
+            style={{
+              margin: "0 0 12px",
+              color: "#00215D",
+              fontSize: 26,
+              lineHeight: 1.3,
+            }}
+          >
+            אין נתוני דוח להצגה
+          </h1>
+
+          <p
+            style={{
+              margin: 0,
+              color: "#627D98",
+              fontSize: 15,
+              lineHeight: 1.8,
+            }}
+          >
+            הדוח לא נוצר או שלא הועבר אובייקט clientModel למסך תצוגת הלקוח.
+            בדוק שהכפתור “מעבר לתצוגת לקוח” מעביר את המודל שנבנה.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const summary = clientModel?.summary || {};
+  const exposures = clientModel?.exposures || {};
+  const members = Array.isArray(clientModel?.members) ? clientModel.members : [];
+  const managers = Array.isArray(clientModel?.distributions?.managers)
+    ? clientModel.distributions.managers
+    : [];
+  const products = Array.isArray(clientModel?.distributions?.products)
+    ? clientModel.distributions.products
+    : [];
+  const mainGroupsCandidate =
+    clientModel?.distributions?.mainGroups ||
+    clientModel?.distributions?.mainGroupAllocation ||
+    clientModel?.mainGroupAllocation ||
+    clientModel?.distributions?.assetClasses ||
     [];
 
-  const loans = clientModel.loans || {};
-  const loanDetails = Array.isArray(loans.details) ? loans.details : [];
+  const mainGroups = Array.isArray(mainGroupsCandidate) ? mainGroupsCandidate : [];
+
+  const loans = clientModel?.loans || {};
+  const loanDetails = Array.isArray(loans?.details) ? loans.details : [];
 
   const formatCurrency = (value) =>
     `₪${Math.round(Number(value || 0)).toLocaleString("en-US")}`;
@@ -20,7 +82,7 @@ function ClientFamilyView({ clientModel }) {
   const formatPercent = (value) => `${Math.round(Number(value || 0))}%`;
 
   const totalLoansAmount = loanDetails.reduce(
-    (sum, loan) => sum + Number(loan.amount || loan.balance || 0),
+    (sum, loan) => sum + Number(loan?.amount || loan?.balance || 0),
     0
   );
 
@@ -367,7 +429,7 @@ function ClientFamilyView({ clientModel }) {
             <div className="family-members-grid" style={membersGrid}>
               {members.map((member) => (
                 <MemberCard
-                  key={member.id || member.name}
+                  key={member?.id || member?.name}
                   member={member}
                   formatCurrency={formatCurrency}
                 />
@@ -411,18 +473,18 @@ function ClientFamilyView({ clientModel }) {
                   </thead>
                   <tbody>
                     {loanDetails.map((loan, index) => (
-                      <tr key={loan.id || index}>
+                      <tr key={loan?.id || index}>
                         <td style={td}>
-                          {[loan.firstName, loan.familyName]
+                          {[loan?.firstName, loan?.familyName]
                             .filter(Boolean)
                             .join(" ") ||
-                            loan.name ||
+                            loan?.name ||
                             "—"}
                         </td>
-                        <td style={td}>{formatCurrency(loan.amount)}</td>
-                        <td style={td}>{formatCurrency(loan.balance)}</td>
-                        <td style={td}>{loan.repaymentFrequency || "—"}</td>
-                        <td style={td}>{formatDate(loan.endDate)}</td>
+                        <td style={td}>{formatCurrency(loan?.amount)}</td>
+                        <td style={td}>{formatCurrency(loan?.balance)}</td>
+                        <td style={td}>{loan?.repaymentFrequency || "—"}</td>
+                        <td style={td}>{formatDate(loan?.endDate)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -802,14 +864,14 @@ function LegendRow({ seg, formatCurrency }) {
 }
 
 function MemberCard({ member, formatCurrency }) {
-  const summary = member.summary || {};
-  const insurance = member.insurance || {};
+  const summary = member?.summary || {};
+  const insurance = member?.insurance || {};
 
   return (
     <div className="family-member-card" style={memberCard}>
       <div style={memberTop}>
         <div>
-          <div style={memberName}>{member.name}</div>
+          <div style={memberName}>{member?.name || "ללא שם"}</div>
         </div>
 
         <div style={chip}>
