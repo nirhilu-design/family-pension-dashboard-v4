@@ -1,10 +1,108 @@
 import React, { useMemo, useState } from "react";
 
+const STORAGE_CLIENT_MODEL_KEY = "familyPensionClientModel";
+const STORAGE_REPORT_DATA_KEY = "familyPensionReportData";
+
+function safeArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function buildClientModelFromReportData(reportData) {
+  const data = reportData || {};
+  const family = data.family || {};
+
+  return {
+    lastUpdated:
+      family.lastUpdated ||
+      data.lastUpdated ||
+      new Intl.DateTimeFormat("he-IL").format(new Date()),
+
+    summary: {
+      totalAssets: Number(family.totalAssets || 0),
+      monthlyDeposits: Number(family.monthlyDeposits || 0),
+      projectedLumpSumWithDeposits: Number(
+        family.projectedLumpSumWithDeposits || 0
+      ),
+      projectedLumpSumWithoutDeposits: Number(
+        family.projectedLumpSumWithoutDeposits || 0
+      ),
+      monthlyPensionWithDeposits: Number(
+        family.monthlyPensionWithDeposits || 0
+      ),
+      monthlyPensionWithoutDeposits: Number(
+        family.monthlyPensionWithoutDeposits || 0
+      ),
+    },
+
+    exposures: {
+      equity: Number(data.weightedEquityExposure || 0),
+      foreign: Number(data.weightedForeignExposure || 0),
+    },
+
+    distributions: {
+      products: safeArray(data.products),
+      managers: safeArray(data.managers),
+      mainGroups: safeArray(data.mainGroupAllocation),
+      mainGroupAllocation: safeArray(data.mainGroupAllocation),
+      assetClasses: safeArray(data.mainGroupAllocation),
+      foreignExposureAllocation: safeArray(data.foreignExposureAllocation),
+    },
+
+    members: safeArray(data.members).map((member, index) => ({
+      id: member.id || member.name || `member-${index}`,
+      name: member.name || "ללא שם",
+
+      summary: {
+        totalAssets: Number(member.assets || member.totalAssets || 0),
+        monthlyDeposits: Number(member.monthlyDeposits || 0),
+        monthlyPensionWithDeposits: Number(
+          member.monthlyPensionWithDeposits || 0
+        ),
+        monthlyPensionWithoutDeposits: Number(
+          member.monthlyPensionWithoutDeposits || 0
+        ),
+        projectedLumpSumWithDeposits: Number(
+          member.lumpSumWithDeposits ||
+            member.projectedLumpSumWithDeposits ||
+            0
+        ),
+        projectedLumpSumWithoutDeposits: Number(
+          member.lumpSumWithoutDeposits ||
+            member.projectedLumpSumWithoutDeposits ||
+            0
+        ),
+      },
+
+      insurance: {
+        deathCoverage: Number(member.deathCoverage || 0),
+        disabilityValue: Number(member.disabilityValue || 0),
+        disabilityPercent: Number(member.disabilityPercent || 0),
+      },
+    })),
+
+    loans: {
+      hasData: Boolean(data.loans?.hasData),
+      details: safeArray(data.loans?.details),
+    },
+
+    sourceReportData: data,
+  };
+}
+
+function saveClientDashboardData(reportData) {
+  const clientModel = buildClientModelFromReportData(reportData);
+
+  localStorage.setItem(STORAGE_CLIENT_MODEL_KEY, JSON.stringify(clientModel));
+  localStorage.setItem(STORAGE_REPORT_DATA_KEY, JSON.stringify(reportData));
+
+  return clientModel;
+}
+
 export default function ReportPage({
   reportData,
   onBack,
   onResetAll = () => {},
-  onOpenClientDashboard = () => {},
+  onOpenClientDashboard,
 }) {
   const [recommendations, setRecommendations] = useState(
     `1. מומלץ לבחון את הפער בין הקצבה הצפויה עם המשך הפקדות לבין ללא המשך הפקדות.
@@ -29,6 +127,26 @@ export default function ReportPage({
 
   const handleExportPdf = () => {
     window.print();
+  };
+
+  const handleOpenClientDashboard = () => {
+    if (!reportData || !reportData.family) {
+      alert("אין דוח מוכן להצגה. קודם יש להפיק דוח.");
+      return;
+    }
+
+    const clientModel = saveClientDashboardData(reportData);
+
+    if (typeof onOpenClientDashboard === "function") {
+      try {
+        onOpenClientDashboard(clientModel);
+        return;
+      } catch (error) {
+        console.warn("onOpenClientDashboard failed, opening fallback route", error);
+      }
+    }
+
+    window.open("/client-dashboard", "_blank", "noopener,noreferrer");
   };
 
   const formatCurrency = (value) =>
@@ -1019,7 +1137,6 @@ export default function ReportPage({
               page-break-before: always !important;
             }
 
-
             html,
             body {
               width: 210mm !important;
@@ -1142,7 +1259,7 @@ export default function ReportPage({
             חזרה למסך העלאה
           </button>
 
-          <button onClick={onOpenClientDashboard} className="action-button accent">
+          <button onClick={handleOpenClientDashboard} className="action-button accent">
             פתח תצוגת לקוח
           </button>
 
@@ -1375,15 +1492,15 @@ export default function ReportPage({
             </div>
 
             <div className="responsive-members-grid" style={styles.membersGrid}>
-              {members.map((member) => (
+              {members.map((member, index) => (
                 <div
-                  key={member.name}
+                  key={member.id || member.name || index}
                   className="member-card-print avoid-break"
                   style={styles.memberCard}
                 >
                   <div style={styles.memberTop}>
                     <div>
-                      <div style={styles.memberName}>{member.name}</div>
+                      <div style={styles.memberName}>{member.name || "ללא שם"}</div>
                     </div>
 
                     <div style={styles.chip}>
@@ -1460,7 +1577,7 @@ export default function ReportPage({
                       <div style={styles.insuranceLabel}>🧍 אובדן כושר עבודה</div>
                       <div style={styles.insuranceValue}>
                         {formatCurrency(member.disabilityValue)} (
-                        {member.disabilityPercent}%)
+                        {Math.round(Number(member.disabilityPercent || 0))}%)
                       </div>
                     </div>
                   </div>
