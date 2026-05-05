@@ -1,3 +1,41 @@
+
+// ======== CLIENT LOGO HEADER ========
+function ReportHeader({ reportData }) {
+  return (
+    <div style={{
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 24,
+      direction: "rtl"
+    }}>
+      <div style={{ width: 140 }}>
+        {reportData?.clientLogo ? (
+          <img
+            src={reportData.clientLogo}
+            alt="client logo"
+            style={{ height: 50, objectFit: "contain" }}
+          />
+        ) : (
+          <div
+            style={{
+              width: 120,
+              height: 50,
+              background: "#f0f2f7",
+              borderRadius: 10,
+            }}
+          />
+        )}
+      </div>
+
+      <div>
+        <img src="/zviran-logo.png" alt="zviran" style={{ height: 50 }} />
+      </div>
+    </div>
+  );
+}
+
+
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 const STORAGE_CLIENT_MODEL_KEY = "familyPensionClientModel";
