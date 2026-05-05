@@ -373,11 +373,409 @@ function EmptyClientDashboardState() {
   );
 }
 
+
+function getQueryParam(name) {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get(name);
+  } catch (error) {
+    return null;
+  }
+}
+
+function findMemberForClientView(clientModel, memberIdFromUrl) {
+  const members = Array.isArray(clientModel?.members) ? clientModel.members : [];
+  if (!members.length) return null;
+
+  if (!memberIdFromUrl) return members[0];
+
+  const decoded = decodeURIComponent(String(memberIdFromUrl));
+
+  return (
+    members.find(
+      (member) =>
+        String(member?.id || "") === decoded ||
+        String(member?.name || "") === decoded
+    ) || members[0]
+  );
+}
+
+function ClientMemberView({ clientModel, member }) {
+  const summary = member?.summary || {};
+  const insurance = member?.insurance || {};
+  const familySummary = clientModel?.summary || {};
+
+  const formatCurrency = (value) =>
+    `₪${Math.round(Number(value || 0)).toLocaleString("en-US")}`;
+
+  const formatPercent = (value) => `${Math.round(Number(value || 0))}%`;
+
+  const shareOfFamily =
+    Number(familySummary.totalAssets || 0) > 0
+      ? (Number(summary.totalAssets || 0) /
+          Number(familySummary.totalAssets || 0)) *
+        100
+      : 0;
+
+  const cardStyle = {
+    background: "#FFFFFF",
+    border: "1px solid #E2D1BF",
+    borderRadius: 22,
+    padding: 22,
+    boxShadow: "0 2px 10px rgba(16,42,67,0.05)",
+    boxSizing: "border-box",
+  };
+
+  const statLabel = {
+    color: "#627D98",
+    fontSize: 13,
+    marginBottom: 8,
+    fontWeight: 700,
+  };
+
+  const statValue = {
+    color: "#00215D",
+    fontSize: 28,
+    fontWeight: 900,
+    lineHeight: 1.15,
+  };
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#F9F7F3",
+        direction: "rtl",
+        fontFamily: 'Calibri, "Arial", sans-serif',
+        color: "#102A43",
+        padding: 24,
+        boxSizing: "border-box",
+      }}
+    >
+      <style>
+        {`
+          @media print {
+            @page {
+              size: A4 portrait;
+              margin: 7mm;
+            }
+
+            html,
+            body {
+              margin: 0 !important;
+              padding: 0 !important;
+              background: #ffffff !important;
+              direction: rtl !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+
+            .no-print {
+              display: none !important;
+            }
+          }
+        `}
+      </style>
+
+      <div
+        className="no-print"
+        style={{
+          maxWidth: 1180,
+          margin: "0 auto 16px",
+          display: "flex",
+          justifyContent: "flex-start",
+          gap: 12,
+          flexWrap: "wrap",
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => window.print()}
+          style={{
+            minWidth: 150,
+            minHeight: 42,
+            borderRadius: 12,
+            border: "1px solid #00215D",
+            background: "#00215D",
+            color: "#fff",
+            fontWeight: 900,
+            cursor: "pointer",
+            fontFamily: 'Calibri, "Arial", sans-serif',
+          }}
+        >
+          ייצוא ל־PDF
+        </button>
+
+        <button
+          type="button"
+          onClick={() => window.close()}
+          style={{
+            minWidth: 150,
+            minHeight: 42,
+            borderRadius: 12,
+            border: "1px solid #D9DDE8",
+            background: "#fff",
+            color: "#102A43",
+            fontWeight: 900,
+            cursor: "pointer",
+            fontFamily: 'Calibri, "Arial", sans-serif',
+          }}
+        >
+          סגירה
+        </button>
+      </div>
+
+      <div style={{ maxWidth: 1180, margin: "0 auto" }}>
+        <section
+          style={{
+            background: "linear-gradient(135deg, #00215D, #001845)",
+            color: "#fff",
+            borderRadius: 24,
+            padding: "28px 32px",
+            marginBottom: 18,
+            display: "grid",
+            gridTemplateColumns: "1fr 2fr 1fr",
+            alignItems: "center",
+            gap: 18,
+            boxShadow: "0 8px 28px rgba(0,33,93,0.14)",
+          }}
+        >
+          <div style={{ justifySelf: "start", direction: "ltr" }}>
+            <ZviranLogo light />
+          </div>
+
+          <div style={{ textAlign: "center" }}>
+            <div
+              style={{
+                fontSize: 12,
+                color: "rgba(255,255,255,0.78)",
+                marginBottom: 8,
+                fontWeight: 800,
+              }}
+            >
+              מסך לקוח · דוח פרט
+            </div>
+
+            <h1
+              style={{
+                margin: 0,
+                fontSize: 32,
+                lineHeight: 1.2,
+                color: "#fff",
+                fontWeight: 900,
+              }}
+            >
+              דוח פנסיוני אישי
+            </h1>
+
+            <div
+              style={{
+                marginTop: 10,
+                color: "rgba(255,255,255,0.9)",
+                fontSize: 15,
+                fontWeight: 700,
+              }}
+            >
+              {member?.name || "ללא שם"}
+            </div>
+          </div>
+
+          <div style={{ justifySelf: "end", textAlign: "right" }}>
+            <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 12 }}>
+              תאריך עדכון
+            </div>
+            <div style={{ color: "#fff", fontSize: 15, fontWeight: 900 }}>
+              {clientModel?.lastUpdated ||
+                new Intl.DateTimeFormat("he-IL").format(new Date())}
+            </div>
+          </div>
+        </section>
+
+        <section
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+            gap: 16,
+            marginBottom: 18,
+          }}
+        >
+          <div style={cardStyle}>
+            <div style={statLabel}>סך צבירה</div>
+            <div style={statValue}>{formatCurrency(summary.totalAssets)}</div>
+          </div>
+
+          <div style={cardStyle}>
+            <div style={statLabel}>הפקדה חודשית</div>
+            <div style={statValue}>{formatCurrency(summary.monthlyDeposits)}</div>
+          </div>
+
+          <div style={cardStyle}>
+            <div style={statLabel}>חלק מהתיק המשפחתי</div>
+            <div style={statValue}>{formatPercent(shareOfFamily)}</div>
+          </div>
+
+          <div style={cardStyle}>
+            <div style={statLabel}>אובדן כושר עבודה</div>
+            <div style={statValue}>
+              {formatCurrency(insurance.disabilityValue)}
+            </div>
+            <div style={{ color: "#627D98", marginTop: 8, fontWeight: 700 }}>
+              {formatPercent(insurance.disabilityPercent)}
+            </div>
+          </div>
+        </section>
+
+        <section
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+            gap: 16,
+            marginBottom: 18,
+          }}
+        >
+          <div style={cardStyle}>
+            <h2
+              style={{
+                margin: "0 0 14px",
+                color: "#00215D",
+                fontSize: 18,
+                fontWeight: 900,
+              }}
+            >
+              קצבה חודשית צפויה
+            </h2>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1px 1fr",
+                gap: 16,
+                alignItems: "stretch",
+              }}
+            >
+              <div style={{ textAlign: "center" }}>
+                <div style={statLabel}>עם המשך הפקדות</div>
+                <div style={statValue}>
+                  {formatCurrency(summary.monthlyPensionWithDeposits)}
+                </div>
+              </div>
+
+              <div style={{ background: "#EEE4D8" }} />
+
+              <div style={{ textAlign: "center" }}>
+                <div style={statLabel}>ללא המשך הפקדות</div>
+                <div style={statValue}>
+                  {formatCurrency(summary.monthlyPensionWithoutDeposits)}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={cardStyle}>
+            <h2
+              style={{
+                margin: "0 0 14px",
+                color: "#00215D",
+                fontSize: 18,
+                fontWeight: 900,
+              }}
+            >
+              סכום חד הוני לפרישה
+            </h2>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1px 1fr",
+                gap: 16,
+                alignItems: "stretch",
+              }}
+            >
+              <div style={{ textAlign: "center" }}>
+                <div style={statLabel}>עם המשך הפקדות</div>
+                <div style={statValue}>
+                  {formatCurrency(summary.projectedLumpSumWithDeposits)}
+                </div>
+              </div>
+
+              <div style={{ background: "#EEE4D8" }} />
+
+              <div style={{ textAlign: "center" }}>
+                <div style={statLabel}>ללא המשך הפקדות</div>
+                <div style={statValue}>
+                  {formatCurrency(summary.projectedLumpSumWithoutDeposits)}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section style={cardStyle}>
+          <h2
+            style={{
+              margin: "0 0 14px",
+              color: "#00215D",
+              fontSize: 18,
+              fontWeight: 900,
+            }}
+          >
+            כיסויים ביטוחיים
+          </h2>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              gap: 16,
+            }}
+          >
+            <div
+              style={{
+                background: "#FCFBF8",
+                border: "1px solid #EEE4D8",
+                borderRadius: 16,
+                padding: 18,
+              }}
+            >
+              <div style={statLabel}>הון למוטבים / פטירה</div>
+              <div style={statValue}>{formatCurrency(insurance.deathCoverage)}</div>
+            </div>
+
+            <div
+              style={{
+                background: "#FCFBF8",
+                border: "1px solid #EEE4D8",
+                borderRadius: 16,
+                padding: 18,
+              }}
+            >
+              <div style={statLabel}>אובדן כושר עבודה</div>
+              <div style={statValue}>
+                {formatCurrency(insurance.disabilityValue)}
+              </div>
+              <div style={{ color: "#627D98", marginTop: 8, fontWeight: 700 }}>
+                שיעור כיסוי: {formatPercent(insurance.disabilityPercent)}
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
 export default function ClientDashboardPage() {
   const clientModel = useMemo(() => getClientModelFromStorage(), []);
+  const view = getQueryParam("view");
+  const memberId = getQueryParam("memberId");
 
   if (!hasUsableClientModel(clientModel)) {
     return <EmptyClientDashboardState />;
+  }
+
+  if (view === "member") {
+    const member = findMemberForClientView(clientModel, memberId);
+    return <ClientMemberView clientModel={clientModel} member={member} />;
   }
 
   return <ClientFamilyView clientModel={clientModel} />;
