@@ -8,21 +8,40 @@ function safeArray(value) {
 }
 
 function readJsonFromStorage(key) {
+  const tryParse = (raw) => {
+    try {
+      return raw ? JSON.parse(raw) : null;
+    } catch (error) {
+      console.error(`Failed to parse ${key}`, error);
+      return null;
+    }
+  };
+
   try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : null;
+    const localValue = tryParse(localStorage.getItem(key));
+    if (localValue) return localValue;
   } catch (error) {
     console.error(`Failed to read ${key} from localStorage`, error);
-    return null;
   }
+
+  try {
+    const sessionValue = tryParse(sessionStorage.getItem(key));
+    if (sessionValue) return sessionValue;
+  } catch (error) {
+    console.error(`Failed to read ${key} from sessionStorage`, error);
+  }
+
+  return null;
 }
 
 function writeJsonToStorage(key, value) {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    const json = JSON.stringify(value);
+    localStorage.setItem(key, json);
+    sessionStorage.setItem(key, json);
     return true;
   } catch (error) {
-    console.error(`Failed to write ${key} to localStorage`, error);
+    console.error(`Failed to write ${key} to storage`, error);
     return false;
   }
 }
@@ -161,13 +180,21 @@ function hasUsableClientModel(clientModel) {
 }
 
 function getClientModelFromStorage() {
-  const storedClientModel = readJsonFromStorage(STORAGE_CLIENT_MODEL_KEY);
+  const storedClientModel =
+    readJsonFromStorage(STORAGE_CLIENT_MODEL_KEY) ||
+    readJsonFromStorage("clientModel") ||
+    window.__familyPensionClientModel ||
+    null;
 
   if (hasUsableClientModel(storedClientModel)) {
     return storedClientModel;
   }
 
-  const storedReportData = readJsonFromStorage(STORAGE_REPORT_DATA_KEY);
+  const storedReportData =
+    readJsonFromStorage(STORAGE_REPORT_DATA_KEY) ||
+    readJsonFromStorage("reportData") ||
+    window.__familyPensionReportData ||
+    null;
 
   if (storedReportData) {
     const convertedClientModel = buildClientModelFromReportData(storedReportData);
@@ -766,8 +793,10 @@ function ClientMemberView({ clientModel, member }) {
 
 export default function ClientDashboardPage() {
   const clientModel = useMemo(() => getClientModelFromStorage(), []);
-  const view = getQueryParam("view");
-  const memberId = getQueryParam("memberId");
+  const view = getQueryParam("view") || getQueryParam("clientView");
+  const memberId =
+    getQueryParam("memberId") ||
+    readJsonFromStorage("familyPensionSelectedMemberId");
 
   if (!hasUsableClientModel(clientModel)) {
     return <EmptyClientDashboardState />;
