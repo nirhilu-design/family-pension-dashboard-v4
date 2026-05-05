@@ -160,7 +160,7 @@ export default function ReportPage({
   const getClientMemberUrl = (memberId) => {
     const baseUrl = window.location.origin;
     const encodedMemberId = encodeURIComponent(String(memberId || ""));
-    return `${baseUrl}/client-member/${encodedMemberId}`;
+    return `${baseUrl}/client-dashboard?view=member&memberId=${encodedMemberId}`;
   };
 
   const copyTextToClipboard = async (text) => {
@@ -192,16 +192,13 @@ export default function ReportPage({
 
     try {
       await copyTextToClipboard(clientUrl);
-      setIsClientLinkCopied(true);
-      window.setTimeout(() => setIsClientLinkCopied(false), 3500);
     } catch (error) {
       console.error("Failed to copy client link", error);
       window.prompt("העתק את הלינק ללקוח:", clientUrl);
-      setIsClientLinkCopied(true);
-      window.setTimeout(() => setIsClientLinkCopied(false), 3500);
     }
 
-    window.open(clientUrl, "_blank", "noopener,noreferrer");
+    setIsClientLinkCopied(true);
+    window.setTimeout(() => setIsClientLinkCopied(false), 3500);
   };
 
   const handleOpenClientLink = () => {
@@ -1196,6 +1193,125 @@ export default function ReportPage({
           }
 
           .client-menu-panel {
+            position: absolute !important;
+            top: 56px !important;
+            right: 0 !important;
+            left: auto !important;
+            width: 316px !important;
+            max-width: calc(100vw - 32px) !important;
+            background: rgba(255, 255, 255, 0.98) !important;
+            border: 1px solid #E2D1BF !important;
+            border-radius: 22px !important;
+            box-shadow: 0 18px 40px rgba(16,42,67,0.16) !important;
+            padding: 18px !important;
+            z-index: 100 !important;
+            backdrop-filter: blur(8px);
+          }
+
+          .client-menu-title {
+            color: #00215D;
+            font-size: 15px;
+            font-weight: 900;
+            margin-bottom: 6px;
+          }
+
+          .client-menu-subtitle {
+            color: #627D98;
+            font-size: 12px;
+            line-height: 1.6;
+            margin-bottom: 14px;
+          }
+
+          .client-menu-member-row {
+            width: 100% !important;
+            display: grid !important;
+            grid-template-columns: 1fr auto !important;
+            gap: 10px !important;
+            align-items: center !important;
+            padding: 14px 16px !important;
+            border: 1px solid #EEE4D8 !important;
+            border-radius: 14px !important;
+            background: #FFFFFF !important;
+            cursor: pointer !important;
+            font-family: Calibri, Arial, sans-serif !important;
+            text-align: right !important;
+            margin-bottom: 10px !important;
+            transition: all 0.18s ease !important;
+          }
+
+          .client-menu-member-row:hover {
+            border-color: #00215D !important;
+            background: #F4F7FB !important;
+            transform: translateY(-1px);
+          }
+
+          .client-menu-member-name {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #102A43;
+            font-size: 14px;
+            font-weight: 900;
+          }
+
+          .client-menu-member-arrow {
+            color: #00215D;
+            font-size: 22px;
+            font-weight: 900;
+            line-height: 1;
+            transform: rotate(180deg);
+          }
+
+          .client-menu-empty {
+            border: 1px dashed #E2D1BF;
+            background: #FCFBF8;
+            color: #627D98;
+            border-radius: 14px;
+            padding: 14px;
+            font-size: 12px;
+            text-align: center;
+          }
+
+          .client-link-button-wrap {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+          }
+
+          .client-link-success-check {
+            position: absolute;
+            right: -10px;
+            top: -8px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #20B26B;
+            color: #ffffff;
+            border: 2px solid #ffffff;
+            box-shadow: 0 4px 10px rgba(32,178,107,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 900;
+            line-height: 1;
+          }
+
+          .client-menu-wrap {
+            position: relative;
+            display: inline-flex;
+          }
+
+          .hamburger-button {
+            width: 46px;
+            min-width: 46px;
+            padding: 0;
+            font-size: 22px;
+            line-height: 1;
+          }
+
+          .client-menu-panel {
             position: absolute;
             top: 52px;
             right: 0;
@@ -1525,9 +1641,9 @@ export default function ReportPage({
 
             {isClientMenuOpen ? (
               <div className="client-menu-panel">
-                <div className="client-menu-title">בחירת דוח פרט</div>
+                <div className="client-menu-title">בחירת בן משפחה</div>
                 <div className="client-menu-subtitle">
-                  בחר בן משפחה כדי לפתוח ישירות את דוח הפרט שלו.
+                  לחיצה על שם תפתח ישירות את דוח הפרט במסך הלקוח.
                 </div>
 
                 {members.length ? (
@@ -1542,10 +1658,11 @@ export default function ReportPage({
                       <span className="client-menu-member-name">
                         {member?.name || "ללא שם"}
                       </span>
+                      <span className="client-menu-member-arrow">›</span>
                     </button>
                   ))
                 ) : (
-                  <div style={{ color: "#627D98", fontSize: 12 }}>
+                  <div className="client-menu-empty">
                     אין בני משפחה להצגה.
                   </div>
                 )}
