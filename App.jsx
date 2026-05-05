@@ -115,6 +115,8 @@ function App() {
   const [shareError, setShareError] = useState("");
   const [isSharedMode, setIsSharedMode] = useState(false);
   const [sharePayload, setSharePayload] = useState(null);
+  const [clientViewMode, setClientViewMode] = useState("family");
+  const [selectedMemberId, setSelectedMemberId] = useState(null);
 
   useEffect(() => {
     const shareToken = getShareModeFromUrl();
@@ -134,12 +136,24 @@ function App() {
 
     setReportData(result.reportData);
     setSharePayload(result.payload || null);
+    setClientViewMode("family");
+    setSelectedMemberId(null);
     setCurrentPage("client");
   }, []);
 
   const handleSetReportData = (data) => {
     setReportData(data);
+    setClientViewMode("family");
+    setSelectedMemberId(null);
     setCurrentPage("report");
+  };
+
+  const handleOpenClientDashboard = (options = {}) => {
+    const view = options.view || "family";
+
+    setClientViewMode(view);
+    setSelectedMemberId(options.memberId || null);
+    setCurrentPage("client");
   };
 
   const handleCreateShareLink = (options = {}) => {
@@ -231,9 +245,12 @@ function App() {
             setReportData(null);
             setSharePayload(null);
             setIsSharedMode(false);
+            setClientViewMode("family");
+            setSelectedMemberId(null);
             setCurrentPage("upload");
           }}
-          onOpenClientDashboard={() => setCurrentPage("client")}
+          onOpenClientDashboard={handleOpenClientDashboard}
+          onCreateShareLink={handleCreateShareLink}
         />
       </>
     );
@@ -250,6 +267,12 @@ function App() {
           onCreateShareLink={handleCreateShareLink}
           isSharedMode={isSharedMode}
           sharePayload={sharePayload}
+          viewMode={clientViewMode}
+          selectedMemberId={selectedMemberId}
+          onChangeView={(view, memberId = null) => {
+            setClientViewMode(view);
+            setSelectedMemberId(memberId);
+          }}
         />
       </>
     );
