@@ -116,7 +116,8 @@ export default function ReportPage({
   reportData,
   onBack,
   onResetAll = () => {},
-  onOpenClientDashboard,
+  onOpenClientDashboard = () => {},
+  onCreateShareLink = () => null,
 }) {
   const [recommendations, setRecommendations] = useState(
     `1. מומלץ לבחון את הפער בין הקצבה הצפויה עם המשך הפקדות לבין ללא המשך הפקדות.
@@ -166,17 +167,6 @@ export default function ReportPage({
     window.print();
   };
 
-  const getClientDashboardUrl = () => {
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/client-dashboard`;
-  };
-
-  const getClientMemberUrl = (memberId) => {
-    const baseUrl = window.location.origin;
-    const encodedMemberId = encodeURIComponent(String(memberId || ""));
-    return `${baseUrl}/client-dashboard?view=member&memberId=${encodedMemberId}`;
-  };
-
   const copyTextToClipboard = async (text) => {
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(text);
@@ -200,29 +190,22 @@ export default function ReportPage({
       return;
     }
 
-    saveClientDashboardData(reportData);
+    const result = onCreateShareLink({ expirationHours: 24 });
 
-    const clientUrl = getClientDashboardUrl();
+    if (!result?.success || !result?.url) {
+      alert(result?.error || "לא ניתן היה ליצור לינק ללקוח.");
+      return;
+    }
 
     try {
-      await copyTextToClipboard(clientUrl);
+      await copyTextToClipboard(result.url);
     } catch (error) {
       console.error("Failed to copy client link", error);
-      window.prompt("העתק את הלינק ללקוח:", clientUrl);
+      window.prompt("העתק את הלינק ללקוח:", result.url);
     }
 
     setIsClientLinkCopied(true);
     window.setTimeout(() => setIsClientLinkCopied(false), 3500);
-  };
-
-  const handleOpenClientLink = () => {
-    if (!reportData || !reportData.family) {
-      alert("אין דוח מוכן לפתיחה. קודם יש להפיק דוח.");
-      return;
-    }
-
-    saveClientDashboardData(reportData);
-    window.open(getClientDashboardUrl(), "_blank", "noopener,noreferrer");
   };
 
   const handleOpenMemberReport = (member, index) => {
@@ -231,62 +214,25 @@ export default function ReportPage({
       return;
     }
 
-    const clientModel = saveClientDashboardData(reportData);
     const memberId = member?.id || member?.name || `member-${index}`;
-
-    localStorage.setItem("familyPensionSelectedMemberId", JSON.stringify(memberId));
-    sessionStorage.setItem("familyPensionSelectedMemberId", JSON.stringify(memberId));
-
-    localStorage.setItem(
-      "familyPensionSelectedMember",
-      JSON.stringify({
-        id: memberId,
-        member,
-        clientModel,
-        reportData,
-      })
-    );
-
-    sessionStorage.setItem(
-      "familyPensionSelectedMember",
-      JSON.stringify({
-        id: memberId,
-        member,
-        clientModel,
-        reportData,
-      })
-    );
 
     setIsClientMenuOpen(false);
 
-    window.open(getClientMemberUrl(memberId), "_blank", "noopener,noreferrer");
+    onOpenClientDashboard({
+      view: "member",
+      memberId,
+      memberName: member?.name || "ללא שם",
+    });
   };
 
-  const handleCopyMemberReportLink = async (member, index) => {
+  const handleOpenFamilyClientView = () => {
     if (!reportData || !reportData.family) {
-      alert("אין דוח מוכן ליצירת לינק. קודם יש להפיק דוח.");
+      alert("אין דוח מוכן לפתיחה. קודם יש להפיק דוח.");
       return;
     }
 
-    saveClientDashboardData(reportData);
-
-    const memberId = member?.id || member?.name || `member-${index}`;
-    const memberUrl = getClientMemberUrl(memberId);
-
-    localStorage.setItem(
-      "familyPensionSelectedMemberId",
-      JSON.stringify(memberId)
-    );
-
-    try {
-      await copyTextToClipboard(memberUrl);
-      alert(`הלינק לדוח הפרט הועתק ללוח:\n${memberUrl}`);
-    } catch (error) {
-      console.error("Failed to copy member report link", error);
-      window.prompt("העתק את הלינק לדוח הפרט:", memberUrl);
-    }
-
     setIsClientMenuOpen(false);
+    onOpenClientDashboard({ view: "family" });
   };
 
   const formatCurrency = (value) =>
@@ -1619,6 +1565,173 @@ export default function ReportPage({
             line-height: 1;
           }
 
+
+          /* Final client-actions menu design */
+          .client-menu-wrap {
+            position: relative !important;
+            display: inline-flex !important;
+            order: -100 !important;
+          }
+
+          .hamburger-button {
+            width: 48px !important;
+            min-width: 48px !important;
+            height: 44px !important;
+            padding: 0 !important;
+            font-size: 0 !important;
+            line-height: 1 !important;
+            border-radius: 14px !important;
+            position: relative !important;
+            background: #ffffff !important;
+          }
+
+          .hamburger-button::before {
+            content: "";
+            width: 20px;
+            height: 14px;
+            display: block;
+            background:
+              linear-gradient(#00215D, #00215D) 0 0 / 20px 2px no-repeat,
+              linear-gradient(#00215D, #00215D) 0 6px / 20px 2px no-repeat,
+              linear-gradient(#00215D, #00215D) 0 12px / 20px 2px no-repeat;
+            margin: 0 auto;
+          }
+
+          .client-menu-panel {
+            position: absolute !important;
+            top: 54px !important;
+            right: 0 !important;
+            left: auto !important;
+            width: 288px !important;
+            max-width: calc(100vw - 28px) !important;
+            background: #FFFFFF !important;
+            border: 1px solid #E9DCCF !important;
+            border-radius: 20px !important;
+            box-shadow: 0 24px 54px rgba(0, 33, 93, 0.18) !important;
+            padding: 14px !important;
+            z-index: 9999 !important;
+            text-align: right !important;
+          }
+
+          .client-menu-panel::before {
+            content: "";
+            position: absolute;
+            top: -8px;
+            right: 18px;
+            width: 16px;
+            height: 16px;
+            background: #FFFFFF;
+            border-top: 1px solid #E9DCCF;
+            border-right: 1px solid #E9DCCF;
+            transform: rotate(-45deg);
+          }
+
+          .client-menu-title {
+            color: #00215D !important;
+            font-size: 14px !important;
+            font-weight: 900 !important;
+            margin: 0 0 4px !important;
+            padding: 2px 2px 0 !important;
+          }
+
+          .client-menu-subtitle {
+            color: #627D98 !important;
+            font-size: 11px !important;
+            line-height: 1.55 !important;
+            margin: 0 0 12px !important;
+            padding: 0 2px 10px !important;
+            border-bottom: 1px solid #EEE4D8 !important;
+          }
+
+          .client-menu-member-row {
+            width: 100% !important;
+            border: 1px solid #EEE4D8 !important;
+            background: linear-gradient(180deg, #FFFFFF 0%, #FCFBF8 100%) !important;
+            border-radius: 14px !important;
+            min-height: 48px !important;
+            padding: 0 14px !important;
+            margin: 0 0 9px !important;
+            display: grid !important;
+            grid-template-columns: 1fr 24px !important;
+            gap: 10px !important;
+            align-items: center !important;
+            cursor: pointer !important;
+            font-family: Calibri, Arial, sans-serif !important;
+            text-align: right !important;
+            transition: all 0.16s ease !important;
+          }
+
+          .client-menu-member-row:hover {
+            border-color: #00215D !important;
+            background: #F4F7FB !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 8px 18px rgba(0, 33, 93, 0.08) !important;
+          }
+
+          .client-menu-member-row:last-child {
+            margin-bottom: 0 !important;
+          }
+
+          .client-menu-member-name {
+            min-width: 0 !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+            color: #102A43 !important;
+            font-size: 14px !important;
+            font-weight: 900 !important;
+          }
+
+          .client-menu-member-arrow {
+            width: 24px !important;
+            height: 24px !important;
+            border-radius: 50% !important;
+            background: #EAF1FB !important;
+            color: #00215D !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 20px !important;
+            font-weight: 900 !important;
+            line-height: 1 !important;
+            transform: rotate(180deg) !important;
+          }
+
+          .client-menu-empty {
+            border: 1px dashed #E2D1BF !important;
+            background: #FCFBF8 !important;
+            color: #627D98 !important;
+            border-radius: 14px !important;
+            padding: 14px !important;
+            font-size: 12px !important;
+            text-align: center !important;
+          }
+
+          .client-link-button-wrap {
+            position: relative !important;
+            display: inline-flex !important;
+            align-items: center !important;
+          }
+
+          .client-link-success-check {
+            position: absolute !important;
+            right: -9px !important;
+            top: -9px !important;
+            width: 21px !important;
+            height: 21px !important;
+            border-radius: 50% !important;
+            background: #20B26B !important;
+            color: #ffffff !important;
+            border: 2px solid #ffffff !important;
+            box-shadow: 0 4px 10px rgba(32,178,107,0.25) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 12px !important;
+            font-weight: 900 !important;
+            line-height: 1 !important;
+          }
+
           .kpi-card-hover:hover {
             transform: translateY(-3px);
             box-shadow: 0 8px 18px rgba(16,42,67,0.08) !important;
@@ -1830,7 +1943,7 @@ export default function ReportPage({
               <div className="client-menu-panel">
                 <div className="client-menu-title">בחירת בן משפחה</div>
                 <div className="client-menu-subtitle">
-                  לחיצה על שם תפתח את מסך הלקוח בתצוגת דוח פרט.
+                  לחיצה על שם תפתח את דוח הפרט במסך הלקוח.
                 </div>
 
                 {members.length ? (
@@ -1876,6 +1989,10 @@ export default function ReportPage({
               </span>
             ) : null}
           </div>
+
+          <button onClick={handleOpenFamilyClientView} className="action-button">
+            מעבר לתצוגת לקוח
+          </button>
 
           <button onClick={onBack} className="action-button">
             חזרה למסך העלאה
