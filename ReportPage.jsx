@@ -1737,6 +1737,194 @@ export default function ReportPage({
             box-shadow: 0 8px 18px rgba(16,42,67,0.08) !important;
           }
 
+
+          /* Unified client navigation menu - final override */
+          .client-menu-wrap {
+            position: relative !important;
+            display: inline-flex !important;
+            order: -100 !important;
+            z-index: 10000 !important;
+          }
+
+          .client-hamburger-button,
+          .hamburger-button {
+            width: 48px !important;
+            min-width: 48px !important;
+            height: 44px !important;
+            padding: 0 !important;
+            border-radius: 14px !important;
+            background: #ffffff !important;
+            border: 1px solid #D9DDE8 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-shadow: 0 2px 8px rgba(16,42,67,0.05) !important;
+            font-size: 0 !important;
+          }
+
+          .client-hamburger-lines {
+            width: 22px;
+            height: 16px;
+            display: block;
+            background:
+              linear-gradient(#00215D, #00215D) 0 0 / 22px 2px no-repeat,
+              linear-gradient(#00215D, #00215D) 0 7px / 22px 2px no-repeat,
+              linear-gradient(#00215D, #00215D) 0 14px / 22px 2px no-repeat;
+          }
+
+          .hamburger-button::before {
+            content: "";
+            width: 22px;
+            height: 16px;
+            display: block;
+            background:
+              linear-gradient(#00215D, #00215D) 0 0 / 22px 2px no-repeat,
+              linear-gradient(#00215D, #00215D) 0 7px / 22px 2px no-repeat,
+              linear-gradient(#00215D, #00215D) 0 14px / 22px 2px no-repeat;
+            margin: 0 auto;
+          }
+
+          .client-menu-panel {
+            position: absolute !important;
+            top: 56px !important;
+            right: 0 !important;
+            left: auto !important;
+            width: 292px !important;
+            max-width: calc(100vw - 28px) !important;
+            background: #FFFFFF !important;
+            border: 1px solid #E7D9CA !important;
+            border-radius: 22px !important;
+            box-shadow: 0 24px 54px rgba(0, 33, 93, 0.18) !important;
+            padding: 14px !important;
+            z-index: 99999 !important;
+            text-align: right !important;
+            direction: rtl !important;
+          }
+
+          .client-menu-panel::before {
+            content: "";
+            position: absolute;
+            top: -8px;
+            right: 18px;
+            width: 16px;
+            height: 16px;
+            background: #FFFFFF;
+            border-top: 1px solid #E7D9CA;
+            border-right: 1px solid #E7D9CA;
+            transform: rotate(-45deg);
+          }
+
+          .client-menu-title {
+            color: #00215D !important;
+            font-size: 14px !important;
+            font-weight: 900 !important;
+            margin: 0 0 4px !important;
+            padding: 2px 2px 0 !important;
+          }
+
+          .client-menu-subtitle {
+            color: #627D98 !important;
+            font-size: 11px !important;
+            line-height: 1.55 !important;
+            margin: 0 0 12px !important;
+            padding: 0 2px 10px !important;
+            border-bottom: 1px solid #EEE4D8 !important;
+          }
+
+          .client-menu-member-row {
+            width: 100% !important;
+            border: 1px solid #EEE4D8 !important;
+            background: linear-gradient(180deg, #FFFFFF 0%, #FCFBF8 100%) !important;
+            border-radius: 14px !important;
+            min-height: 48px !important;
+            padding: 0 14px !important;
+            margin: 0 0 9px !important;
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) 24px !important;
+            gap: 10px !important;
+            align-items: center !important;
+            cursor: pointer !important;
+            font-family: Calibri, Arial, sans-serif !important;
+            text-align: right !important;
+            transition: all 0.16s ease !important;
+          }
+
+          .client-menu-member-row::after {
+            content: none !important;
+            display: none !important;
+          }
+
+          .client-menu-member-row:hover {
+            border-color: #00215D !important;
+            background: #F4F7FB !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 8px 18px rgba(0, 33, 93, 0.08) !important;
+          }
+
+          .client-menu-member-row:last-child {
+            margin-bottom: 0 !important;
+          }
+
+          .client-menu-member-name {
+            min-width: 0 !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+            color: #102A43 !important;
+            font-size: 14px !important;
+            font-weight: 900 !important;
+          }
+
+          .client-menu-member-arrow {
+            width: 24px !important;
+            height: 24px !important;
+            border-radius: 50% !important;
+            background: #EAF1FB !important;
+            color: #00215D !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 20px !important;
+            font-weight: 900 !important;
+            line-height: 1 !important;
+            transform: rotate(180deg) !important;
+          }
+
+          .client-menu-empty {
+            border: 1px dashed #E2D1BF !important;
+            background: #FCFBF8 !important;
+            color: #627D98 !important;
+            border-radius: 14px !important;
+            padding: 14px !important;
+            font-size: 12px !important;
+            text-align: center !important;
+          }
+
+          .client-link-button-wrap {
+            position: relative !important;
+            display: inline-flex !important;
+            align-items: center !important;
+          }
+
+          .client-link-success-check {
+            position: absolute !important;
+            right: -9px !important;
+            top: -9px !important;
+            width: 21px !important;
+            height: 21px !important;
+            border-radius: 50% !important;
+            background: #20B26B !important;
+            color: #ffffff !important;
+            border: 2px solid #ffffff !important;
+            box-shadow: 0 4px 10px rgba(32,178,107,0.25) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 12px !important;
+            font-weight: 900 !important;
+            line-height: 1 !important;
+          }
+
           @media print {
             .no-print,
             .client-menu-panel {
@@ -1932,19 +2120,29 @@ export default function ReportPage({
             <button
               type="button"
               onClick={() => setIsClientMenuOpen((value) => !value)}
-              className="action-button hamburger-button"
-              aria-label="בחירת בן משפחה"
-              title="בחירת בן משפחה"
+              className="action-button client-hamburger-button"
+              aria-label="ניווט תצוגת לקוח"
+              title="ניווט תצוגת לקוח"
             >
-              ☰
+              <span className="client-hamburger-lines" aria-hidden="true" />
             </button>
 
             {isClientMenuOpen ? (
               <div className="client-menu-panel">
-                <div className="client-menu-title">בחירת בן משפחה</div>
+                <div className="client-menu-title">ניווט תצוגת לקוח</div>
                 <div className="client-menu-subtitle">
-                  לחיצה על שם תפתח את דוח הפרט במסך הלקוח.
+                  בחר את הדוח שתרצה לפתוח מתוך מסך הלקוח.
                 </div>
+
+                <button
+                  type="button"
+                  className="client-menu-member-row"
+                  onClick={handleOpenFamilyClientView}
+                  title="פתיחת דוח משפחתי"
+                >
+                  <span className="client-menu-member-name">דוח משפחתי</span>
+                  <span className="client-menu-member-arrow">›</span>
+                </button>
 
                 {members.length ? (
                   members.map((member, index) => (
@@ -1989,10 +2187,6 @@ export default function ReportPage({
               </span>
             ) : null}
           </div>
-
-          <button onClick={handleOpenFamilyClientView} className="action-button">
-            מעבר לתצוגת לקוח
-          </button>
 
           <button onClick={onBack} className="action-button">
             חזרה למסך העלאה
