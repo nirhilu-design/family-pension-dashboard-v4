@@ -1,3 +1,390 @@
+import React, { useMemo } from "react";
+
+const STORAGE_CLIENT_MODEL_KEY = "familyPensionClientModel";
+const STORAGE_REPORT_DATA_KEY = "familyPensionReportData";
+
+function safeArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function readJsonFromStorage(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch (error) {
+    console.error(`Failed to read ${key} from localStorage`, error);
+    return null;
+  }
+}
+
+function writeJsonToStorage(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch (error) {
+    console.error(`Failed to write ${key} to localStorage`, error);
+    return false;
+  }
+}
+
+function normalizeDistributionItems(items) {
+  return safeArray(items)
+    .map((item, index) => ({
+      id: item?.id || item?.name || `distribution-${index}`,
+      name: item?.name || item?.label || item?.title || "ללא שם",
+      value: Number(item?.value || item?.amount || item?.assets || 0),
+      percent: Number(item?.percent || item?.percentage || 0),
+    }))
+    .filter((item) => item.value > 0 || item.percent > 0);
+}
+
+function normalizeLoanDetails(loans) {
+  return safeArray(loans?.details).map((loan, index) => ({
+    id:
+      loan?.id ||
+      `${loan?.firstName || ""}_${loan?.familyName || ""}_${
+        loan?.endDate || ""
+      }_${index}`,
+    firstName: loan?.firstName || "",
+    familyName: loan?.familyName || "",
+    name:
+      loan?.name ||
+      [loan?.firstName, loan?.familyName].filter(Boolean).join(" ").trim() ||
+      "",
+    amount: Number(loan?.amount || 0),
+    balance: Number(loan?.balance || 0),
+    repaymentFrequency: loan?.repaymentFrequency || "",
+    endDate: loan?.endDate || "",
+  }));
+}
+
+function buildClientModelFromReportData(reportData) {
+  const data = reportData || {};
+  const family = data.family || {};
+
+  const products = normalizeDistributionItems(data.products);
+  const managers = normalizeDistributionItems(data.managers);
+  const mainGroupAllocation = normalizeDistributionItems(data.mainGroupAllocation);
+
+  return {
+    lastUpdated:
+      family.lastUpdated ||
+      data.lastUpdated ||
+      new Intl.DateTimeFormat("he-IL").format(new Date()),
+
+    summary: {
+      totalAssets: Number(family.totalAssets || 0),
+      monthlyDeposits: Number(family.monthlyDeposits || 0),
+      projectedLumpSumWithDeposits: Number(
+        family.projectedLumpSumWithDeposits || 0
+      ),
+      projectedLumpSumWithoutDeposits: Number(
+        family.projectedLumpSumWithoutDeposits || 0
+      ),
+      monthlyPensionWithDeposits: Number(
+        family.monthlyPensionWithDeposits || 0
+      ),
+      monthlyPensionWithoutDeposits: Number(
+        family.monthlyPensionWithoutDeposits || 0
+      ),
+    },
+
+    exposures: {
+      equity: Number(data.weightedEquityExposure || 0),
+      foreign: Number(data.weightedForeignExposure || 0),
+    },
+
+    distributions: {
+      products,
+      managers,
+      mainGroups: mainGroupAllocation,
+      mainGroupAllocation,
+      assetClasses: mainGroupAllocation,
+      foreignExposureAllocation: normalizeDistributionItems(
+        data.foreignExposureAllocation
+      ),
+    },
+
+    members: safeArray(data.members).map((member, index) => ({
+      id: member?.id || member?.name || `member-${index}`,
+      name: member?.name || "ללא שם",
+
+      summary: {
+        totalAssets: Number(member?.assets || member?.totalAssets || 0),
+        monthlyDeposits: Number(member?.monthlyDeposits || 0),
+        monthlyPensionWithDeposits: Number(
+          member?.monthlyPensionWithDeposits || 0
+        ),
+        monthlyPensionWithoutDeposits: Number(
+          member?.monthlyPensionWithoutDeposits || 0
+        ),
+        projectedLumpSumWithDeposits: Number(
+          member?.lumpSumWithDeposits ||
+            member?.projectedLumpSumWithDeposits ||
+            0
+        ),
+        projectedLumpSumWithoutDeposits: Number(
+          member?.lumpSumWithoutDeposits ||
+            member?.projectedLumpSumWithoutDeposits ||
+            0
+        ),
+      },
+
+      insurance: {
+        deathCoverage: Number(member?.deathCoverage || 0),
+        disabilityValue: Number(member?.disabilityValue || 0),
+        disabilityPercent: Number(member?.disabilityPercent || 0),
+      },
+    })),
+
+    loans: {
+      hasData: Boolean(data.loans?.hasData),
+      details: normalizeLoanDetails(data.loans),
+    },
+
+    sourceReportData: data,
+  };
+}
+
+function hasUsableClientModel(clientModel) {
+  if (!clientModel || typeof clientModel !== "object" || Array.isArray(clientModel)) {
+    return false;
+  }
+
+  return Boolean(
+    clientModel.summary ||
+      clientModel.members ||
+      clientModel.distributions ||
+      clientModel.exposures ||
+      clientModel.loans
+  );
+}
+
+function getClientModelFromStorage() {
+  const storedClientModel = readJsonFromStorage(STORAGE_CLIENT_MODEL_KEY);
+
+  if (hasUsableClientModel(storedClientModel)) {
+    return storedClientModel;
+  }
+
+  const storedReportData = readJsonFromStorage(STORAGE_REPORT_DATA_KEY);
+
+  if (storedReportData) {
+    const convertedClientModel = buildClientModelFromReportData(storedReportData);
+    writeJsonToStorage(STORAGE_CLIENT_MODEL_KEY, convertedClientModel);
+    return convertedClientModel;
+  }
+
+  return null;
+}
+
+function EmptyClientDashboardState() {
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+
+    window.location.href = "/";
+  };
+
+  const handleClearStorage = () => {
+    localStorage.removeItem(STORAGE_CLIENT_MODEL_KEY);
+    localStorage.removeItem(STORAGE_REPORT_DATA_KEY);
+    window.location.reload();
+  };
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        direction: "rtl",
+        fontFamily: 'Calibri, "Arial", sans-serif',
+        background: "#F9F7F3",
+        color: "#102A43",
+        padding: 32,
+        boxSizing: "border-box",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 860,
+          background: "#FFFFFF",
+          border: "1px solid #E2D1BF",
+          borderRadius: 22,
+          padding: 32,
+          boxShadow: "0 10px 28px rgba(16,42,67,0.08)",
+          boxSizing: "border-box",
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            width: 64,
+            height: 64,
+            margin: "0 auto 18px",
+            borderRadius: "50%",
+            background: "#EAF1FB",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#00215D",
+            fontSize: 30,
+            fontWeight: 900,
+          }}
+        >
+          !
+        </div>
+
+        <h1
+          style={{
+            margin: "0 0 12px",
+            color: "#00215D",
+            fontSize: 28,
+            lineHeight: 1.25,
+            fontWeight: 800,
+          }}
+        >
+          אין נתוני דוח להצגה
+        </h1>
+
+        <p
+          style={{
+            margin: "0 auto 22px",
+            maxWidth: 660,
+            color: "#627D98",
+            fontSize: 15,
+            lineHeight: 1.8,
+          }}
+        >
+          תצוגת הלקוח לא מצאה נתוני דוח שמורים בדפדפן. יש להפיק דוח במסך הראשי
+          ואז ללחוץ על “פתח תצוגת לקוח”.
+        </p>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+            gap: 12,
+            margin: "0 auto 22px",
+            maxWidth: 620,
+            textAlign: "right",
+          }}
+        >
+          <div
+            style={{
+              background: "#FCFBF8",
+              border: "1px solid #EEE4D8",
+              borderRadius: 16,
+              padding: 16,
+            }}
+          >
+            <div
+              style={{
+                color: "#00215D",
+                fontWeight: 800,
+                fontSize: 14,
+                marginBottom: 8,
+              }}
+            >
+              מה נבדק?
+            </div>
+            <div style={{ color: "#627D98", fontSize: 13, lineHeight: 1.7 }}>
+              הקובץ חיפש ב־localStorage את familyPensionClientModel, ואם לא מצא
+              ניסה לשחזר מתוך familyPensionReportData.
+            </div>
+          </div>
+
+          <div
+            style={{
+              background: "#FCFBF8",
+              border: "1px solid #EEE4D8",
+              borderRadius: 16,
+              padding: 16,
+            }}
+          >
+            <div
+              style={{
+                color: "#00215D",
+                fontWeight: 800,
+                fontSize: 14,
+                marginBottom: 8,
+              }}
+            >
+              מה לעשות?
+            </div>
+            <div style={{ color: "#627D98", fontSize: 13, lineHeight: 1.7 }}>
+              החלף גם את ReportPage.jsx המתוקן, הפק דוח מחדש, ואז פתח שוב את
+              תצוגת הלקוח.
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            gap: 12,
+            justifyContent: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <button
+            type="button"
+            onClick={handleBack}
+            style={{
+              minWidth: 160,
+              minHeight: 44,
+              border: "1px solid #D9DDE8",
+              borderRadius: 12,
+              background: "#FFFFFF",
+              color: "#102A43",
+              fontWeight: 800,
+              fontFamily: 'Calibri, "Arial", sans-serif',
+              cursor: "pointer",
+            }}
+          >
+            חזרה
+          </button>
+
+          <button
+            type="button"
+            onClick={handleClearStorage}
+            style={{
+              minWidth: 160,
+              minHeight: 44,
+              border: "1px solid #FF2756",
+              borderRadius: 12,
+              background: "#FFFFFF",
+              color: "#FF2756",
+              fontWeight: 800,
+              fontFamily: 'Calibri, "Arial", sans-serif',
+              cursor: "pointer",
+            }}
+          >
+            נקה נתונים שמורים
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function ClientDashboardPage() {
+  const clientModel = useMemo(() => getClientModelFromStorage(), []);
+
+  if (!hasUsableClientModel(clientModel)) {
+    return <EmptyClientDashboardState />;
+  }
+
+  return <ClientFamilyView clientModel={clientModel} />;
+}
+
+
+
 function ClientFamilyView({ clientModel }) {
   const hasClientModel =
     clientModel && typeof clientModel === "object" && !Array.isArray(clientModel);
@@ -1854,4 +2241,3 @@ const emptyState = {
   color: theme.textSoft,
 };
 
-export default ClientFamilyView;
