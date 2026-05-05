@@ -111,6 +111,8 @@ export default function ReportPage({
 4. מומלץ לבחון את מדיניות ההשקעה ורמת החשיפה למניות בהתאם לפרופיל הסיכון הרצוי.`
   );
 
+  const [isClientMenuOpen, setIsClientMenuOpen] = useState(false);
+
   const safeReportData = reportData || {};
 
   const {
@@ -129,24 +131,116 @@ export default function ReportPage({
     window.print();
   };
 
-  const handleOpenClientDashboard = () => {
+  const getClientDashboardUrl = () => {
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/client-dashboard`;
+  };
+
+  const getClientMemberUrl = (memberId) => {
+    const baseUrl = window.location.origin;
+    const encodedMemberId = encodeURIComponent(String(memberId || ""));
+    return `${baseUrl}/client-member/${encodedMemberId}`;
+  };
+
+  const copyTextToClipboard = async (text) => {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+    return true;
+  };
+
+  const handleCreateClientLink = async () => {
     if (!reportData || !reportData.family) {
-      alert("אין דוח מוכן להצגה. קודם יש להפיק דוח.");
+      alert("אין דוח מוכן ליצירת לינק. קודם יש להפיק דוח.");
+      return;
+    }
+
+    saveClientDashboardData(reportData);
+
+    const clientUrl = getClientDashboardUrl();
+
+    try {
+      await copyTextToClipboard(clientUrl);
+      alert(`הלינק ללקוח נוצר והועתק ללוח:\n${clientUrl}`);
+    } catch (error) {
+      console.error("Failed to copy client link", error);
+      window.prompt("העתק את הלינק ללקוח:", clientUrl);
+    }
+  };
+
+  const handleOpenClientLink = () => {
+    if (!reportData || !reportData.family) {
+      alert("אין דוח מוכן לפתיחה. קודם יש להפיק דוח.");
+      return;
+    }
+
+    saveClientDashboardData(reportData);
+    window.open(getClientDashboardUrl(), "_blank", "noopener,noreferrer");
+  };
+
+  const handleOpenMemberReport = (member, index) => {
+    if (!reportData || !reportData.family) {
+      alert("אין דוח מוכן לפתיחה. קודם יש להפיק דוח.");
       return;
     }
 
     const clientModel = saveClientDashboardData(reportData);
+    const memberId = member?.id || member?.name || `member-${index}`;
 
-    if (typeof onOpenClientDashboard === "function") {
-      try {
-        onOpenClientDashboard(clientModel);
-        return;
-      } catch (error) {
-        console.warn("onOpenClientDashboard failed, opening fallback route", error);
-      }
+    localStorage.setItem(
+      "familyPensionSelectedMemberId",
+      JSON.stringify(memberId)
+    );
+
+    localStorage.setItem(
+      "familyPensionSelectedMember",
+      JSON.stringify({
+        id: memberId,
+        member,
+        clientModel,
+        reportData,
+      })
+    );
+
+    window.open(getClientMemberUrl(memberId), "_blank", "noopener,noreferrer");
+    setIsClientMenuOpen(false);
+  };
+
+  const handleCopyMemberReportLink = async (member, index) => {
+    if (!reportData || !reportData.family) {
+      alert("אין דוח מוכן ליצירת לינק. קודם יש להפיק דוח.");
+      return;
     }
 
-    window.open("/client-dashboard", "_blank", "noopener,noreferrer");
+    saveClientDashboardData(reportData);
+
+    const memberId = member?.id || member?.name || `member-${index}`;
+    const memberUrl = getClientMemberUrl(memberId);
+
+    localStorage.setItem(
+      "familyPensionSelectedMemberId",
+      JSON.stringify(memberId)
+    );
+
+    try {
+      await copyTextToClipboard(memberUrl);
+      alert(`הלינק לדוח הפרט הועתק ללוח:\n${memberUrl}`);
+    } catch (error) {
+      console.error("Failed to copy member report link", error);
+      window.prompt("העתק את הלינק לדוח הפרט:", memberUrl);
+    }
+
+    setIsClientMenuOpen(false);
   };
 
   const formatCurrency = (value) =>
@@ -1060,13 +1154,103 @@ export default function ReportPage({
             outline-offset: 2px;
           }
 
+          .client-menu-wrap {
+            position: relative;
+            display: inline-flex;
+          }
+
+          .hamburger-button {
+            width: 46px;
+            min-width: 46px;
+            padding: 0;
+            font-size: 22px;
+            line-height: 1;
+          }
+
+          .client-menu-panel {
+            position: absolute;
+            top: 52px;
+            right: 0;
+            width: 360px;
+            max-width: calc(100vw - 32px);
+            background: #ffffff;
+            border: 1px solid #E2D1BF;
+            border-radius: 18px;
+            box-shadow: 0 16px 34px rgba(16,42,67,0.16);
+            padding: 14px;
+            z-index: 50;
+          }
+
+          .client-menu-title {
+            color: #00215D;
+            font-size: 14px;
+            font-weight: 900;
+            margin-bottom: 4px;
+          }
+
+          .client-menu-subtitle {
+            color: #627D98;
+            font-size: 12px;
+            line-height: 1.6;
+            margin-bottom: 12px;
+          }
+
+          .client-menu-section {
+            border-top: 1px solid #EEE4D8;
+            padding-top: 12px;
+            margin-top: 12px;
+          }
+
+          .client-menu-member-row {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 8px;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #F0E6DA;
+          }
+
+          .client-menu-member-row:last-child {
+            border-bottom: none;
+          }
+
+          .client-menu-member-name {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #102A43;
+            font-size: 13px;
+            font-weight: 800;
+          }
+
+          .client-menu-mini-button {
+            min-height: 34px;
+            padding: 7px 10px;
+            border: 1px solid #D9DDE8;
+            border-radius: 10px;
+            background: #ffffff;
+            color: #00215D;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            font-family: Calibri, Arial, sans-serif;
+            white-space: nowrap;
+          }
+
+          .client-menu-mini-button:hover {
+            border-color: #00215D;
+            background: #F4F7FB;
+          }
+
           .kpi-card-hover:hover {
             transform: translateY(-3px);
             box-shadow: 0 8px 18px rgba(16,42,67,0.08) !important;
           }
 
           @media print {
-            .no-print {
+            .no-print,
+            .client-menu-panel {
               display: none !important;
             }
 
@@ -1259,9 +1443,80 @@ export default function ReportPage({
             חזרה למסך העלאה
           </button>
 
-          <button onClick={handleOpenClientDashboard} className="action-button accent">
-            פתח תצוגת לקוח
+          <button onClick={handleCreateClientLink} className="action-button accent">
+            יצירת לינק ללקוח
           </button>
+
+          <div className="client-menu-wrap">
+            <button
+              type="button"
+              onClick={() => setIsClientMenuOpen((value) => !value)}
+              className="action-button hamburger-button"
+              aria-label="תפריט דוחות לקוח"
+              title="תפריט דוחות לקוח"
+            >
+              ☰
+            </button>
+
+            {isClientMenuOpen ? (
+              <div className="client-menu-panel">
+                <div className="client-menu-title">דוחות לקוח ופרט</div>
+                <div className="client-menu-subtitle">
+                  מכאן אפשר ליצור לינק ללקוח או לפתוח דוחות פרט ישירות מתוך מסך
+                  ה־REPORT.
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleOpenClientLink}
+                  className="client-menu-mini-button"
+                  style={{ width: "100%" }}
+                >
+                  פתיחת דוח לקוח מלא
+                </button>
+
+                <div className="client-menu-section">
+                  <div className="client-menu-title">דוחות פרט</div>
+
+                  {members.length ? (
+                    members.map((member, index) => (
+                      <div
+                        key={member?.id || member?.name || index}
+                        className="client-menu-member-row"
+                      >
+                        <div
+                          className="client-menu-member-name"
+                          title={member?.name || "ללא שם"}
+                        >
+                          {member?.name || "ללא שם"}
+                        </div>
+
+                        <button
+                          type="button"
+                          className="client-menu-mini-button"
+                          onClick={() => handleOpenMemberReport(member, index)}
+                        >
+                          פתיחה
+                        </button>
+
+                        <button
+                          type="button"
+                          className="client-menu-mini-button"
+                          onClick={() => handleCopyMemberReportLink(member, index)}
+                        >
+                          לינק
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ color: "#627D98", fontSize: 12 }}>
+                      אין בני משפחה להצגה.
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : null}
+          </div>
 
           <button onClick={onResetAll} className="action-button danger">
             איפוס מלא
