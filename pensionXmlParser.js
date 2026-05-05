@@ -36,6 +36,59 @@ function normalizeText(value) {
   return stripHtml(value).replace(/\s+/g, " ").trim();
 }
 
+function normalizeManagerName(value) {
+  const raw = normalizeText(value);
+  const text = raw
+    .replace(/[״"]/g, "")
+    .replace(/[׳']/g, "")
+    .replace(/בע"מ/g, "בעמ")
+    .replace(/בע\s*מ/g, "בעמ")
+    .trim();
+
+  if (!text || text === "לא ידוע" || text === "ללא שם") {
+    return "אחר";
+  }
+
+  const lowerText = text.toLowerCase();
+
+  if (text.includes("כלל")) return "כלל";
+  if (text.includes("הראל")) return "הראל";
+  if (text.includes("מגדל")) return "מגדל";
+  if (text.includes("מנורה")) return "מנורה";
+  if (text.includes("הפניקס") || text.includes("פניקס")) return "הפניקס";
+  if (text.includes("מיטב")) return "מיטב";
+  if (text.includes("אלטשולר")) return "אלטשולר שחם";
+  if (text.includes("מור")) return "מור";
+  if (text.includes("ילין")) return "ילין לפידות";
+  if (text.includes("אנליסט")) return "אנליסט";
+  if (text.includes("אינפיניטי")) return "אינפיניטי";
+  if (text.includes("איילון")) return "איילון";
+  if (text.includes("הכשרה")) return "הכשרה";
+  if (text.includes("פסגות")) return "פסגות";
+  if (text.includes("עמיתים")) return "עמיתים";
+  if (text.includes("גלובלנט")) return "גלובלנט";
+  if (text.includes("סלייס")) return "סלייס";
+  if (text.includes("קל גמל")) return "קל גמל";
+
+  const looksLikeKnownFinancialEntity =
+    lowerText.includes("insurance") ||
+    lowerText.includes("pension") ||
+    lowerText.includes("gemel") ||
+    text.includes("ביטוח") ||
+    text.includes("פנסיה") ||
+    text.includes("גמל") ||
+    text.includes("השתלמות") ||
+    text.includes("חברה מנהלת") ||
+    text.includes("ניהול") ||
+    text.includes("בית השקעות");
+
+  if (looksLikeKnownFinancialEntity) {
+    return text;
+  }
+
+  return "אחר";
+}
+
 function parseNumber(value) {
   if (value === null || value === undefined) return null;
 
@@ -208,7 +261,7 @@ function parsePolicy(policyNode) {
   const productType = pickFirstText(sectionRoots, "ProposeName2");
   const planName = pickFirstText(sectionRoots, "PlanName");
 
-  const managerName =
+  const rawManagerName =
     pickFirstText(sectionRoots, "CompanyName") ||
     pickFirstText(sectionRoots, "YeshutName") ||
     pickFirstText(sectionRoots, "ProducerName") ||
@@ -216,6 +269,8 @@ function parsePolicy(policyNode) {
     pickFirstText(sectionRoots, "FundName") ||
     planName ||
     "לא ידוע";
+
+  const managerName = normalizeManagerName(rawManagerName);
 
   return {
     rowNum: Number(policyNode.getAttribute("RowNum") || 0),
@@ -777,7 +832,7 @@ export function buildLegacyReportData(parsedFiles) {
 
   const managers = groupBySum(
     flatPolicies,
-    (p) => p.managerName || "לא ידוע",
+    (p) => normalizeManagerName(p.managerName),
     (p) => p.savings?.totalAccumulated || 0
   );
 
@@ -890,4 +945,3 @@ export function buildLegacyReportData(parsedFiles) {
     })),
   };
 }
-
