@@ -723,7 +723,7 @@ export default function ReportPage({
     },
     summaryStatsGrid: {
       display: "grid",
-      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+      gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
       gap: "12px",
       marginBottom: "14px",
     },
@@ -1985,7 +1985,7 @@ export default function ReportPage({
             }
 
             .responsive-bottom-grid {
-              grid-template-columns: 1.35fr 0.9fr !important;
+              grid-template-columns: 1fr !important;
             }
 
             .members-section {
@@ -2022,13 +2022,17 @@ export default function ReportPage({
 
             .responsive-grid-2,
             .responsive-lower-two,
-            .responsive-bottom-grid,
             .responsive-members-grid,
             .responsive-loans-grid,
             .responsive-mini-grid,
             .responsive-insurance-grid,
             .responsive-loan-summary {
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 8px !important;
+            }
+
+            .responsive-bottom-grid {
+              grid-template-columns: 1fr !important;
               gap: 8px !important;
             }
 
@@ -2332,74 +2336,16 @@ export default function ReportPage({
           </section>
 
           <section
-            className="print-section responsive-bottom-grid"
-            style={styles.bottomGrid}
+            className="print-section main-group-print avoid-break"
+            style={styles.sectionCard}
           >
-            <section
-              className="main-group-print avoid-break"
-              style={styles.sectionCard}
-            >
-              <DonutBreakdownCard
-                title="חלוקה עבור אפיקים ראשיים"
-                subtitle="התרשים מציג את חלוקת אפיקי ההשקעה בתיק ביחס לסך הנכסים."
-                items={mainGroupAllocation}
-                formatCurrency={formatCurrency}
-                colors={brandChartColors}
-              />
-            </section>
-
-            <section
-              className="summary-box-print avoid-break"
-              style={styles.sectionCard}
-            >
-              <div style={styles.sectionHeader}>
-                <div style={styles.titleWithIcon}>
-                  <span>🧾</span>
-                  <h2 style={styles.h2}>סיכום מהיר</h2>
-                </div>
-              </div>
-
-              <div style={styles.summaryStatsGrid}>
-                <div style={styles.statCard}>
-                  <div style={styles.statLabel}>מוצרים</div>
-                  <div style={styles.statValue}>{products.length}</div>
-                </div>
-
-                <div style={styles.statCard}>
-                  <div style={styles.statLabel}>גופים מנהלים</div>
-                  <div style={styles.statValue}>{managers.length}</div>
-                </div>
-
-                <div style={styles.statCard}>
-                  <div style={styles.statLabel}>בני משפחה</div>
-                  <div style={styles.statValue}>{members.length}</div>
-                </div>
-
-                <div style={styles.statCard}>
-                  <div style={styles.statLabel}>אפיקים ראשיים</div>
-                  <div style={styles.statValue}>{mainGroupAllocation.length}</div>
-                </div>
-              </div>
-
-              <div style={styles.simpleInfoBox}>
-                <div style={styles.infoLabel}>יחס הלוואות לנכסים</div>
-                <div style={styles.infoValue}>{loanRatioToAssets.toFixed(1)}%</div>
-              </div>
-
-              <div style={{ ...styles.simpleInfoBox, marginTop: "12px" }}>
-                <div style={styles.infoLabel}>קצבה חודשית צפויה</div>
-                <div style={styles.infoValue}>
-                  {formatCurrency(family.monthlyPensionWithDeposits)}
-                </div>
-              </div>
-
-              <div style={{ ...styles.simpleInfoBox, marginTop: "12px" }}>
-                <div style={styles.infoLabel}>צבירה צפויה בגיל פרישה</div>
-                <div style={styles.infoValue}>
-                  {formatCurrency(family.projectedLumpSumWithDeposits)}
-                </div>
-              </div>
-            </section>
+            <DonutBreakdownCard
+              title="חלוקה עבור אפיקים ראשיים"
+              subtitle="התרשים מציג את חלוקת אפיקי ההשקעה בתיק ביחס לסך הנכסים."
+              items={mainGroupAllocation}
+              formatCurrency={formatCurrency}
+              colors={brandChartColors}
+            />
           </section>
 
           <section
@@ -2642,6 +2588,60 @@ export default function ReportPage({
           </section>
 
           <section
+            className="summary-box-print avoid-break"
+            style={styles.sectionCard}
+          >
+            <div style={styles.sectionHeader}>
+              <div style={styles.titleWithIcon}>
+                <span>🧾</span>
+                <h2 style={styles.h2}>סיכום מהיר</h2>
+              </div>
+            </div>
+
+            <div style={styles.summaryStatsGrid}>
+              <div style={styles.statCard}>
+                <div style={styles.statLabel}>מוצרים</div>
+                <div style={styles.statValue}>{products.length}</div>
+              </div>
+
+              <div style={styles.statCard}>
+                <div style={styles.statLabel}>גופים מנהלים</div>
+                <div style={styles.statValue}>{managers.length}</div>
+              </div>
+
+              <div style={styles.statCard}>
+                <div style={styles.statLabel}>בני משפחה</div>
+                <div style={styles.statValue}>{members.length}</div>
+              </div>
+
+              <div style={styles.statCard}>
+                <div style={styles.statLabel}>אפיקים ראשיים</div>
+                <div style={styles.statValue}>{mainGroupAllocation.length}</div>
+              </div>
+            </div>
+
+            <div style={styles.simpleInfoBox}>
+              <div style={styles.infoLabel}>יחס הלוואות לנכסים</div>
+              <div style={styles.infoValue}>{loanRatioToAssets.toFixed(1)}%</div>
+            </div>
+
+            <div style={{ ...styles.simpleInfoBox, marginTop: "12px" }}>
+              <div style={styles.infoLabel}>קצבה חודשית צפויה</div>
+              <div style={styles.infoValue}>
+                {formatCurrency(family.monthlyPensionWithDeposits)}
+              </div>
+            </div>
+
+            <div style={{ ...styles.simpleInfoBox, marginTop: "12px" }}>
+              <div style={styles.infoLabel}>צבירה צפויה בגיל פרישה</div>
+              <div style={styles.infoValue}>
+                {formatCurrency(family.projectedLumpSumWithDeposits)}
+              </div>
+            </div>
+          </section>
+
+
+          <section
             className="print-section recommendations-section recommendations-print avoid-break"
             style={styles.sectionCard}
           >
@@ -2748,31 +2748,19 @@ function EquityBarModern({ value }) {
           height: "16px",
           borderRadius: "999px",
           background:
-            "linear-gradient(90deg, #F9F7F3 0%, #EAF1FB 45%, #E2D1BF 75%, #00215D 100%)",
-          overflow: "visible",
+            "linear-gradient(270deg, #F9F7F3 0%, #EAF1FB 45%, #E2D1BF 75%, #00215D 100%)",
+          overflow: "hidden",
         }}
       >
         <div
           style={{
+            marginRight: 0,
+            marginLeft: "auto",
             width: `${safeValue}%`,
             height: "100%",
             borderRadius: "999px",
-            background: "linear-gradient(90deg, #FF2756 0%, #00215D 100%)",
+            background: "linear-gradient(270deg, #FF2756 0%, #00215D 100%)",
             boxShadow: "0 1px 3px rgba(0,33,93,0.25)",
-          }}
-        />
-
-        <div
-          style={{
-            position: "absolute",
-            right: `calc(${safeValue}% - 10px)`,
-            top: "-4px",
-            width: "24px",
-            height: "24px",
-            borderRadius: "50%",
-            background: "#00215D",
-            border: "3px solid #fff",
-            boxShadow: "0 4px 12px rgba(0,33,93,0.18)",
           }}
         />
       </div>
@@ -2784,7 +2772,7 @@ function EquityBarModern({ value }) {
           marginTop: "10px",
           fontSize: "12px",
           color: "#627D98",
-          direction: "ltr",
+          direction: "rtl",
         }}
       >
         <span>0%</span>
@@ -2892,35 +2880,49 @@ function DonutSummaryCard({
       <h3 style={styles.donutTitle}>{title}</h3>
       <div style={{ ...styles.smallText, marginTop: "6px" }}>{subtitle}</div>
 
-      <div style={styles.donutLayout}>
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <Donut3D gradient={gradient} size={104} hole="31%" soft />
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 116px",
+          gap: "14px",
+          alignItems: "center",
+          marginTop: "12px",
+          minHeight: "122px",
+          direction: "rtl",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+            minWidth: 0,
+          }}
+        >
           {segments.length ? (
             segments.slice(0, 5).map((seg, index) => (
               <div
                 key={`${seg.name || "item"}-${index}`}
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "10px 1fr auto",
+                  gridTemplateColumns: "42px 1fr 10px",
                   gap: "8px",
                   alignItems: "center",
                   fontSize: "12px",
                 }}
               >
-                <span
+                <div
                   style={{
-                    width: "10px",
-                    height: "10px",
-                    borderRadius: "50%",
-                    background: seg.color,
-                    display: "inline-block",
-                    boxShadow: "0 1px 3px rgba(16,42,67,0.15)",
+                    color: "#102A43",
+                    fontWeight: 800,
+                    textAlign: "left",
+                    direction: "ltr",
                   }}
-                />
-                <div style={{ minWidth: 0 }}>
+                >
+                  {Math.round(seg.percent)}%
+                </div>
+
+                <div style={{ minWidth: 0, textAlign: "right" }}>
                   <div
                     style={{
                       color: "#102A43",
@@ -2943,9 +2945,17 @@ function DonutSummaryCard({
                     {formatCurrency(seg.value)}
                   </div>
                 </div>
-                <div style={{ color: "#102A43", fontWeight: 700 }}>
-                  {Math.round(seg.percent)}%
-                </div>
+
+                <span
+                  style={{
+                    width: "10px",
+                    height: "10px",
+                    borderRadius: "50%",
+                    background: seg.color,
+                    display: "inline-block",
+                    boxShadow: "0 1px 3px rgba(16,42,67,0.15)",
+                  }}
+                />
               </div>
             ))
           ) : (
@@ -2953,6 +2963,10 @@ function DonutSummaryCard({
               אין נתונים להצגה
             </div>
           )}
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <Donut3D gradient={gradient} size={104} hole="31%" soft />
         </div>
       </div>
     </section>
@@ -3184,16 +3198,16 @@ function PercentDonutCard({ title, subtitle, items, colors, styles }) {
         border: "none",
       }}
     >
-      <h3 style={styles.donutTitle}>{title}</h3>
-      <div style={{ ...styles.smallText, marginTop: "6px", marginBottom: "14px" }}>
-        {subtitle}
-      </div>
-
-      <div style={styles.donutLayout}>
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <Donut3D gradient={gradient} size={110} hole="31%" soft />
-        </div>
-
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 116px",
+          gap: "14px",
+          alignItems: "center",
+          minHeight: "122px",
+          direction: "rtl",
+        }}
+      >
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {segments.length ? (
             segments.map((seg, index) => (
@@ -3201,12 +3215,38 @@ function PercentDonutCard({ title, subtitle, items, colors, styles }) {
                 key={`${seg.name || "item"}-${index}`}
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "10px 1fr auto",
+                  gridTemplateColumns: "42px 1fr 10px",
                   gap: "8px",
                   alignItems: "center",
                   fontSize: "12px",
                 }}
               >
+                <div
+                  style={{
+                    color: "#102A43",
+                    fontWeight: 800,
+                    textAlign: "left",
+                    direction: "ltr",
+                  }}
+                >
+                  {Math.round(seg.percent)}%
+                </div>
+
+                <div
+                  style={{
+                    color: "#102A43",
+                    fontWeight: 700,
+                    minWidth: 0,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    textAlign: "right",
+                  }}
+                  title={seg.name}
+                >
+                  {seg.name}
+                </div>
+
                 <span
                   style={{
                     width: "10px",
@@ -3217,23 +3257,6 @@ function PercentDonutCard({ title, subtitle, items, colors, styles }) {
                     boxShadow: "0 1px 3px rgba(16,42,67,0.15)",
                   }}
                 />
-                <div style={{ minWidth: 0 }}>
-                  <div
-                    style={{
-                      color: "#102A43",
-                      fontWeight: 700,
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                    title={seg.name}
-                  >
-                    {seg.name}
-                  </div>
-                </div>
-                <div style={{ color: "#102A43", fontWeight: 700 }}>
-                  {Math.round(seg.percent)}%
-                </div>
               </div>
             ))
           ) : (
@@ -3241,6 +3264,10 @@ function PercentDonutCard({ title, subtitle, items, colors, styles }) {
               אין נתונים להצגה
             </div>
           )}
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <Donut3D gradient={gradient} size={110} hole="31%" soft />
         </div>
       </div>
     </section>
