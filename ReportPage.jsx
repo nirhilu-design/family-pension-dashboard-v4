@@ -200,6 +200,8 @@ export default function ReportPage({
       setIsClientLinkCopied(true);
       window.setTimeout(() => setIsClientLinkCopied(false), 3500);
     }
+
+    window.open(clientUrl, "_blank", "noopener,noreferrer");
   };
 
   const handleOpenClientLink = () => {
@@ -1228,16 +1230,36 @@ export default function ReportPage({
           }
 
           .client-menu-member-row {
-            display: grid;
-            grid-template-columns: 1fr auto auto;
-            gap: 8px;
+            width: 100%;
+            display: flex;
             align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #F0E6DA;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 13px 12px;
+            border: 1px solid #EEE4D8;
+            border-radius: 12px;
+            background: #FFFFFF;
+            cursor: pointer;
+            font-family: Calibri, Arial, sans-serif;
+            text-align: right;
+            margin-bottom: 8px;
+          }
+
+          .client-menu-member-row:hover {
+            border-color: #00215D;
+            background: #F4F7FB;
+          }
+
+          .client-menu-member-row::after {
+            content: "›";
+            color: #00215D;
+            font-size: 20px;
+            font-weight: 900;
+            transform: rotate(180deg);
           }
 
           .client-menu-member-row:last-child {
-            border-bottom: none;
+            margin-bottom: 0;
           }
 
           .client-menu-member-name {
@@ -1505,38 +1527,22 @@ export default function ReportPage({
               <div className="client-menu-panel">
                 <div className="client-menu-title">בחירת דוח פרט</div>
                 <div className="client-menu-subtitle">
-                  בחר אחד מבני הזוג לפתיחת דוח פרט או להעתקת לינק.
+                  בחר בן משפחה כדי לפתוח ישירות את דוח הפרט שלו.
                 </div>
 
                 {members.length ? (
                   members.map((member, index) => (
-                    <div
+                    <button
                       key={member?.id || member?.name || index}
+                      type="button"
                       className="client-menu-member-row"
+                      onClick={() => handleOpenMemberReport(member, index)}
+                      title={`פתיחת דוח פרט עבור ${member?.name || "ללא שם"}`}
                     >
-                      <div
-                        className="client-menu-member-name"
-                        title={member?.name || "ללא שם"}
-                      >
+                      <span className="client-menu-member-name">
                         {member?.name || "ללא שם"}
-                      </div>
-
-                      <button
-                        type="button"
-                        className="client-menu-mini-button"
-                        onClick={() => handleOpenMemberReport(member, index)}
-                      >
-                        פתיחה
-                      </button>
-
-                      <button
-                        type="button"
-                        className="client-menu-mini-button"
-                        onClick={() => handleCopyMemberReportLink(member, index)}
-                      >
-                        לינק
-                      </button>
-                    </div>
+                      </span>
+                    </button>
                   ))
                 ) : (
                   <div style={{ color: "#627D98", fontSize: 12 }}>
