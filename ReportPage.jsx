@@ -163,6 +163,10 @@ export default function ReportPage({
     weightedEquityExposure = 0,
   } = safeReportData;
 
+  const vestedBalanceTable = safeReportData?.vestedBalanceTable || null;
+  const hasVestedBalanceTable =
+    Array.isArray(vestedBalanceTable?.rows) && vestedBalanceTable.rows.length > 0;
+
   const handleExportPdf = () => {
     window.print();
   };
@@ -1031,6 +1035,55 @@ export default function ReportPage({
       borderBottom: "1px solid #F0E6DA",
       padding: "12px 10px",
       whiteSpace: "nowrap",
+    },
+    vestedTableWrap: {
+      overflowX: "auto",
+      marginTop: "12px",
+      borderRadius: "16px",
+      border: `1px solid ${divider}`,
+      background: "#fff",
+      breakInside: "avoid",
+      pageBreakInside: "avoid",
+    },
+    vestedTable: {
+      width: "100%",
+      borderCollapse: "collapse",
+      minWidth: "980px",
+      background: "#fff",
+      breakInside: "avoid",
+      pageBreakInside: "avoid",
+    },
+    vestedTh: {
+      textAlign: "center",
+      fontSize: "12px",
+      color: "#fff",
+      background: navy,
+      borderLeft: "1px solid rgba(255,255,255,0.15)",
+      padding: "12px 10px",
+      fontWeight: 800,
+      whiteSpace: "normal",
+      lineHeight: 1.35,
+    },
+    vestedTd: {
+      textAlign: "center",
+      fontSize: "12px",
+      color: text,
+      borderBottom: "1px solid #F0E6DA",
+      borderLeft: "1px solid #F0E6DA",
+      padding: "12px 10px",
+      whiteSpace: "nowrap",
+      background: "#fff",
+    },
+    vestedTotalTd: {
+      textAlign: "center",
+      fontSize: "12px",
+      color: navy,
+      borderBottom: "1px solid #D8DEE9",
+      borderLeft: "1px solid #D8DEE9",
+      padding: "12px 10px",
+      whiteSpace: "nowrap",
+      background: "#EEF2FA",
+      fontWeight: 900,
     },
     recommendationsWrap: {
       background: "#fff",
@@ -2118,6 +2171,26 @@ export default function ReportPage({
               font-size: 9px !important;
               padding: 6px !important;
             }
+
+            .vested-balance-section {
+              width: 100% !important;
+              max-width: 100% !important;
+              break-inside: avoid !important;
+              page-break-inside: avoid !important;
+            }
+
+            .vested-balance-section table {
+              min-width: 100% !important;
+              table-layout: fixed !important;
+            }
+
+            .vested-balance-section th,
+            .vested-balance-section td {
+              font-size: 7.5px !important;
+              padding: 5px 4px !important;
+              white-space: normal !important;
+              word-break: break-word !important;
+            }
           }
 
           @media screen {
@@ -2343,6 +2416,33 @@ export default function ReportPage({
               bars={retirementPensionBars}
             />
           </section>
+
+          {hasVestedBalanceTable ? (
+            <section
+              className="print-section vested-balance-section avoid-break"
+              style={styles.sectionCard}
+            >
+              <div style={styles.sectionHeader}>
+                <div style={styles.titleWithIcon}>
+                  <span>📋</span>
+                  <h2 style={styles.h2}>צבירה מוכרת לפי תגמולים ופיצויים</h2>
+                </div>
+              </div>
+
+              <div style={styles.explanation}>
+                טבלה זו מוצגת רק כאשר הועלה PDF ייעודי במסך ההעלאה ונמצאו בו
+                נתוני צבירה מוכרת.
+                {vestedBalanceTable?.sourceFileName
+                  ? ` מקור הנתונים: ${vestedBalanceTable.sourceFileName}.`
+                  : ""}
+              </div>
+
+              <VestedBalanceTable
+                table={vestedBalanceTable}
+                styles={styles}
+              />
+            </section>
+          ) : null}
 
           <section
             className="print-section responsive-lower-two"
@@ -2744,6 +2844,63 @@ export default function ReportPage({
         </div>
       </div>
     </>
+  );
+}
+
+function VestedBalanceTable({ table, styles }) {
+  const rows = Array.isArray(table?.rows) ? table.rows : [];
+
+  const columns = [
+    { key: "fundName", label: "שם הקופה" },
+    { key: "balanceFee", label: "% דמי ניהול על הצבירה" },
+    { key: "depositFee", label: "% דמי ניהול על ההפקדות" },
+    { key: "rewardsUntil2011", label: "תגמולים עד 2011" },
+    { key: "rewardsFrom2012", label: "תגמולים מ־2012" },
+    { key: "severanceFrom2017", label: "פיצויים מ־2017" },
+    { key: "exemptPayments", label: "סכום תשלומים פטורים" },
+    { key: "coefficient", label: "מקדם" },
+    { key: "pension", label: "קצבה" },
+  ];
+
+  const isTotalRow = (row) =>
+    String(row?.fundName || "")
+      .replace(/[״"]/g, "")
+      .includes("סהכ") ||
+    String(row?.fundName || "").includes('סה"כ') ||
+    String(row?.fundName || "").includes("סה״כ");
+
+  return (
+    <div style={styles.vestedTableWrap}>
+      <table style={styles.vestedTable}>
+        <thead>
+          <tr>
+            {columns.map((column) => (
+              <th key={column.key} style={styles.vestedTh}>
+                {column.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+
+        <tbody>
+          {rows.map((row, index) => {
+            const rowStyle = isTotalRow(row)
+              ? styles.vestedTotalTd
+              : styles.vestedTd;
+
+            return (
+              <tr key={row.id || index}>
+                {columns.map((column) => (
+                  <td key={column.key} style={rowStyle}>
+                    {row[column.key] || "—"}
+                  </td>
+                ))}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
