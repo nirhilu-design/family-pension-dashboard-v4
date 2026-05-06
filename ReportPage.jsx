@@ -3117,10 +3117,21 @@ function Section28Group({ group, styles }) {
 
 function Section28ComparisonBars({ rows }) {
   const chartRows = rows.filter((row) => {
-    const label = String(row?.label || "");
-    const hasRelevantLabel = label.includes("קצבה") || label.includes("הון");
-    const hasValues = parseSection28NumericValue(row.before) || parseSection28NumericValue(row.after);
-    return hasRelevantLabel && hasValues;
+    const label = String(row?.label || "").trim();
+    const normalizedLabel = label
+      .replace(/["״]/g, "")
+      .replace(/\s+/g, "")
+      .replace(/סהכ/g, "סהכ");
+    const isPensionRow = normalizedLabel === "קצבה";
+    const isTotalCapitalRow =
+      normalizedLabel === "סהכהון" ||
+      normalizedLabel === "סה"כהון" ||
+      normalizedLabel === "סה״כהון";
+    const hasValues =
+      parseSection28NumericValue(row.before) ||
+      parseSection28NumericValue(row.after);
+
+    return (isPensionRow || isTotalCapitalRow) && hasValues;
   });
 
   if (!chartRows.length) return null;
