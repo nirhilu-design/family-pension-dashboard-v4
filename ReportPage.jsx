@@ -3124,9 +3124,7 @@ function Section28ComparisonBars({ rows }) {
       .replace(/סהכ/g, "סהכ");
     const isPensionRow = normalizedLabel === "קצבה";
     const isTotalCapitalRow =
-      normalizedLabel === "סהכהון" ||
-      normalizedLabel === "סה"כהון" ||
-      normalizedLabel === "סה״כהון";
+      normalizedLabel === "סהכהון";
     const hasValues =
       parseSection28NumericValue(row.before) ||
       parseSection28NumericValue(row.after);
