@@ -1155,7 +1155,7 @@ export default function ReportPage({
     },
     section28TableWrap: {
       overflowX: "auto",
-      marginTop: "14px",
+      marginTop: "0",
       borderRadius: "16px",
       border: `1px solid ${divider}`,
       background: "#fff",
@@ -1165,7 +1165,7 @@ export default function ReportPage({
     section28Table: {
       width: "100%",
       borderCollapse: "collapse",
-      minWidth: "680px",
+      minWidth: "520px",
       background: "#fff",
     },
     section28Th: {
@@ -2135,6 +2135,15 @@ export default function ReportPage({
           }
 
 
+
+
+          .section-28-employer-employee-grid-print,
+          .section-28-standalone-grid-print,
+          .section-28-comparison-layout-print {
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+
           .responsive-hero-logo img,
           .responsive-hero-meta img {
             max-width: 100% !important;
@@ -2297,6 +2306,13 @@ export default function ReportPage({
             .vested-balance-section table {
               min-width: 100% !important;
               table-layout: fixed !important;
+            }
+
+            .section-28-employer-employee-grid-print,
+            .section-28-standalone-grid-print,
+            .section-28-comparison-layout-print {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 8px !important;
             }
 
             .vested-balance-section th,
@@ -3046,57 +3062,355 @@ function formatSection28DisplayValue(value) {
   return text;
 }
 
+
+function parseSection28NumericValue(value) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+
+  const clean = String(value || "")
+    .replace(/[₪,%\s]/g, "")
+    .replace(/,/g, "")
+    .replace(/[()]/g, "")
+    .replace(/[−–—]/g, "-")
+    .replace(/[^\d.-]/g, "");
+
+  const number = Number(clean);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function getSection28RowsByKeywords(groups, keywords) {
+  const rows = groups.flatMap((group) => Array.isArray(group?.rows) ? group.rows : []);
+  return rows.filter((row) =>
+    keywords.some((keyword) => String(row?.label || "").includes(keyword))
+  );
+}
+
 function Section28CappingReport({ data, styles }) {
   const groups = Array.isArray(data?.groups) ? data.groups : [];
   const comparisonRows = Array.isArray(data?.comparisonRows)
     ? data.comparisonRows
     : [];
 
+  const visibleGroups = groups.filter(
+    (group) => group?.id !== "base" && !String(group?.title || "").includes("נתוני בסיס")
+  );
+
+  const employerRows = getSection28RowsByKeywords(visibleGroups, [
+    "השתלמות מעל תקרה",
+    "פיצויים מעל לתקרה",
+    "תגמולים מעל לתקרה",
+    "סכום קיטום מעל",
+    "חלק מעסיק לחיסכון",
+  ]);
+
+  const employeeRows = getSection28RowsByKeywords(visibleGroups, [
+    "גידול בנטו",
+    "הפרשות עובד",
+    "סה\"כ גידול נטו",
+    "סה״כ גידול נטו",
+    "סכום חודשי נטו",
+  ]);
+
+  const savingsGroup = visibleGroups.find(
+    (group) => group?.id === "saving-simulation" || String(group?.title || "").includes("סימולציה לחיסכון")
+  );
+
+  const retirementGroup = visibleGroups.find(
+    (group) => group?.id === "retirement" || String(group?.title || "").includes("סימולציה לגיל פרישה")
+  );
+
+  const usedGroupIds = new Set(["employer-cost", "saving-simulation", "retirement"]);
+  const fallbackGroups = visibleGroups.filter((group) => !usedGroupIds.has(group?.id));
+
   return (
-    <div>
-      {groups.length ? (
-        <div className="section-28-grid-print" style={styles.section28Grid}>
-          {groups.map((group) => (
-            <Section28Group key={group.id || group.title} group={group} styles={styles} />
-          ))}
-        </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {(employerRows.length || employeeRows.length) ? (
+        <Section28EmployerEmployeeBlock
+          employerRows={employerRows}
+          employeeRows={employeeRows}
+          styles={styles}
+        />
+      ) : null}
+
+      {savingsGroup?.rows?.length ? (
+        <Section28StandaloneBlock
+          title="סימולציה לחיסכון"
+          subtitle="הנתונים מוצגים לפי שדות האקסל, ללא חישוב נוסף במערכת."
+          rows={savingsGroup.rows}
+          styles={styles}
+        />
       ) : null}
 
       {comparisonRows.length ? (
-        <Section28ComparisonTable rows={comparisonRows} styles={styles} />
+        <Section28ComparisonBlock rows={comparisonRows} styles={styles} />
       ) : null}
+
+      {retirementGroup?.rows?.length ? (
+        <Section28StandaloneBlock
+          title="סימולציה לגיל פרישה"
+          subtitle="תוצאת הסימולציה החודשית לפי הקובץ שהועלה."
+          rows={retirementGroup.rows}
+          styles={styles}
+        />
+      ) : null}
+
+      {fallbackGroups.map((group) => (
+        <Section28StandaloneBlock
+          key={group.id || group.title}
+          title={group.title}
+          rows={group.rows || []}
+          styles={styles}
+        />
+      ))}
     </div>
   );
 }
 
-function Section28Group({ group, styles }) {
-  const rows = Array.isArray(group?.rows) ? group.rows : [];
-
+function Section28EmployerEmployeeBlock({ employerRows, employeeRows, styles }) {
   return (
     <div style={styles.section28Group}>
-      <div style={styles.section28GroupTitle}>{group.title}</div>
+      <div style={{ ...styles.section28GroupTitle, marginBottom: 12 }}>
+        פירוט עלויות עובד / מעסיק
+      </div>
 
-      {rows.map((row, index) => (
-        <div
+      <div
+        className="section-28-employer-employee-grid-print"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+          gap: 12,
+          alignItems: "start",
+        }}
+      >
+        <Section28MiniPanel title="חלק מעסיק" rows={employerRows} styles={styles} tone="navy" />
+        <Section28MiniPanel title="חלק עובד / נטו" rows={employeeRows} styles={styles} tone="accent" />
+      </div>
+    </div>
+  );
+}
+
+function Section28MiniPanel({ title, rows, styles, tone = "navy" }) {
+  const isAccent = tone === "accent";
+
+  return (
+    <div
+      style={{
+        background: "#FFFFFF",
+        border: `1px solid ${isAccent ? "#F3C2C2" : "#D8DEE9"}`,
+        borderRadius: 14,
+        overflow: "hidden",
+        breakInside: "avoid",
+        pageBreakInside: "avoid",
+      }}
+    >
+      <div
+        style={{
+          background: isAccent ? "#FFF0F3" : "#EEF2FA",
+          color: "#00215D",
+          fontSize: 12,
+          fontWeight: 900,
+          padding: "9px 12px",
+          borderBottom: `1px solid ${isAccent ? "#F3C2C2" : "#D8DEE9"}`,
+        }}
+      >
+        {title}
+      </div>
+
+      {rows.length ? rows.map((row, index) => (
+        <Section28CompactRow
           key={`${row.label}-${index}`}
-          style={{
-            ...styles.section28Row,
-            borderBottom: index === rows.length - 1 ? "none" : styles.section28Row.borderBottom,
-          }}
-        >
-          <div style={styles.section28Label}>{row.label}</div>
-          <div style={styles.section28Value}>{formatSection28DisplayValue(row.value)}</div>
+          row={row}
+          styles={styles}
+          isLast={index === rows.length - 1}
+        />
+      )) : (
+        <div style={{ padding: 12, color: "#627D98", fontSize: 11 }}>אין נתונים להצגה</div>
+      )}
+    </div>
+  );
+}
+
+function Section28StandaloneBlock({ title, subtitle, rows, styles }) {
+  return (
+    <div style={styles.section28Group}>
+      <div style={styles.section28GroupTitle}>{title}</div>
+      {subtitle ? (
+        <div style={{ color: "#627D98", fontSize: 11, lineHeight: 1.6, marginBottom: 8 }}>
+          {subtitle}
         </div>
-      ))}
+      ) : null}
+
+      <div
+        className="section-28-standalone-grid-print"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+          gap: "0 14px",
+        }}
+      >
+        {(Array.isArray(rows) ? rows : []).map((row, index) => (
+          <Section28CompactRow
+            key={`${row.label}-${index}`}
+            row={row}
+            styles={styles}
+            isLast={index >= rows.length - 2}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Section28CompactRow({ row, styles, isLast }) {
+  return (
+    <div
+      style={{
+        ...styles.section28Row,
+        borderBottom: isLast ? "none" : styles.section28Row.borderBottom,
+        minHeight: 38,
+      }}
+    >
+      <div style={styles.section28Label}>{row.label}</div>
+      <div style={styles.section28Value}>{formatSection28DisplayValue(row.value)}</div>
+    </div>
+  );
+}
+
+function Section28ComparisonBlock({ rows, styles }) {
+  return (
+    <div style={styles.section28Group}>
+      <div style={styles.section28GroupTitle}>השוואה בין תרחישים</div>
+
+      <div
+        className="section-28-comparison-layout-print"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1.05fr 0.95fr",
+          gap: 14,
+          alignItems: "stretch",
+        }}
+      >
+        <Section28ComparisonTable rows={rows} styles={styles} />
+        <Section28ComparisonChart rows={rows} />
+      </div>
+    </div>
+  );
+}
+
+function Section28ComparisonChart({ rows }) {
+  const chartRows = rows.filter((row) => {
+    const label = String(row.label || "");
+    return label.includes("קצבה") || label.includes("הון");
+  }).slice(-2);
+
+  const maxValue = Math.max(
+    1,
+    ...chartRows.flatMap((row) => [
+      Math.abs(parseSection28NumericValue(row.before)),
+      Math.abs(parseSection28NumericValue(row.after)),
+    ])
+  );
+
+  return (
+    <div
+      style={{
+        background: "linear-gradient(180deg, #FFFFFF 0%, #FCFBF8 100%)",
+        border: "1px solid #EEE4D8",
+        borderRadius: 16,
+        padding: "12px 14px",
+        minHeight: 190,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+      }}
+    >
+      <div>
+        <div style={{ color: "#00215D", fontSize: 12, fontWeight: 900, marginBottom: 4 }}>
+          גרף השוואה
+        </div>
+        <div style={{ color: "#627D98", fontSize: 10.5, lineHeight: 1.45 }}>
+          לפני קיטום מול אחרי קיטום, בהתאם לשורות הסיכום באקסל.
+        </div>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
+        {chartRows.map((row, index) => {
+          const before = Math.abs(parseSection28NumericValue(row.before));
+          const after = Math.abs(parseSection28NumericValue(row.after));
+
+          return (
+            <div key={`${row.label}-${index}`}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 8,
+                  marginBottom: 6,
+                  color: "#102A43",
+                  fontSize: 11,
+                  fontWeight: 800,
+                }}
+              >
+                <span>{row.label}</span>
+              </div>
+
+              <Section28BarLine label="לפני" value={before} maxValue={maxValue} color="#C7D1E2" />
+              <Section28BarLine label="אחרי" value={after} maxValue={maxValue} color="#00215D" />
+            </div>
+          );
+        })}
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          justifyContent: "center",
+          color: "#627D98",
+          fontSize: 10.5,
+          marginTop: 10,
+        }}
+      >
+        <span>■ לפני קיטום</span>
+        <span style={{ color: "#00215D" }}>■ אחרי קיטום</span>
+      </div>
+    </div>
+  );
+}
+
+function Section28BarLine({ label, value, maxValue, color }) {
+  const width = Math.max(5, (Number(value || 0) / maxValue) * 100);
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "42px 1fr 78px",
+        gap: 8,
+        alignItems: "center",
+        marginTop: 5,
+      }}
+    >
+      <div style={{ color: "#627D98", fontSize: 10.5, fontWeight: 800 }}>{label}</div>
+      <div style={{ height: 13, background: "#EAF1FB", borderRadius: 999, overflow: "hidden" }}>
+        <div
+          style={{
+            width: `${width}%`,
+            height: "100%",
+            background: color,
+            borderRadius: 999,
+          }}
+        />
+      </div>
+      <div style={{ color: "#00215D", fontSize: 10.5, fontWeight: 900, textAlign: "left", direction: "ltr" }}>
+        {formatSection28DisplayValue(value)}
+      </div>
     </div>
   );
 }
 
 function Section28ComparisonTable({ rows, styles }) {
   return (
-    <div style={{ marginTop: 16 }}>
-      <div style={styles.section28GroupTitle}>השוואה בין תרחישים</div>
-
+    <div style={{ minWidth: 0 }}>
       <div style={styles.section28TableWrap}>
         <table style={styles.section28Table}>
           <thead>
@@ -3104,7 +3418,7 @@ function Section28ComparisonTable({ rows, styles }) {
               <th style={styles.section28Th}>סעיף</th>
               <th style={styles.section28Th}>לפני קיטום</th>
               <th style={styles.section28Th}>אחרי קיטום</th>
-              <th style={styles.section28Th}>פער בין תרחישים</th>
+              <th style={styles.section28Th}>פער</th>
             </tr>
           </thead>
 
