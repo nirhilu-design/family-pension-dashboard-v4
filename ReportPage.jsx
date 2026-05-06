@@ -3046,6 +3046,29 @@ function formatSection28DisplayValue(value) {
   return text;
 }
 
+
+function parseSection28NumericValue(value) {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  const text = String(value ?? "").trim();
+
+  if (!text || text === "—" || text === "-") {
+    return 0;
+  }
+
+  const normalized = text
+    .replace(/[₪\s,]/g, "")
+    .replace(/−/g, "-")
+    .replace(/[()]/g, "")
+    .replace(/%/g, "");
+
+  const number = Number(normalized.replace(/[^0-9.-]/g, ""));
+
+  return Number.isFinite(number) ? number : 0;
+}
+
 function Section28CappingReport({ data, styles }) {
   const groups = Array.isArray(data?.groups) ? data.groups : [];
   const comparisonRows = Array.isArray(data?.comparisonRows)
