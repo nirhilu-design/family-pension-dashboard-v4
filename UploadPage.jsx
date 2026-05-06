@@ -6,6 +6,33 @@ import {
   buildLegacyReportData,
 } from "./pensionXmlParser";
 
+const ISRAEL_INSURANCE_COMPANIES = [
+  "כלל",
+  "מגדל",
+  "הראל",
+  "מנורה מבטחים",
+  "הפניקס",
+  "איילון",
+  "הכשרה",
+  "ביטוח ישיר",
+  "שלמה ביטוח",
+  "שומרה",
+  "ליברה",
+  "ווישור",
+];
+
+function formatAmountInput(value) {
+  const clean = String(value || "").replace(/[^0-9.]/g, "");
+  const parts = clean.split(".");
+  if (parts.length <= 1) return clean;
+  return `${parts[0]}.${parts.slice(1).join("")}`;
+}
+
+function normalizeAmountForReport(value) {
+  const number = Number(String(value || "").replace(/,/g, ""));
+  return Number.isFinite(number) && number > 0 ? number : 0;
+}
+
 export default function UploadPage({ setReportData }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,6 +47,15 @@ export default function UploadPage({ setReportData }) {
   const [vestedPdfTable, setVestedPdfTable] = useState(null);
   const [vestedPdfLoading, setVestedPdfLoading] = useState(false);
   const [vestedPdfError, setVestedPdfError] = useState("");
+
+  const [recognizedPensionAdjustments, setRecognizedPensionAdjustments] =
+    useState([
+      {
+        id: "recognized-pension-1",
+        companyName: "",
+        amount: "",
+      },
+    ]);
 
   const fileInputRef = useRef(null);
   const logoInputRef = useRef(null);
@@ -462,6 +498,44 @@ export default function UploadPage({ setReportData }) {
     setVestedPdfError("");
   };
 
+  const updateRecognizedPensionAdjustment = (id, field, value) => {
+    setRecognizedPensionAdjustments((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              [field]: field === "amount" ? formatAmountInput(value) : value,
+            }
+          : item
+      )
+    );
+  };
+
+  const addRecognizedPensionAdjustment = () => {
+    setRecognizedPensionAdjustments((prev) => [
+      ...prev,
+      {
+        id: `recognized-pension-${Date.now()}`,
+        companyName: "",
+        amount: "",
+      },
+    ]);
+  };
+
+  const removeRecognizedPensionAdjustment = (id) => {
+    setRecognizedPensionAdjustments((prev) =>
+      prev.length <= 1 ? prev : prev.filter((item) => item.id !== id)
+    );
+  };
+
+  const getCleanRecognizedPensionAdjustments = () =>
+    recognizedPensionAdjustments
+      .map((item) => ({
+        companyName: item.companyName,
+        amount: normalizeAmountForReport(item.amount),
+      }))
+      .filter((item) => item.companyName && item.amount > 0);
+
   const handleDrop = (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -555,6 +629,8 @@ export default function UploadPage({ setReportData }) {
       reportData.vestedBalanceTable = vestedPdfTable?.rows?.length
         ? vestedPdfTable
         : null;
+      reportData.recognizedPensionAdjustments =
+        getCleanRecognizedPensionAdjustments();
 
       setReportData(reportData);
     } catch (err) {
@@ -865,6 +941,151 @@ export default function UploadPage({ setReportData }) {
                   {vestedPdfError}
                 </div>
               )}
+
+              <div
+                style={{
+                  marginTop: 18,
+                  paddingTop: 16,
+                  borderTop: "1px solid #e4e9f5",
+                }}
+              >
+                <div
+                  style={{
+                    color: "#0d2c6c",
+                    fontSize: 15,
+                    fontWeight: 900,
+                    marginBottom: 8,
+                  }}
+                >
+                  עדכון קצבה מוכרת לפי חברת ביטוח
+                </div>
+
+                <div
+                  style={{
+                    color: "#69758e",
+                    fontSize: 13,
+                    lineHeight: 1.7,
+                    marginBottom: 12,
+                  }}
+                >
+                  ניתן לבחור חברת ביטוח ולהזין סכום. הסכום יעודכן בעמודת
+                  הקצבה המוכרת עבור אותה חברה בדוח.
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {recognizedPensionAdjustments.map((item) => (
+                    <div
+                      key={item.id}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "minmax(180px, 240px) minmax(160px, 220px) auto",
+                        gap: 10,
+                        alignItems: "center",
+                      }}
+                    >
+                      <select
+                        value={item.companyName}
+                        onChange={(event) =>
+                          updateRecognizedPensionAdjustment(
+                            item.id,
+                            "companyName",
+                            event.target.value
+                          )
+                        }
+                        style={{
+                          height: 42,
+                          border: "1px solid #cbd4e6",
+                          borderRadius: 12,
+                          padding: "0 12px",
+                          color: "#0d2c6c",
+                          fontWeight: 800,
+                          background: "#fff",
+                          fontFamily: "Arial, sans-serif",
+                        }}
+                      >
+                        <option value="">בחר חברת ביטוח</option>
+                        {ISRAEL_INSURANCE_COMPANIES.map((company) => (
+                          <option key={company} value={company}>
+                            {company}
+                          </option>
+                        ))}
+                      </select>
+
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={item.amount}
+                        onChange={(event) =>
+                          updateRecognizedPensionAdjustment(
+                            item.id,
+                            "amount",
+                            event.target.value
+                          )
+                        }
+                        placeholder="סכום קצבה מוכרת"
+                        style={{
+                          height: 42,
+                          border: "1px solid #cbd4e6",
+                          borderRadius: 12,
+                          padding: "0 12px",
+                          color: "#0d2c6c",
+                          fontWeight: 800,
+                          background: "#fff",
+                          fontFamily: "Arial, sans-serif",
+                        }}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => removeRecognizedPensionAdjustment(item.id)}
+                        disabled={recognizedPensionAdjustments.length <= 1}
+                        style={{
+                          height: 42,
+                          border: "1px solid #f0c7c2",
+                          borderRadius: 12,
+                          padding: "0 12px",
+                          background:
+                            recognizedPensionAdjustments.length <= 1
+                              ? "#f4f6fb"
+                              : "#fff5f5",
+                          color:
+                            recognizedPensionAdjustments.length <= 1
+                              ? "#9aa5b8"
+                              : "#c81e1e",
+                          fontWeight: 800,
+                          cursor:
+                            recognizedPensionAdjustments.length <= 1
+                              ? "not-allowed"
+                              : "pointer",
+                          fontFamily: "Arial, sans-serif",
+                        }}
+                      >
+                        הסר
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={addRecognizedPensionAdjustment}
+                  style={{
+                    marginTop: 12,
+                    background: "#ffffff",
+                    color: "#0d2c6c",
+                    border: "1px solid #cbd4e6",
+                    borderRadius: 12,
+                    padding: "10px 14px",
+                    fontSize: 14,
+                    fontWeight: 800,
+                    cursor: "pointer",
+                    fontFamily: "Arial, sans-serif",
+                  }}
+                >
+                  הוסף חברה נוספת
+                </button>
+              </div>
             </div>
 
             <div
@@ -1209,7 +1430,8 @@ export default function UploadPage({ setReportData }) {
           }
 
           @media (max-width: 760px) {
-            div[style*="grid-template-columns: 1fr auto"] {
+            div[style*="grid-template-columns: 1fr auto"],
+            div[style*="grid-template-columns: minmax(180px, 240px)"] {
               grid-template-columns: 1fr !important;
             }
           }
