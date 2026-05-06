@@ -2893,6 +2893,33 @@ function normalizeInsuranceName(value) {
   return text;
 }
 
+function parseReportNumber(value) {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  const clean = String(value || "")
+    .replace(/[₪,\s]/g, "")
+    .replace(/[^\d.-]/g, "");
+
+  const number = Number(clean);
+
+  return Number.isFinite(number) ? number : 0;
+}
+
+function formatReportNumber(value, decimals = 0) {
+  const number = Number(value || 0);
+
+  if (!Number.isFinite(number)) {
+    return "—";
+  }
+
+  return number.toLocaleString("he-IL", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
+
 function formatRecognizedPensionAmount(value) {
   const number = Number(value || 0);
 
@@ -2900,57 +2927,57 @@ function formatRecognizedPensionAmount(value) {
     return "";
   }
 
-  return number.toLocaleString("he-IL", {
-    maximumFractionDigits: 0,
-  });
+  return formatReportNumber(number, 0);
 }
 
-function mergeRecognizedPensionAdjustments(rows, adjustments) {
-  const baseRows = Array.isArray(rows) ? rows.map((row) => ({ ...row })) : [];
-  const cleanAdjustments = Array.isArray(adjustments)
-    ? adjustments.filter(
-        (item) => item?.companyName && Number(item?.amount || 0) > 0
-      )
+function isVestedTotalRow(row) {
+  return (
+    String(row?.fundName || "")
+      .replace(/[״"]/g, "")
+      .includes("סהכ") ||
+    String(row?.fundName || "").includes('סה"כ') ||
+    String(row?.fundName || "").includes("סה״כ")
+  );
+}
+
+function getPdfExemptPaymentsTotal(rows) {
+  const pdfRows = Array.isArray(rows) ? rows : [];
+
+  if (!pdfRows.length) {
+    return 0;
+  }
+
+  const totalRows = pdfRows.filter(isVestedTotalRow);
+  const totalRowValues = totalRows
+    .map((row) => parseReportNumber(row.exemptPayments))
+    .filter((value) => value > 0);
+
+  if (totalRowValues.length) {
+    return Math.max(...totalRowValues);
+  }
+
+  const nonTotalValues = pdfRows
+    .filter((row) => !isVestedTotalRow(row))
+    .map((row) => parseReportNumber(row.exemptPayments))
+    .filter((value) => value > 0);
+
+  return nonTotalValues.reduce((sum, value) => sum + value, 0);
+}
+
+function getManualRecognizedPensionRows(adjustments) {
+  return Array.isArray(adjustments)
+    ? adjustments
+        .filter((item) => item?.companyName && Number(item?.amount || 0) > 0)
+        .map((item, index) => ({
+          id: `manual-recognized-pension-${index}`,
+          companyName: normalizeInsuranceName(item.companyName),
+          amount: Number(item.amount || 0),
+        }))
     : [];
-
-  cleanAdjustments.forEach((adjustment, index) => {
-    const companyName = normalizeInsuranceName(adjustment.companyName);
-    const amountText = formatRecognizedPensionAmount(adjustment.amount);
-
-    const existingRow = baseRows.find((row) => {
-      const fundName = normalizeInsuranceName(row?.fundName);
-      return (
-        fundName === companyName ||
-        fundName.includes(companyName) ||
-        companyName.includes(fundName)
-      );
-    });
-
-    if (existingRow) {
-      existingRow.pension = amountText;
-      existingRow.recognizedPensionManuallyUpdated = true;
-    } else {
-      baseRows.push({
-        id: `manual-recognized-pension-${index}`,
-        fundName: companyName,
-        balanceFee: "",
-        depositFee: "",
-        rewardsUntil2011: "",
-        rewardsFrom2012: "",
-        severanceFrom2017: "",
-        exemptPayments: "",
-        coefficient: "",
-        pension: amountText,
-        recognizedPensionManuallyUpdated: true,
-      });
-    }
-  });
-
-  return baseRows;
 }
 
-function VestedBalanceTable({ table, adjustments, styles }) {
-  const rows = mergeRecognizedPensionAdjustments(table?.rows, adjustments);
+function VestedPdfCalculationTable({ rows, styles }) {
+  const pdfRows = Array.isArray(rows) ? rows : [];
 
   const columns = [
     { key: "fundName", label: "שם הקופה" },
@@ -2964,46 +2991,239 @@ function VestedBalanceTable({ table, adjustments, styles }) {
     { key: "pension", label: "קצבה מוכרת" },
   ];
 
-  const isTotalRow = (row) =>
-    String(row?.fundName || "")
-      .replace(/[״"]/g, "")
-      .includes("סהכ") ||
-    String(row?.fundName || "").includes('סה"כ') ||
-    String(row?.fundName || "").includes("סה״כ");
+  const pdfTotal = getPdfExemptPaymentsTotal(pdfRows);
 
   return (
-    <div style={styles.vestedTableWrap}>
-      <table style={styles.vestedTable}>
-        <thead>
-          <tr>
-            {columns.map((column) => (
-              <th key={column.key} style={styles.vestedTh}>
-                {column.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
+    <div style={{ marginBottom: 22 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          gap: 12,
+          marginBottom: 10,
+          flexWrap: "wrap",
+        }}
+      >
+        <div>
+          <div style={{ color: "#00215D", fontSize: 14, fontWeight: 900 }}>
+            טבלת חישוב מתוך PDF
+          </div>
+          <div style={{ color: "#627D98", fontSize: 12, marginTop: 4 }}>
+            הטבלה מציגה את נתוני הצבירה המוכרת כפי שנקראו מהמסמך.
+          </div>
+        </div>
 
-        <tbody>
-          {rows.map((row, index) => {
-            const rowStyle = isTotalRow(row)
-              ? styles.vestedTotalTd
-              : row.recognizedPensionManuallyUpdated
-              ? styles.vestedManualTd
-              : styles.vestedTd;
+        <div
+          style={{
+            background: "#EEF2FA",
+            color: "#00215D",
+            border: "1px solid #D8DEE9",
+            borderRadius: 999,
+            padding: "8px 14px",
+            fontSize: 12,
+            fontWeight: 900,
+            whiteSpace: "nowrap",
+          }}
+        >
+          סה"כ תשלומים פטורים: {formatReportNumber(pdfTotal)}
+        </div>
+      </div>
 
-            return (
-              <tr key={row.id || index}>
-                {columns.map((column) => (
-                  <td key={column.key} style={rowStyle}>
-                    {row[column.key] || "—"}
-                  </td>
-                ))}
+      <div style={styles.vestedTableWrap}>
+        <table style={styles.vestedTable}>
+          <thead>
+            <tr>
+              {columns.map((column) => (
+                <th key={column.key} style={styles.vestedTh}>
+                  {column.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          <tbody>
+            {pdfRows.map((row, index) => {
+              const rowStyle = isVestedTotalRow(row)
+                ? styles.vestedTotalTd
+                : styles.vestedTd;
+
+              return (
+                <tr key={row.id || index}>
+                  {columns.map((column) => (
+                    <td key={column.key} style={rowStyle}>
+                      {row[column.key] || "—"}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+
+            <tr>
+              {columns.map((column) => (
+                <td key={column.key} style={styles.vestedTotalTd}>
+                  {column.key === "fundName"
+                    ? 'סה"כ טבלת PDF'
+                    : column.key === "exemptPayments"
+                    ? formatReportNumber(pdfTotal)
+                    : "—"}
+                </td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function ManualRecognizedPensionTable({ rows, styles }) {
+  const manualTotal = rows.reduce(
+    (sum, row) => sum + Number(row.amount || 0),
+    0
+  );
+
+  return (
+    <div style={{ marginTop: 20 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          gap: 12,
+          marginBottom: 10,
+          flexWrap: "wrap",
+        }}
+      >
+        <div>
+          <div style={{ color: "#00215D", fontSize: 14, fontWeight: 900 }}>
+            קצבה מוכרת שהוזנה ידנית
+          </div>
+          <div style={{ color: "#627D98", fontSize: 12, marginTop: 4 }}>
+            הטבלה מציגה את הסכומים שהוזנו במסך ההעלאה לפי חברת ביטוח.
+          </div>
+        </div>
+
+        <div
+          style={{
+            background: "#FFF7E8",
+            color: "#00215D",
+            border: "1px solid #E2D1BF",
+            borderRadius: 999,
+            padding: "8px 14px",
+            fontSize: 12,
+            fontWeight: 900,
+            whiteSpace: "nowrap",
+          }}
+        >
+          סה"כ קצבה מוכרת: {formatReportNumber(manualTotal)}
+        </div>
+      </div>
+
+      <div style={styles.vestedTableWrap}>
+        <table
+          style={{
+            ...styles.vestedTable,
+            minWidth: "520px",
+          }}
+        >
+          <thead>
+            <tr>
+              <th style={styles.vestedTh}>חברת ביטוח</th>
+              <th style={styles.vestedTh}>קצבה מוכרת שהוזנה</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.id}>
+                <td style={styles.vestedManualTd}>{row.companyName}</td>
+                <td style={styles.vestedManualTd}>
+                  {formatReportNumber(row.amount)}
+                </td>
               </tr>
-            );
-          })}
-        </tbody>
-      </table>
+            ))}
+
+            <tr>
+              <td style={styles.vestedTotalTd}>סה"כ</td>
+              <td style={styles.vestedTotalTd}>
+                {formatReportNumber(manualTotal)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function TaxSavingGapSummary({ pdfTotal, manualTotal }) {
+  const gap = pdfTotal - manualTotal;
+  const gapColor = gap >= 0 ? "#00215D" : "#B42318";
+
+  return (
+    <div
+      style={{
+        marginTop: 22,
+        padding: "18px 20px",
+        borderRadius: 18,
+        border: "1px solid #E2D1BF",
+        background:
+          "linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(255,247,232,1) 100%)",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: 16,
+        flexWrap: "wrap",
+      }}
+    >
+      <div>
+        <div style={{ color: "#00215D", fontSize: 15, fontWeight: 900 }}>
+          פער הצבירה לחיסכון במס
+        </div>
+        <div style={{ color: "#627D98", fontSize: 12, marginTop: 5 }}>
+          חישוב לפי סה"כ טבלת ה־PDF פחות סה"כ הקצבה המוכרת שהוזנה ידנית.
+        </div>
+      </div>
+
+      <div
+        style={{
+          color: gapColor,
+          fontSize: 22,
+          fontWeight: 900,
+          direction: "ltr",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {formatReportNumber(gap)}
+      </div>
+    </div>
+  );
+}
+
+function VestedBalanceTable({ table, adjustments, styles }) {
+  const pdfRows = Array.isArray(table?.rows) ? table.rows : [];
+  const manualRows = getManualRecognizedPensionRows(adjustments);
+
+  const pdfTotal = getPdfExemptPaymentsTotal(pdfRows);
+  const manualTotal = manualRows.reduce(
+    (sum, row) => sum + Number(row.amount || 0),
+    0
+  );
+
+  return (
+    <div>
+      {pdfRows.length ? (
+        <VestedPdfCalculationTable rows={pdfRows} styles={styles} />
+      ) : null}
+
+      {manualRows.length ? (
+        <ManualRecognizedPensionTable rows={manualRows} styles={styles} />
+      ) : null}
+
+      {pdfTotal > 0 && manualTotal > 0 ? (
+        <TaxSavingGapSummary pdfTotal={pdfTotal} manualTotal={manualTotal} />
+      ) : null}
     </div>
   );
 }
