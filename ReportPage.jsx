@@ -3147,16 +3147,40 @@ function Section28CappingReport({ data, styles }) {
   );
 }
 
+function pickSection28Rows(rows, labelParts) {
+  return labelParts
+    .map((part) => rows.find((row) => normalizeSection28Text(row.label).includes(part)))
+    .filter(Boolean);
+}
+
 function Section28CostSplit({ group, styles }) {
   const rows = Array.isArray(group?.rows) ? group.rows.filter((row) => isMeaningfulSection28Value(row.value)) : [];
   const monthlyRow = rows.find((row) => isSection28MonthlySavingRow(row.label));
-  const totalRows = rows.filter((row) => isSection28ImportantRow(row.label) && !isSection28MonthlySavingRow(row.label));
-  const regularRows = rows.filter(
-    (row) => !isSection28ImportantRow(row.label) && !isSection28MonthlySavingRow(row.label)
-  );
 
-  const employeeRows = regularRows.filter((row) => normalizeSection28Text(row.label).includes("עובד"));
-  const employerRows = regularRows.filter((row) => !normalizeSection28Text(row.label).includes("עובד"));
+  const employerRows = pickSection28Rows(rows, [
+    "השתלמות מעל תקרה",
+    "פיצויים מעל לתקרה",
+    "תגמולים מעל לתקרה",
+  ]);
+
+  const employerSummaryRows = pickSection28Rows(rows, [
+    "סכום קיטום מעל לסעיף 28 ברוטו",
+    "סכום נטו לאחר ניכוי מס שולי",
+  ]);
+
+  const employeeRows = pickSection28Rows(rows, [
+    "גידול בנטו בעקבות קיטום בפיצויים",
+    "גידול בנטו בעקבות קיטום תגמולים",
+    "גידול בנטו בעקבות קיטום קה\"ל מעל לתקרה",
+    "הפרשות עובד קה\"ל מעל תקרה",
+    "הפרשות עובד תגמולים",
+  ]);
+
+  const employeeSummaryRows = pickSection28Rows(rows, [
+    'סה"כ גידול נטו',
+    "סה״כ גידול נטו",
+    "סך הכל גידול נטו",
+  ]);
 
   const cardStyle = {
     ...styles.section28Group,
@@ -3173,7 +3197,13 @@ function Section28CostSplit({ group, styles }) {
           {employerRows.map((row, index) => (
             <Section28DataRow key={`${row.label}-${index}`} row={row} styles={styles} />
           ))}
-          {!employerRows.length ? <Section28EmptyNote /> : null}
+          {employerSummaryRows.length ? (
+            <div style={{ marginTop: 10 }}>
+              {employerSummaryRows.map((row, index) => (
+                <Section28DataRow key={`${row.label}-${index}`} row={row} styles={styles} forceHighlight />
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div style={cardStyle}>
@@ -3181,17 +3211,15 @@ function Section28CostSplit({ group, styles }) {
           {employeeRows.map((row, index) => (
             <Section28DataRow key={`${row.label}-${index}`} row={row} styles={styles} />
           ))}
-          {!employeeRows.length ? <Section28EmptyNote /> : null}
+          {employeeSummaryRows.length ? (
+            <div style={{ marginTop: 10 }}>
+              {employeeSummaryRows.map((row, index) => (
+                <Section28DataRow key={`${row.label}-${index}`} row={row} styles={styles} forceHighlight />
+              ))}
+            </div>
+          ) : null}
         </div>
       </div>
-
-      {totalRows.length ? (
-        <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
-          {totalRows.map((row, index) => (
-            <Section28DataRow key={`${row.label}-${index}`} row={row} styles={styles} forceHighlight />
-          ))}
-        </div>
-      ) : null}
 
       {monthlyRow ? (
         <div style={{ marginTop: 12 }}>
@@ -3323,18 +3351,18 @@ function Section28MonthlySavingRow({ row, styles }) {
     <div
       style={{
         border: "1px solid #D8DEE9",
-        borderRadius: 16,
+        borderRadius: 14,
         background: "linear-gradient(135deg, #00215D 0%, #001845 100%)",
         color: "#fff",
-        padding: "13px 16px",
+        padding: "10px 14px",
         textAlign: "center",
-        boxShadow: "0 8px 18px rgba(0,33,93,0.12)",
+        boxShadow: "0 6px 14px rgba(0,33,93,0.10)",
       }}
     >
-      <div style={{ fontSize: 12, fontWeight: 800, color: "rgba(255,255,255,0.82)", marginBottom: 5 }}>
+      <div style={{ fontSize: 11.5, fontWeight: 800, color: "rgba(255,255,255,0.82)", marginBottom: 4 }}>
         {row.label}
       </div>
-      <div style={{ fontSize: 16, fontWeight: 900, direction: "ltr" }}>
+      <div style={{ fontSize: 14, fontWeight: 900, direction: "ltr" }}>
         {formatSection28DisplayValue(row.value)}
       </div>
     </div>
@@ -3360,9 +3388,11 @@ function Section28EmptyNote() {
 }
 
 function Section28ComparisonBars({ rows }) {
-  const chartRows = rows.filter(
-    (row) => isMeaningfulSection28Value(row.before) || isMeaningfulSection28Value(row.after)
-  );
+  const chartRows = rows.filter((row) => {
+    const label = normalizeSection28Text(row.label).replace(/סהכ/g, 'סה"כ');
+    const isWantedRow = label === "קצבה" || label.includes('סה"כ הון') || label.includes("סה״כ הון");
+    return isWantedRow && (isMeaningfulSection28Value(row.before) || isMeaningfulSection28Value(row.after));
+  });
   const maxValue = Math.max(
     1,
     ...chartRows.flatMap((row) => [Math.abs(section28NumericValue(row.before)), Math.abs(section28NumericValue(row.after))])
@@ -3392,7 +3422,7 @@ function Section28ComparisonBars({ rows }) {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 4 }}>
                 <div style={{ height: 9, borderRadius: 999, background: "#EAF1FB", overflow: "hidden" }}>
-                  <div style={{ width: `${Math.max((before / maxValue) * 100, before ? 4 : 0)}%`, height: "100%", background: "linear-gradient(90deg, #C7D1E2, #8F63C9)", borderRadius: 999 }} />
+                  <div style={{ width: `${Math.max((before / maxValue) * 100, before ? 4 : 0)}%`, height: "100%", background: "linear-gradient(90deg, #C7D1E2, #EAF1FB)", borderRadius: 999 }} />
                 </div>
                 <div style={{ height: 9, borderRadius: 999, background: "#EAF1FB", overflow: "hidden" }}>
                   <div style={{ width: `${Math.max((after / maxValue) * 100, after ? 4 : 0)}%`, height: "100%", background: "linear-gradient(90deg, #FF2756, #00215D)", borderRadius: 999 }} />
@@ -3403,7 +3433,7 @@ function Section28ComparisonBars({ rows }) {
         })}
       </div>
       <div style={{ display: "flex", gap: 12, marginTop: 12, color: "#627D98", fontSize: 10.5, fontWeight: 800 }}>
-        <span><span style={{ color: "#8F63C9" }}>■</span> לפני</span>
+        <span><span style={{ color: "#C7D1E2" }}>■</span> לפני</span>
         <span><span style={{ color: "#FF2756" }}>■</span> אחרי</span>
       </div>
     </div>
@@ -3415,15 +3445,15 @@ function Section28ComparisonTable({ rows, styles }) {
     <div style={{ marginTop: 16 }}>
       <div style={styles.section28GroupTitle}>השוואה בין תרחישים</div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.25fr) minmax(240px, 0.75fr)", gap: 12, alignItems: "stretch" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.18fr) minmax(230px, 0.82fr)", gap: 12, alignItems: "stretch" }}>
         <div style={{ ...styles.section28TableWrap, marginTop: 0 }}>
-          <table style={{ ...styles.section28Table, minWidth: "600px" }}>
+          <table style={{ ...styles.section28Table, minWidth: "560px" }}>
             <thead>
               <tr>
-                <th style={{ ...styles.section28Th, fontSize: 10, padding: "8px 6px" }}>סעיף</th>
-                <th style={{ ...styles.section28Th, fontSize: 10, padding: "8px 6px" }}>לפני קיטום</th>
-                <th style={{ ...styles.section28Th, fontSize: 10, padding: "8px 6px" }}>אחרי קיטום</th>
-                <th style={{ ...styles.section28Th, fontSize: 10, padding: "8px 6px" }}>פער בין תרחישים</th>
+                <th style={{ ...styles.section28Th, fontSize: 9.5, padding: "7px 5px" }}>סעיף</th>
+                <th style={{ ...styles.section28Th, fontSize: 9.5, padding: "7px 5px" }}>לפני קיטום</th>
+                <th style={{ ...styles.section28Th, fontSize: 9.5, padding: "7px 5px" }}>אחרי קיטום</th>
+                <th style={{ ...styles.section28Th, fontSize: 9.5, padding: "7px 5px" }}>פער בין תרחישים</th>
               </tr>
             </thead>
 
@@ -3432,7 +3462,7 @@ function Section28ComparisonTable({ rows, styles }) {
                 const isTotal = String(row.label || "").includes('סה"כ') ||
                   String(row.label || "").includes("סה״כ");
                 const cellStyle = isTotal ? styles.section28TotalTd : styles.section28Td;
-                const compactCellStyle = { ...cellStyle, fontSize: 10, padding: "8px 6px" };
+                const compactCellStyle = { ...cellStyle, fontSize: 9.5, padding: "7px 5px" };
 
                 return (
                   <tr key={`${row.label}-${index}`}>
