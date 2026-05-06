@@ -6,6 +6,80 @@ import {
   buildLegacyReportData,
 } from "./pensionXmlParser";
 
+
+const SECTION_28_CAPPING_GROUPS = [
+  {
+    id: "base",
+    title: "נתוני בסיס",
+    fields: [
+      "גיל פרישה",
+      "גיל הלקוח",
+      "שכר פנסיוני על פי סעיף 28 לחוק קופות הגמל",
+      "עלות אובדן כושר עבודה",
+      "מס שולי",
+      "שכר מלא",
+    ],
+  },
+  {
+    id: "employer-cost",
+    title: "פירוט עלויות שכר מעסיק/עובד",
+    fields: [
+      "השתלמות מעל תקרה",
+      "פיצויים מעל לתקרה",
+      "תגמולים מעל לתקרה",
+      "סכום קיטום מעל לסעיף 28 ברוטו",
+      "סכום נטו לאחר ניכוי מס שולי -חלק מעסיק לחיסכון",
+      "גידול בנטו בעקבות קיטום בפיצויים",
+      "גידול בנטו בעקבות קיטום תגמולים",
+      "גידול בנטו בעקבות קיטום קה\"ל מעל לתקרה (15,712 ₪)",
+      "הפרשות עובד קה\"ל מעל תקרה (2.5%) נטו",
+      "הפרשות עובד תגמולים (6%) מעל לתקרה נטו",
+      "סה\"כ גידול נטו",
+      "סכום חודשי נטו שמועבר לחיסכון אישי",
+    ],
+  },
+  {
+    id: "saving-simulation",
+    title: "סימולציה לחיסכון",
+    fields: [
+      "צבירת סכום נטו בחיסכון אישי",
+      "סכום צבירה ברוטו",
+      "הפקדות נומינליות",
+      "צבירת נטו בקרן השתלמות ( ממועד הקיטום ועד לפרישה)",
+      "צבירה עד גיל פרישה לפי שכר עדכני",
+      "צבירה עד גיל פרישה לפי תקרת מס",
+      "צבירה עדכנית בקרן ההשתלמות ( מהוונת לגיל 67)",
+      "הפקדות נומינליות ממעוד הקיטום ועד גיל פרישה",
+      "צבירת קופות הוניות ( גמל וביטוחי חיים וקרנות השתלמות לא פעילות) מהוון לגיל 67",
+    ],
+  },
+  {
+    id: "retirement",
+    title: "סימולציה לגיל פרישה",
+    fields: [
+      "תגמול נדחה כקצבה לפי תוחלת חיים ממוצעת (17 שנים מגיל 67)",
+      "חישוב תשלום חודשי לפרק זמן נתון",
+      "ריבית שנתית:",
+      "סכום חסכון קיים",
+      "תקופת משיכה בשנים:",
+      "סכום משיכה:",
+    ],
+  },
+];
+
+const SECTION_28_COMPARISON_ROWS = [
+  "קצבה",
+  "הוני ( קה\"ש , גמל וביטוחי מנהלים )",
+  "קופת גמל להשקעה ( קיטום סעיף 28) לאחר מס רווחי הון",
+  "סה\"כ קצבה",
+  "סה\"כ הון",
+];
+
+const SECTION_28_ALL_FIELD_NAMES = [
+  ...SECTION_28_CAPPING_GROUPS.flatMap((group) => group.fields),
+  ...SECTION_28_COMPARISON_ROWS,
+];
+
 const ISRAEL_INSURANCE_COMPANIES = [
   "כלל",
   "מגדל",
@@ -43,6 +117,11 @@ export default function UploadPage({ setReportData }) {
   const [clientLogoPreview, setClientLogoPreview] = useState(null);
   const [logoError, setLogoError] = useState("");
 
+  const [section28ExcelFile, setSection28ExcelFile] = useState(null);
+  const [section28Capping, setSection28Capping] = useState(null);
+  const [section28ExcelLoading, setSection28ExcelLoading] = useState(false);
+  const [section28ExcelError, setSection28ExcelError] = useState("");
+
   const [vestedPdfFile, setVestedPdfFile] = useState(null);
   const [vestedPdfTable, setVestedPdfTable] = useState(null);
   const [vestedPdfLoading, setVestedPdfLoading] = useState(false);
@@ -59,6 +138,7 @@ export default function UploadPage({ setReportData }) {
 
   const fileInputRef = useRef(null);
   const logoInputRef = useRef(null);
+  const section28ExcelInputRef = useRef(null);
   const vestedPdfInputRef = useRef(null);
   const dragCounterRef = useRef(0);
 
@@ -154,6 +234,256 @@ export default function UploadPage({ setReportData }) {
 
   const openVestedPdfPicker = () => {
     vestedPdfInputRef.current?.click();
+  };
+
+
+  const openSection28ExcelPicker = () => {
+    section28ExcelInputRef.current?.click();
+  };
+
+  const normalizeSection28Label = (value) =>
+    String(value || "")
+      .replace(/[״"]/g, '"')
+      .replace(/[׳']/g, "'")
+      .replace(/\s+/g, " ")
+      .replace(/\s*:\s*$/g, ":")
+      .trim();
+
+  const isEmptySection28Value = (value) =>
+    value === null || value === undefined || String(value).trim() === "";
+
+  const formatSection28ExcelValue = (value, cell) => {
+    if (isEmptySection28Value(value)) return "";
+
+    if (cell?.w && String(cell.w).trim()) {
+      return String(cell.w).replace(/\s+/g, " ").trim();
+    }
+
+    if (typeof value === "number") {
+      return value;
+    }
+
+    return String(value).replace(/\s+/g, " ").trim();
+  };
+
+  const findSection28ValueNextToLabel = (worksheet, XLSX, label) => {
+    const ref = worksheet["!ref"];
+    if (!ref) return "";
+
+    const range = XLSX.utils.decode_range(ref);
+    const wanted = normalizeSection28Label(label);
+
+    for (let row = range.s.r; row <= range.e.r; row += 1) {
+      for (let col = range.s.c; col <= range.e.c; col += 1) {
+        const address = XLSX.utils.encode_cell({ r: row, c: col });
+        const cell = worksheet[address];
+        const cellText = normalizeSection28Label(cell?.v);
+
+        if (!cellText || cellText !== wanted) continue;
+
+        const preferredCells = [
+          { r: row, c: col + 1 },
+          { r: row, c: col - 1 },
+          { r: row + 1, c: col },
+          { r: row, c: col + 2 },
+          { r: row, c: col + 3 },
+        ];
+
+        for (const position of preferredCells) {
+          if (
+            position.r < range.s.r ||
+            position.r > range.e.r ||
+            position.c < range.s.c ||
+            position.c > range.e.c
+          ) {
+            continue;
+          }
+
+          const valueAddress = XLSX.utils.encode_cell(position);
+          const valueCell = worksheet[valueAddress];
+          const value = valueCell?.v;
+
+          if (!isEmptySection28Value(value)) {
+            return formatSection28ExcelValue(value, valueCell);
+          }
+        }
+      }
+    }
+
+    return "";
+  };
+
+  const findSection28ComparisonRows = (worksheet, XLSX) => {
+    const ref = worksheet["!ref"];
+    if (!ref) return [];
+
+    const range = XLSX.utils.decode_range(ref);
+    const comparisonRows = [];
+
+    for (const label of SECTION_28_COMPARISON_ROWS) {
+      const wanted = normalizeSection28Label(label);
+
+      for (let row = range.s.r; row <= range.e.r; row += 1) {
+        let found = false;
+
+        for (let col = range.s.c; col <= range.e.c; col += 1) {
+          const address = XLSX.utils.encode_cell({ r: row, c: col });
+          const cell = worksheet[address];
+          const cellText = normalizeSection28Label(cell?.v);
+
+          if (cellText !== wanted) continue;
+
+          const getValue = (offset) => {
+            const valueAddress = XLSX.utils.encode_cell({ r: row, c: col + offset });
+            const valueCell = worksheet[valueAddress];
+            return formatSection28ExcelValue(valueCell?.v, valueCell);
+          };
+
+          comparisonRows.push({
+            label,
+            before: getValue(1),
+            after: getValue(2),
+            gap: getValue(3),
+          });
+
+          found = true;
+          break;
+        }
+
+        if (found) break;
+      }
+    }
+
+    return comparisonRows.filter(
+      (row) => row.before !== "" || row.after !== "" || row.gap !== ""
+    );
+  };
+
+  const loadXlsx = () =>
+    new Promise((resolve, reject) => {
+      if (window.XLSX) {
+        resolve(window.XLSX);
+        return;
+      }
+
+      const existingScript = document.querySelector(
+        'script[data-xlsx-loader="true"]'
+      );
+
+      if (existingScript) {
+        existingScript.addEventListener("load", () => resolve(window.XLSX));
+        existingScript.addEventListener("error", reject);
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js";
+      script.async = true;
+      script.dataset.xlsxLoader = "true";
+
+      script.onload = () => {
+        if (!window.XLSX) {
+          reject(new Error("ספריית קריאת Excel לא נטענה"));
+          return;
+        }
+
+        resolve(window.XLSX);
+      };
+
+      script.onerror = () =>
+        reject(new Error("לא ניתן היה לטעון את ספריית קריאת ה־Excel"));
+
+      document.body.appendChild(script);
+    });
+
+  const extractSection28CappingFromExcel = async (file) => {
+    const XLSX = await loadXlsx();
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer, { type: "array", cellStyles: true, cellDates: true });
+
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+
+    if (!worksheet) {
+      return null;
+    }
+
+    const fields = SECTION_28_ALL_FIELD_NAMES.reduce((acc, label) => {
+      acc[label] = findSection28ValueNextToLabel(worksheet, XLSX, label);
+      return acc;
+    }, {});
+
+    const groups = SECTION_28_CAPPING_GROUPS.map((group) => ({
+      ...group,
+      rows: group.fields
+        .map((label) => ({ label, value: fields[label] }))
+        .filter((row) => row.value !== ""),
+    })).filter((group) => group.rows.length > 0);
+
+    const comparisonRows = findSection28ComparisonRows(worksheet, XLSX);
+
+    if (!groups.length && !comparisonRows.length) {
+      return null;
+    }
+
+    return {
+      sourceFileName: file.name,
+      sheetName,
+      groups,
+      comparisonRows,
+    };
+  };
+
+  const handleSection28ExcelSelection = async (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    const fileName = file.name.toLowerCase();
+    const isExcel =
+      fileName.endsWith(".xlsx") ||
+      fileName.endsWith(".xls") ||
+      file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+      file.type === "application/vnd.ms-excel";
+
+    if (!isExcel) {
+      setSection28ExcelError("יש לבחור קובץ Excel מסוג XLSX / XLS בלבד");
+      event.target.value = "";
+      return;
+    }
+
+    setSection28ExcelLoading(true);
+    setSection28ExcelError("");
+    setSection28ExcelFile(file);
+    setSection28Capping(null);
+
+    try {
+      const parsed = await extractSection28CappingFromExcel(file);
+
+      if (!parsed) {
+        setSection28ExcelError(
+          "לא נמצאו שדות קיטום לפי סעיף 28 באקסל. ניתן להפיק דוח ללא החלק הזה."
+        );
+        setSection28Capping(null);
+      } else {
+        setSection28Capping(parsed);
+      }
+    } catch (err) {
+      console.error(err);
+      setSection28ExcelError(
+        `שגיאה בקריאת קובץ ה־Excel: ${err?.message || err}`
+      );
+      setSection28Capping(null);
+    } finally {
+      setSection28ExcelLoading(false);
+      event.target.value = "";
+    }
+  };
+
+  const removeSection28Excel = () => {
+    setSection28ExcelFile(null);
+    setSection28Capping(null);
+    setSection28ExcelError("");
   };
 
   const loadPdfJs = () =>
@@ -626,6 +956,9 @@ export default function UploadPage({ setReportData }) {
 
       reportData.clientLogo = clientLogoPreview || null;
       reportData.clientLogoFileName = clientLogoFile?.name || "";
+      reportData.section28Capping = section28Capping?.groups?.length || section28Capping?.comparisonRows?.length
+        ? section28Capping
+        : null;
       reportData.vestedBalanceTable = vestedPdfTable?.rows?.length
         ? vestedPdfTable
         : null;
@@ -847,6 +1180,186 @@ export default function UploadPage({ setReportData }) {
                     }}
                   >
                     הסר לוגו
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            background: "#f9fbff",
+            border: "1px solid #e4e9f5",
+            borderRadius: 24,
+            padding: "22px 24px",
+            marginBottom: 20,
+          }}
+        >
+          <input
+            ref={section28ExcelInputRef}
+            type="file"
+            accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+            onChange={handleSection28ExcelSelection}
+            style={{ display: "none" }}
+          />
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr auto",
+              gap: 18,
+              alignItems: "center",
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  color: "#0d2c6c",
+                  fontSize: 18,
+                  fontWeight: 900,
+                  marginBottom: 8,
+                }}
+              >
+                דוח קיטום לפי סעיף 28 (אופציונלי)
+              </div>
+
+              <div
+                style={{
+                  color: "#69758e",
+                  fontSize: 14,
+                  lineHeight: 1.7,
+                }}
+              >
+                ניתן להעלות אקסל קיטום. המערכת קוראת את הערכים לפי שם השדה
+                באקסל, ללא חישובים נוספים, ומציגה אותם כחלק ייעודי בדוח.
+              </div>
+
+              {section28ExcelFile && (
+                <div
+                  style={{
+                    color: "#0d2c6c",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    marginTop: 8,
+                    wordBreak: "break-word",
+                  }}
+                >
+                  קובץ Excel: {section28ExcelFile.name}
+                </div>
+              )}
+
+              {section28Capping?.groups?.length || section28Capping?.comparisonRows?.length ? (
+                <div
+                  style={{
+                    color: "#247a3d",
+                    fontSize: 13,
+                    fontWeight: 800,
+                    marginTop: 8,
+                  }}
+                >
+                  נמצאו נתוני קיטום לפי סעיף 28 להצגה בדוח
+                </div>
+              ) : null}
+
+              {section28ExcelError && (
+                <div
+                  style={{
+                    color: "#b42318",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    marginTop: 8,
+                  }}
+                >
+                  {section28ExcelError}
+                </div>
+              )}
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                flexWrap: "wrap",
+                justifyContent: "flex-end",
+              }}
+            >
+              <div
+                style={{
+                  width: 132,
+                  height: 76,
+                  borderRadius: 18,
+                  border: "1px solid #d7deed",
+                  background:
+                    section28Capping?.groups?.length || section28Capping?.comparisonRows?.length
+                      ? "#eefaf1"
+                      : "#eef2fa",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  overflow: "hidden",
+                  color:
+                    section28Capping?.groups?.length || section28Capping?.comparisonRows?.length
+                      ? "#247a3d"
+                      : "#7b879d",
+                  fontSize: 13,
+                  fontWeight: 800,
+                  textAlign: "center",
+                  padding: 8,
+                }}
+              >
+                {section28ExcelLoading
+                  ? "קורא Excel..."
+                  : section28Capping?.groups?.length || section28Capping?.comparisonRows?.length
+                  ? "קיטום מוכן"
+                  : "Excel"}
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={openSection28ExcelPicker}
+                  disabled={section28ExcelLoading}
+                  style={{
+                    background: "#ffffff",
+                    color: "#0d2c6c",
+                    border: "1px solid #cbd4e6",
+                    borderRadius: 12,
+                    padding: "10px 14px",
+                    fontSize: 14,
+                    fontWeight: 800,
+                    cursor: section28ExcelLoading ? "not-allowed" : "pointer",
+                    minWidth: 120,
+                  }}
+                >
+                  בחירת Excel
+                </button>
+
+                {section28ExcelFile && (
+                  <button
+                    type="button"
+                    onClick={removeSection28Excel}
+                    disabled={section28ExcelLoading}
+                    style={{
+                      background: "#fff5f5",
+                      color: "#c81e1e",
+                      border: "1px solid #f3c2c2",
+                      borderRadius: 12,
+                      padding: "10px 14px",
+                      fontSize: 14,
+                      fontWeight: 800,
+                      cursor: section28ExcelLoading ? "not-allowed" : "pointer",
+                      minWidth: 120,
+                    }}
+                  >
+                    הסר Excel
                   </button>
                 )}
               </div>
