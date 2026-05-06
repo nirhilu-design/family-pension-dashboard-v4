@@ -14,6 +14,19 @@ function ClientFamilyView({ clientModel }) {
   const loans = clientModel.loans || {};
   const loanDetails = Array.isArray(loans.details) ? loans.details : [];
 
+  const sourceReportData = clientModel.sourceReportData || {};
+  const vestedBalanceTable =
+    clientModel.vestedBalanceTable || sourceReportData.vestedBalanceTable || null;
+  const recognizedPensionAdjustments =
+    clientModel.recognizedPensionAdjustments ||
+    sourceReportData.recognizedPensionAdjustments ||
+    [];
+  const hasVestedBalanceData =
+    (Array.isArray(vestedBalanceTable?.rows) &&
+      vestedBalanceTable.rows.length > 0) ||
+    (Array.isArray(recognizedPensionAdjustments) &&
+      recognizedPensionAdjustments.length > 0);
+
   const formatCurrency = (value) =>
     `₪${Math.round(Number(value || 0)).toLocaleString("en-US")}`;
 
@@ -322,6 +335,20 @@ function ClientFamilyView({ clientModel }) {
             bars={pensionBars}
           />
         </section>
+
+        {hasVestedBalanceData ? (
+          <SectionCard title="צבירה מוכרת לפי תגמולים ופיצויים" icon="📋">
+            <div className="family-explanation" style={explanation}>
+              טבלה זו מוצגת כאשר הועלו נתוני צבירה מוכרת או כאשר הוזנה קצבה
+              מוכרת ידנית לפי חברת ביטוח.
+            </div>
+
+            <ClientVestedBalanceSection
+              table={vestedBalanceTable}
+              adjustments={recognizedPensionAdjustments}
+            />
+          </SectionCard>
+        ) : null}
       </div>
 
       <div className="family-print-page family-print-page-2">
@@ -460,6 +487,271 @@ function ClientFamilyView({ clientModel }) {
             value={`${loanRatioToAssets.toFixed(1)}%`}
           />
         </SectionCard>
+      </div>
+    </div>
+  );
+}
+
+function normalizeClientInsuranceName(value) {
+  const text = String(value || "")
+    .replace(/[״"]/g, "")
+    .replace(/[׳']/g, "")
+    .replace(/בע"מ/g, "")
+    .replace(/בעמ/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (text.includes("כלל")) return "כלל";
+  if (text.includes("מגדל")) return "מגדל";
+  if (text.includes("הראל")) return "הראל";
+  if (text.includes("מנורה")) return "מנורה מבטחים";
+  if (text.includes("הפניקס") || text.includes("פניקס")) return "הפניקס";
+  if (text.includes("איילון")) return "איילון";
+  if (text.includes("הכשרה")) return "הכשרה";
+  if (text.includes("ביטוח ישיר")) return "ביטוח ישיר";
+  if (text.includes("שלמה")) return "שלמה ביטוח";
+  if (text.includes("שומרה")) return "שומרה";
+  if (text.includes("ליברה")) return "ליברה";
+  if (text.includes("ווישור") || text.includes("וישור")) return "ווישור";
+
+  return text;
+}
+
+function parseClientReportNumber(value) {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  const clean = String(value || "")
+    .replace(/[₪,\s]/g, "")
+    .replace(/[^\d.-]/g, "");
+
+  const number = Number(clean);
+
+  return Number.isFinite(number) ? number : 0;
+}
+
+function formatClientReportNumber(value, decimals = 0) {
+  const number = Number(value || 0);
+
+  if (!Number.isFinite(number)) {
+    return "—";
+  }
+
+  return number.toLocaleString("he-IL", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
+
+function isClientVestedTotalRow(row) {
+  return (
+    String(row?.fundName || "")
+      .replace(/[״"]/g, "")
+      .includes("סהכ") ||
+    String(row?.fundName || "").includes('סה"כ') ||
+    String(row?.fundName || "").includes("סה״כ")
+  );
+}
+
+function getClientPdfExemptPaymentsTotal(rows) {
+  const pdfRows = Array.isArray(rows) ? rows : [];
+
+  if (!pdfRows.length) {
+    return 0;
+  }
+
+  const totalRows = pdfRows.filter(isClientVestedTotalRow);
+  const totalRowValues = totalRows
+    .map((row) => parseClientReportNumber(row.exemptPayments))
+    .filter((value) => value > 0);
+
+  if (totalRowValues.length) {
+    return Math.max(...totalRowValues);
+  }
+
+  const nonTotalValues = pdfRows
+    .filter((row) => !isClientVestedTotalRow(row))
+    .map((row) => parseClientReportNumber(row.exemptPayments))
+    .filter((value) => value > 0);
+
+  return nonTotalValues.reduce((sum, value) => sum + value, 0);
+}
+
+function getClientManualRecognizedPensionRows(adjustments) {
+  return Array.isArray(adjustments)
+    ? adjustments
+        .filter((item) => item?.companyName && Number(item?.amount || 0) > 0)
+        .map((item, index) => ({
+          id: `manual-recognized-pension-${index}`,
+          companyName: normalizeClientInsuranceName(item.companyName),
+          amount: Number(item.amount || 0),
+        }))
+    : [];
+}
+
+function ClientVestedBalanceSection({ table, adjustments }) {
+  const pdfRows = Array.isArray(table?.rows) ? table.rows : [];
+  const manualRows = getClientManualRecognizedPensionRows(adjustments);
+  const pdfTotal = getClientPdfExemptPaymentsTotal(pdfRows);
+  const manualTotal = manualRows.reduce(
+    (sum, row) => sum + Number(row.amount || 0),
+    0
+  );
+
+  return (
+    <div>
+      {pdfRows.length ? (
+        <ClientVestedPdfTable rows={pdfRows} pdfTotal={pdfTotal} />
+      ) : null}
+
+      {manualRows.length ? (
+        <ClientManualPensionTable rows={manualRows} manualTotal={manualTotal} />
+      ) : null}
+
+      {pdfTotal > 0 && manualTotal > 0 ? (
+        <ClientTaxSavingGapSummary pdfTotal={pdfTotal} manualTotal={manualTotal} />
+      ) : null}
+    </div>
+  );
+}
+
+function ClientVestedPdfTable({ rows, pdfTotal }) {
+  const columns = [
+    { key: "fundName", label: "שם הקופה" },
+    { key: "balanceFee", label: "% דמי ניהול על הצבירה" },
+    { key: "depositFee", label: "% דמי ניהול על ההפקדות" },
+    { key: "rewardsUntil2011", label: "תגמולים עד 2011" },
+    { key: "rewardsFrom2012", label: "תגמולים מ־2012" },
+    { key: "severanceFrom2017", label: "פיצויים מ־2017" },
+    { key: "exemptPayments", label: "סכום תשלומים פטורים" },
+    { key: "coefficient", label: "מקדם" },
+    { key: "pension", label: "קצבה מוכרת" },
+  ];
+
+  return (
+    <div style={{ marginBottom: 22 }}>
+      <div style={clientVestedHeaderRow}>
+        <div>
+          <div style={clientVestedTitle}>טבלת חישוב מתוך PDF</div>
+          <div style={clientVestedSub}>
+            הטבלה מציגה את נתוני הצבירה המוכרת כפי שנקראו מהמסמך.
+          </div>
+        </div>
+      </div>
+
+      <div style={clientVestedTableWrap}>
+        <table style={clientVestedTable}>
+          <thead>
+            <tr>
+              {columns.map((column) => (
+                <th key={column.key} style={clientVestedTh}>
+                  {column.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          <tbody>
+            {rows.map((row, index) => {
+              const rowStyle = isClientVestedTotalRow(row)
+                ? clientVestedTotalTd
+                : clientVestedTd;
+
+              return (
+                <tr key={row.id || index}>
+                  {columns.map((column) => (
+                    <td key={column.key} style={rowStyle}>
+                      {row[column.key] || "—"}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+
+            <tr>
+              {columns.map((column) => (
+                <td key={column.key} style={clientVestedTotalTd}>
+                  {column.key === "fundName"
+                    ? 'סה"כ טבלת PDF'
+                    : column.key === "exemptPayments"
+                    ? formatClientReportNumber(pdfTotal)
+                    : "—"}
+                </td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function ClientManualPensionTable({ rows, manualTotal }) {
+  return (
+    <div style={{ marginTop: 20 }}>
+      <div style={clientVestedHeaderRow}>
+        <div>
+          <div style={clientVestedTitle}>קצבה מוכרת שהוזנה ידנית</div>
+          <div style={clientVestedSub}>
+            הטבלה מציגה את הסכומים שהוזנו במסך ההעלאה לפי חברת ביטוח.
+          </div>
+        </div>
+      </div>
+
+      <div style={clientVestedTableWrap}>
+        <table style={{ ...clientVestedTable, minWidth: 520 }}>
+          <thead>
+            <tr>
+              <th style={clientVestedTh}>חברת ביטוח</th>
+              <th style={clientVestedTh}>קצבה מוכרת שהוזנה</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.id}>
+                <td style={clientVestedManualTd}>{row.companyName}</td>
+                <td style={clientVestedManualTd}>
+                  {formatClientReportNumber(row.amount)}
+                </td>
+              </tr>
+            ))}
+
+            <tr>
+              <td style={clientVestedTotalTd}>סה"כ</td>
+              <td style={clientVestedTotalTd}>
+                {formatClientReportNumber(manualTotal)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-start" }}>
+        <div style={clientManualSummaryPill}>
+          סה"כ קצבה מוכרת: {formatClientReportNumber(manualTotal)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ClientTaxSavingGapSummary({ pdfTotal, manualTotal }) {
+  const gap = pdfTotal - manualTotal;
+  const gapColor = gap >= 0 ? theme.navy : "#B42318";
+
+  return (
+    <div style={clientGapSummaryBox}>
+      <div>
+        <div style={clientGapTitle}>פער הצבירה לחיסכון במס</div>
+        <div style={clientGapSub}>
+          חישוב לפי סה"כ טבלת ה־PDF פחות סה"כ הקצבה המוכרת שהוזנה ידנית.
+        </div>
+      </div>
+
+      <div style={{ ...clientGapValue, color: gapColor }}>
+        {formatClientReportNumber(gap)}
       </div>
     </div>
   );
@@ -1315,5 +1607,134 @@ const table = { width: "100%", borderCollapse: "collapse", minWidth: 760, backgr
 const th = { textAlign: "right", padding: 12, fontSize: 12, color: theme.textSoft, borderBottom: `1px solid ${theme.divider}`, whiteSpace: "nowrap", fontWeight: 700, background: "#FAF8F4" };
 const td = { textAlign: "right", padding: 12, fontSize: 12, color: theme.text, borderBottom: "1px solid #F0E6DA", whiteSpace: "nowrap" };
 const emptyState = { background: theme.surfaceAlt, border: `1px dashed ${theme.border}`, borderRadius: 14, padding: 18, fontSize: 12, color: theme.textSoft };
+
+
+const clientVestedHeaderRow = {
+  display: "flex",
+  alignItems: "baseline",
+  justifyContent: "space-between",
+  gap: 12,
+  marginBottom: 10,
+  flexWrap: "wrap",
+};
+
+const clientVestedTitle = {
+  color: theme.navy,
+  fontSize: 14,
+  fontWeight: 900,
+};
+
+const clientVestedSub = {
+  color: theme.textSoft,
+  fontSize: 12,
+  marginTop: 4,
+};
+
+const clientVestedTableWrap = {
+  overflowX: "auto",
+  marginTop: 12,
+  borderRadius: 16,
+  border: `1px solid ${theme.divider}`,
+  background: "#fff",
+};
+
+const clientVestedTable = {
+  width: "100%",
+  borderCollapse: "collapse",
+  minWidth: 980,
+  background: "#fff",
+};
+
+const clientVestedTh = {
+  textAlign: "center",
+  fontSize: 12,
+  color: "#fff",
+  background: theme.navy,
+  borderLeft: "1px solid rgba(255,255,255,0.15)",
+  padding: "12px 10px",
+  fontWeight: 800,
+  whiteSpace: "normal",
+  lineHeight: 1.35,
+};
+
+const clientVestedTd = {
+  textAlign: "center",
+  fontSize: 12,
+  color: theme.text,
+  borderBottom: "1px solid #F0E6DA",
+  borderLeft: "1px solid #F0E6DA",
+  padding: "12px 10px",
+  whiteSpace: "nowrap",
+  background: "#fff",
+};
+
+const clientVestedTotalTd = {
+  textAlign: "center",
+  fontSize: 12,
+  color: theme.navy,
+  borderBottom: "1px solid #D8DEE9",
+  borderLeft: "1px solid #D8DEE9",
+  padding: "12px 10px",
+  whiteSpace: "nowrap",
+  background: "#EEF2FA",
+  fontWeight: 900,
+};
+
+const clientVestedManualTd = {
+  textAlign: "center",
+  fontSize: 12,
+  color: theme.navy,
+  borderBottom: "1px solid #E2D1BF",
+  borderLeft: "1px solid #E2D1BF",
+  padding: "12px 10px",
+  whiteSpace: "nowrap",
+  background: "#FFF7E8",
+  fontWeight: 900,
+};
+
+const clientManualSummaryPill = {
+  background: "#FFF7E8",
+  color: theme.navy,
+  border: `1px solid ${theme.border}`,
+  borderRadius: 999,
+  padding: "8px 14px",
+  fontSize: 12,
+  fontWeight: 900,
+  whiteSpace: "nowrap",
+};
+
+const clientGapSummaryBox = {
+  marginTop: 22,
+  padding: "18px 20px",
+  borderRadius: 18,
+  border: `1px solid ${theme.border}`,
+  background:
+    "linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(255,247,232,1) 100%)",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: 16,
+  flexWrap: "wrap",
+};
+
+const clientGapTitle = {
+  color: theme.navy,
+  fontSize: 15,
+  fontWeight: 900,
+};
+
+const clientGapSub = {
+  color: theme.textSoft,
+  fontSize: 12,
+  marginTop: 5,
+};
+
+const clientGapValue = {
+  fontSize: 22,
+  fontWeight: 900,
+  direction: "ltr",
+  whiteSpace: "nowrap",
+};
+
 
 export default ClientFamilyView;
