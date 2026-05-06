@@ -3103,21 +3103,6 @@ function ManualRecognizedPensionTable({ rows, styles }) {
             הטבלה מציגה את הסכומים שהוזנו במסך ההעלאה לפי חברת ביטוח.
           </div>
         </div>
-
-        <div
-          style={{
-            background: "#FFF7E8",
-            color: "#00215D",
-            border: "1px solid #E2D1BF",
-            borderRadius: 999,
-            padding: "8px 14px",
-            fontSize: 12,
-            fontWeight: 900,
-            whiteSpace: "nowrap",
-          }}
-        >
-          סה"כ קצבה מוכרת: {formatReportNumber(manualTotal)}
-        </div>
       </div>
 
       <div style={styles.vestedTableWrap}>
@@ -3153,9 +3138,27 @@ function ManualRecognizedPensionTable({ rows, styles }) {
           </tbody>
         </table>
       </div>
+
+      <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-start" }}>
+        <div
+          style={{
+            background: "#FFF7E8",
+            color: "#00215D",
+            border: "1px solid #E2D1BF",
+            borderRadius: 999,
+            padding: "8px 14px",
+            fontSize: 12,
+            fontWeight: 900,
+            whiteSpace: "nowrap",
+          }}
+        >
+          סה"כ קצבה מוכרת: {formatReportNumber(manualTotal)}
+        </div>
+      </div>
     </div>
   );
 }
+
 
 function TaxSavingGapSummary({ pdfTotal, manualTotal }) {
   const gap = pdfTotal - manualTotal;
