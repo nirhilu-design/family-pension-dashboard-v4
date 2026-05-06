@@ -1203,16 +1203,32 @@ function ModernBar({ value }) {
 
   return (
     <div style={{ paddingTop: 6 }}>
-      <div style={modernTrack}>
-        <div style={{ ...modernFill, width: `${safe}%` }} />
+      <div
+        style={{
+          ...modernTrack,
+          direction: "rtl",
+        }}
+      >
+        <div
+          style={{
+            ...modernFill,
+            width: `${safe}%`,
+            marginRight: "auto",
+          }}
+        />
       </div>
 
-      <div style={barScale}>
-        <span>0%</span>
-        <span>25%</span>
-        <span>50%</span>
-        <span>75%</span>
+      <div
+        style={{
+          ...barScale,
+          direction: "rtl",
+        }}
+      >
         <span>100%</span>
+        <span>75%</span>
+        <span>50%</span>
+        <span>25%</span>
+        <span>0%</span>
       </div>
     </div>
   );
