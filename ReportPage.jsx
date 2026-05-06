@@ -176,6 +176,10 @@ export default function ReportPage({
       vestedBalanceTable.rows.length > 0) ||
     hasRecognizedPensionAdjustments;
 
+  const section28Capping = safeReportData?.section28Capping || null;
+  const hasSection28Capping =
+    Array.isArray(section28Capping?.groups) && section28Capping.groups.length > 0;
+
   const handleExportPdf = () => {
     window.print();
   };
@@ -641,7 +645,7 @@ export default function ReportPage({
       border: `1px solid ${border}`,
       borderRadius: "20px",
       padding: "20px",
-      minHeight: "210px",
+      minHeight: "190px",
       boxShadow: "0 2px 10px rgba(16,42,67,0.05)",
       boxSizing: "border-box",
       breakInside: "avoid",
@@ -716,7 +720,7 @@ export default function ReportPage({
       border: `1px solid ${border}`,
       borderRadius: "20px",
       padding: "20px",
-      minHeight: "210px",
+      minHeight: "190px",
       boxShadow: "0 2px 10px rgba(16,42,67,0.05)",
       boxSizing: "border-box",
       display: "flex",
@@ -1103,6 +1107,97 @@ export default function ReportPage({
       padding: "12px 10px",
       whiteSpace: "nowrap",
       background: "#FFF7E8",
+      fontWeight: 900,
+    },
+    section28Grid: {
+      display: "grid",
+      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+      gap: "14px",
+      alignItems: "start",
+    },
+    section28Group: {
+      background: surfaceAlt,
+      border: `1px solid ${divider}`,
+      borderRadius: "16px",
+      padding: "14px",
+      breakInside: "avoid",
+      pageBreakInside: "avoid",
+    },
+    section28GroupTitle: {
+      color: navy,
+      fontSize: "13px",
+      fontWeight: 900,
+      marginBottom: "10px",
+      paddingBottom: "8px",
+      borderBottom: `1px solid ${divider}`,
+    },
+    section28Row: {
+      display: "grid",
+      gridTemplateColumns: "minmax(0, 1.45fr) minmax(92px, 0.55fr)",
+      gap: "10px",
+      alignItems: "center",
+      padding: "8px 0",
+      borderBottom: "1px solid #F0E6DA",
+    },
+    section28Label: {
+      color: textSoft,
+      fontSize: "11px",
+      fontWeight: 700,
+      lineHeight: 1.45,
+    },
+    section28Value: {
+      color: navy,
+      fontSize: "13px",
+      fontWeight: 900,
+      textAlign: "left",
+      direction: "ltr",
+      whiteSpace: "nowrap",
+    },
+    section28TableWrap: {
+      overflowX: "auto",
+      marginTop: "14px",
+      borderRadius: "16px",
+      border: `1px solid ${divider}`,
+      background: "#fff",
+      breakInside: "avoid",
+      pageBreakInside: "avoid",
+    },
+    section28Table: {
+      width: "100%",
+      borderCollapse: "collapse",
+      minWidth: "680px",
+      background: "#fff",
+    },
+    section28Th: {
+      textAlign: "center",
+      fontSize: "11px",
+      color: "#fff",
+      background: navy,
+      borderLeft: "1px solid rgba(255,255,255,0.15)",
+      padding: "10px 8px",
+      fontWeight: 900,
+      whiteSpace: "normal",
+      lineHeight: 1.3,
+    },
+    section28Td: {
+      textAlign: "center",
+      fontSize: "11px",
+      color: text,
+      borderBottom: "1px solid #F0E6DA",
+      borderLeft: "1px solid #F0E6DA",
+      padding: "10px 8px",
+      whiteSpace: "nowrap",
+      background: "#fff",
+    },
+    section28TotalTd: {
+      textAlign: "center",
+      fontSize: "11px",
+      color: navy,
+      borderBottom: "1px solid #D8DEE9",
+      borderLeft: "1px solid #D8DEE9",
+      padding: "10px 8px",
+      whiteSpace: "nowrap",
+      background: "#EEF2FA",
       fontWeight: 900,
     },
     recommendationsWrap: {
@@ -2213,6 +2308,27 @@ export default function ReportPage({
             }
           }
 
+            .section-28-capping-section {
+              width: 100% !important;
+              max-width: 100% !important;
+              break-inside: avoid !important;
+              page-break-inside: avoid !important;
+            }
+
+            .section-28-grid-print {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 8px !important;
+            }
+
+            .section-28-capping-section th,
+            .section-28-capping-section td {
+              font-size: 7.5px !important;
+              padding: 5px 4px !important;
+              white-space: normal !important;
+              word-break: break-word !important;
+            }
+          }
+
           @media screen {
             .print-only {
               display: none !important;
@@ -2436,6 +2552,31 @@ export default function ReportPage({
               bars={retirementPensionBars}
             />
           </section>
+
+
+          {hasSection28Capping ? (
+            <section
+              className="print-section section-28-capping-section avoid-break"
+              style={styles.sectionCard}
+            >
+              <div style={styles.sectionHeader}>
+                <div style={styles.titleWithIcon}>
+                  <span>🧮</span>
+                  <h2 style={styles.h2}>קיטום על פי סעיף 28</h2>
+                </div>
+              </div>
+
+              <div style={styles.explanation}>
+                הנתונים מוצגים כפי שנקראו מקובץ האקסל לפי שמות השדות, ללא חישוב
+                נוסף במערכת.
+                {section28Capping?.sourceFileName
+                  ? ` מקור הנתונים: ${section28Capping.sourceFileName}.`
+                  : ""}
+              </div>
+
+              <Section28CappingReport data={section28Capping} styles={styles} />
+            </section>
+          ) : null}
 
           {hasVestedBalanceTable ? (
             <section
@@ -2865,6 +3006,127 @@ export default function ReportPage({
         </div>
       </div>
     </>
+  );
+}
+
+
+function formatSection28DisplayValue(value) {
+  if (value === null || value === undefined || String(value).trim() === "") {
+    return "—";
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const abs = Math.abs(value);
+
+    if (abs > 0 && abs < 1) {
+      return `${(value * 100).toLocaleString("he-IL", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      })}%`;
+    }
+
+    return `₪${Math.round(value).toLocaleString("en-US")}`;
+  }
+
+  const text = String(value).trim();
+
+  if (/^-?\d+(\.\d+)?$/.test(text)) {
+    const number = Number(text);
+
+    if (Math.abs(number) > 0 && Math.abs(number) < 1) {
+      return `${(number * 100).toLocaleString("he-IL", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      })}%`;
+    }
+
+    return `₪${Math.round(number).toLocaleString("en-US")}`;
+  }
+
+  return text;
+}
+
+function Section28CappingReport({ data, styles }) {
+  const groups = Array.isArray(data?.groups) ? data.groups : [];
+  const comparisonRows = Array.isArray(data?.comparisonRows)
+    ? data.comparisonRows
+    : [];
+
+  return (
+    <div>
+      {groups.length ? (
+        <div className="section-28-grid-print" style={styles.section28Grid}>
+          {groups.map((group) => (
+            <Section28Group key={group.id || group.title} group={group} styles={styles} />
+          ))}
+        </div>
+      ) : null}
+
+      {comparisonRows.length ? (
+        <Section28ComparisonTable rows={comparisonRows} styles={styles} />
+      ) : null}
+    </div>
+  );
+}
+
+function Section28Group({ group, styles }) {
+  const rows = Array.isArray(group?.rows) ? group.rows : [];
+
+  return (
+    <div style={styles.section28Group}>
+      <div style={styles.section28GroupTitle}>{group.title}</div>
+
+      {rows.map((row, index) => (
+        <div
+          key={`${row.label}-${index}`}
+          style={{
+            ...styles.section28Row,
+            borderBottom: index === rows.length - 1 ? "none" : styles.section28Row.borderBottom,
+          }}
+        >
+          <div style={styles.section28Label}>{row.label}</div>
+          <div style={styles.section28Value}>{formatSection28DisplayValue(row.value)}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Section28ComparisonTable({ rows, styles }) {
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div style={styles.section28GroupTitle}>השוואה בין תרחישים</div>
+
+      <div style={styles.section28TableWrap}>
+        <table style={styles.section28Table}>
+          <thead>
+            <tr>
+              <th style={styles.section28Th}>סעיף</th>
+              <th style={styles.section28Th}>לפני קיטום</th>
+              <th style={styles.section28Th}>אחרי קיטום</th>
+              <th style={styles.section28Th}>פער בין תרחישים</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {rows.map((row, index) => {
+              const isTotal = String(row.label || "").includes('סה"כ') ||
+                String(row.label || "").includes("סה״כ");
+              const cellStyle = isTotal ? styles.section28TotalTd : styles.section28Td;
+
+              return (
+                <tr key={`${row.label}-${index}`}>
+                  <td style={cellStyle}>{row.label}</td>
+                  <td style={cellStyle}>{formatSection28DisplayValue(row.before)}</td>
+                  <td style={cellStyle}>{formatSection28DisplayValue(row.after)}</td>
+                  <td style={cellStyle}>{formatSection28DisplayValue(row.gap)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 
