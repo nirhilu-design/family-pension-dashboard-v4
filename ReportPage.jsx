@@ -1,4 +1,3 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
 
 const STORAGE_CLIENT_MODEL_KEY = "familyPensionClientModel";
 const STORAGE_REPORT_DATA_KEY = "familyPensionReportData";
@@ -164,8 +163,17 @@ export default function ReportPage({
   } = safeReportData;
 
   const vestedBalanceTable = safeReportData?.vestedBalanceTable || null;
+  const recognizedPensionAdjustments = Array.isArray(
+    safeReportData?.recognizedPensionAdjustments
+  )
+    ? safeReportData.recognizedPensionAdjustments
+    : [];
+  const hasRecognizedPensionAdjustments =
+    recognizedPensionAdjustments.length > 0;
   const hasVestedBalanceTable =
-    Array.isArray(vestedBalanceTable?.rows) && vestedBalanceTable.rows.length > 0;
+    (Array.isArray(vestedBalanceTable?.rows) &&
+      vestedBalanceTable.rows.length > 0) ||
+    hasRecognizedPensionAdjustments;
 
   const handleExportPdf = () => {
     window.print();
@@ -1083,6 +1091,17 @@ export default function ReportPage({
       padding: "12px 10px",
       whiteSpace: "nowrap",
       background: "#EEF2FA",
+      fontWeight: 900,
+    },
+    vestedManualTd: {
+      textAlign: "center",
+      fontSize: "12px",
+      color: navy,
+      borderBottom: "1px solid #E2D1BF",
+      borderLeft: "1px solid #E2D1BF",
+      padding: "12px 10px",
+      whiteSpace: "nowrap",
+      background: "#FFF7E8",
       fontWeight: 900,
     },
     recommendationsWrap: {
@@ -2431,7 +2450,7 @@ export default function ReportPage({
 
               <div style={styles.explanation}>
                 טבלה זו מוצגת רק כאשר הועלה PDF ייעודי במסך ההעלאה ונמצאו בו
-                נתוני צבירה מוכרת.
+                נתוני צבירה מוכרת, או כאשר הוזן סכום קצבה מוכרת ידנית לפי חברת ביטוח.
                 {vestedBalanceTable?.sourceFileName
                   ? ` מקור הנתונים: ${vestedBalanceTable.sourceFileName}.`
                   : ""}
@@ -2439,6 +2458,7 @@ export default function ReportPage({
 
               <VestedBalanceTable
                 table={vestedBalanceTable}
+                adjustments={recognizedPensionAdjustments}
                 styles={styles}
               />
             </section>
@@ -2847,8 +2867,89 @@ export default function ReportPage({
   );
 }
 
-function VestedBalanceTable({ table, styles }) {
-  const rows = Array.isArray(table?.rows) ? table.rows : [];
+function normalizeInsuranceName(value) {
+  const text = String(value || "")
+    .replace(/[״"]/g, "")
+    .replace(/[׳']/g, "")
+    .replace(/בע"מ/g, "")
+    .replace(/בעמ/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (text.includes("כלל")) return "כלל";
+  if (text.includes("מגדל")) return "מגדל";
+  if (text.includes("הראל")) return "הראל";
+  if (text.includes("מנורה")) return "מנורה מבטחים";
+  if (text.includes("הפניקס") || text.includes("פניקס")) return "הפניקס";
+  if (text.includes("איילון")) return "איילון";
+  if (text.includes("הכשרה")) return "הכשרה";
+  if (text.includes("ביטוח ישיר")) return "ביטוח ישיר";
+  if (text.includes("שלמה")) return "שלמה ביטוח";
+  if (text.includes("שומרה")) return "שומרה";
+  if (text.includes("ליברה")) return "ליברה";
+  if (text.includes("ווישור") || text.includes("וישור")) return "ווישור";
+
+  return text;
+}
+
+function formatRecognizedPensionAmount(value) {
+  const number = Number(value || 0);
+
+  if (!Number.isFinite(number) || number <= 0) {
+    return "";
+  }
+
+  return number.toLocaleString("he-IL", {
+    maximumFractionDigits: 0,
+  });
+}
+
+function mergeRecognizedPensionAdjustments(rows, adjustments) {
+  const baseRows = Array.isArray(rows) ? rows.map((row) => ({ ...row })) : [];
+  const cleanAdjustments = Array.isArray(adjustments)
+    ? adjustments.filter(
+        (item) => item?.companyName && Number(item?.amount || 0) > 0
+      )
+    : [];
+
+  cleanAdjustments.forEach((adjustment, index) => {
+    const companyName = normalizeInsuranceName(adjustment.companyName);
+    const amountText = formatRecognizedPensionAmount(adjustment.amount);
+
+    const existingRow = baseRows.find((row) => {
+      const fundName = normalizeInsuranceName(row?.fundName);
+      return (
+        fundName === companyName ||
+        fundName.includes(companyName) ||
+        companyName.includes(fundName)
+      );
+    });
+
+    if (existingRow) {
+      existingRow.pension = amountText;
+      existingRow.recognizedPensionManuallyUpdated = true;
+    } else {
+      baseRows.push({
+        id: `manual-recognized-pension-${index}`,
+        fundName: companyName,
+        balanceFee: "",
+        depositFee: "",
+        rewardsUntil2011: "",
+        rewardsFrom2012: "",
+        severanceFrom2017: "",
+        exemptPayments: "",
+        coefficient: "",
+        pension: amountText,
+        recognizedPensionManuallyUpdated: true,
+      });
+    }
+  });
+
+  return baseRows;
+}
+
+function VestedBalanceTable({ table, adjustments, styles }) {
+  const rows = mergeRecognizedPensionAdjustments(table?.rows, adjustments);
 
   const columns = [
     { key: "fundName", label: "שם הקופה" },
@@ -2859,7 +2960,7 @@ function VestedBalanceTable({ table, styles }) {
     { key: "severanceFrom2017", label: "פיצויים מ־2017" },
     { key: "exemptPayments", label: "סכום תשלומים פטורים" },
     { key: "coefficient", label: "מקדם" },
-    { key: "pension", label: "קצבה" },
+    { key: "pension", label: "קצבה מוכרת" },
   ];
 
   const isTotalRow = (row) =>
@@ -2886,6 +2987,8 @@ function VestedBalanceTable({ table, styles }) {
           {rows.map((row, index) => {
             const rowStyle = isTotalRow(row)
               ? styles.vestedTotalTd
+              : row.recognizedPensionManuallyUpdated
+              ? styles.vestedManualTd
               : styles.vestedTd;
 
             return (
@@ -2903,6 +3006,7 @@ function VestedBalanceTable({ table, styles }) {
     </div>
   );
 }
+
 
 function KpiCard({ styles, icon, title, value, subtext }) {
   return (
