@@ -3046,27 +3046,56 @@ function formatSection28DisplayValue(value) {
   return text;
 }
 
+function normalizeSection28Text(value) {
+  return String(value || "")
+    .replace(/[״”"]/g, '"')
+    .replace(/[׳’']/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
-function parseSection28NumericValue(value) {
+function section28NumericValue(value) {
   if (typeof value === "number") {
     return Number.isFinite(value) ? value : 0;
   }
 
-  const text = String(value ?? "").trim();
+  const clean = String(value || "")
+    .replace(/[₪,%\s]/g, "")
+    .replace(/,/g, "")
+    .replace(/[^\d.-]/g, "");
 
-  if (!text || text === "—" || text === "-") {
-    return 0;
-  }
-
-  const normalized = text
-    .replace(/[₪\s,]/g, "")
-    .replace(/−/g, "-")
-    .replace(/[()]/g, "")
-    .replace(/%/g, "");
-
-  const number = Number(normalized.replace(/[^0-9.-]/g, ""));
-
+  const number = Number(clean);
   return Number.isFinite(number) ? number : 0;
+}
+
+function isMeaningfulSection28Value(value) {
+  if (value === null || value === undefined) return false;
+  const text = String(value).trim();
+  if (!text || text === "—" || text === "-") return false;
+  return section28NumericValue(value) !== 0 || /[^₪,%\s0.,-]/.test(text);
+}
+
+function isSection28ImportantRow(label) {
+  const text = normalizeSection28Text(label);
+  return (
+    text.includes("סכום קיטום מעל לסעיף 28 ברוטו") ||
+    text.includes("סכום נטו לאחר ניכוי מס שולי") ||
+    text.includes('סה"כ גידול נטו') ||
+    text.includes("סה״כ גידול נטו") ||
+    text.includes("סך הכל גידול נטו") ||
+    text.includes("צבירת סכום נטו בחיסכון אישי")
+  );
+}
+
+function isSection28MonthlySavingRow(label) {
+  return normalizeSection28Text(label).includes("סכום חודשי נטו שמועבר לחיסכון אישי");
+}
+
+function getSection28Group(groups, id, titlePart) {
+  return groups.find(
+    (group) =>
+      group?.id === id || normalizeSection28Text(group?.title).includes(titlePart)
+  );
 }
 
 function Section28CappingReport({ data, styles }) {
@@ -3075,66 +3104,299 @@ function Section28CappingReport({ data, styles }) {
     ? data.comparisonRows
     : [];
 
+  const costGroup = getSection28Group(groups, "employer-cost", "עלויות");
+  const savingGroup = getSection28Group(groups, "saving-simulation", "סימולציה לחיסכון");
+  const retirementGroup = getSection28Group(groups, "retirement", "סימולציה לגיל פרישה");
+
+  const renderedGroupIds = new Set(
+    [costGroup?.id, savingGroup?.id, retirementGroup?.id, "base"].filter(Boolean)
+  );
+
+  const otherGroups = groups.filter(
+    (group) => !renderedGroupIds.has(group?.id) && !normalizeSection28Text(group?.title).includes("נתוני בסיס")
+  );
+
   return (
     <div>
-      {groups.length ? (
-        <div className="section-28-grid-print" style={styles.section28Grid}>
-          {groups.map((group) => (
-            <Section28Group key={group.id || group.title} group={group} styles={styles} />
-          ))}
+      {costGroup ? <Section28CostSplit group={costGroup} styles={styles} /> : null}
+
+      {savingGroup ? (
+        <div style={{ marginTop: 14 }}>
+          <Section28SavingSimulation group={savingGroup} styles={styles} />
         </div>
       ) : null}
 
       {comparisonRows.length ? (
         <Section28ComparisonTable rows={comparisonRows} styles={styles} />
       ) : null}
+
+      {retirementGroup ? (
+        <div style={{ marginTop: 14 }}>
+          <Section28RetirementSimulation group={retirementGroup} styles={styles} />
+        </div>
+      ) : null}
+
+      {otherGroups.length ? (
+        <div className="section-28-grid-print" style={{ ...styles.section28Grid, marginTop: 14 }}>
+          {otherGroups.map((group) => (
+            <Section28Group key={group.id || group.title} group={group} styles={styles} />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function pickSection28Rows(rows, labelParts) {
+  return labelParts
+    .map((part) => rows.find((row) => normalizeSection28Text(row.label).includes(part)))
+    .filter(Boolean);
+}
+
+function Section28CostSplit({ group, styles }) {
+  const rows = Array.isArray(group?.rows) ? group.rows.filter((row) => isMeaningfulSection28Value(row.value)) : [];
+  const monthlyRow = rows.find((row) => isSection28MonthlySavingRow(row.label));
+
+  const employerRows = pickSection28Rows(rows, [
+    "השתלמות מעל תקרה",
+    "פיצויים מעל לתקרה",
+    "תגמולים מעל לתקרה",
+  ]);
+
+  const employerSummaryRows = pickSection28Rows(rows, [
+    "סכום קיטום מעל לסעיף 28 ברוטו",
+    "סכום נטו לאחר ניכוי מס שולי",
+  ]);
+
+  const employeeRows = pickSection28Rows(rows, [
+    "גידול בנטו בעקבות קיטום בפיצויים",
+    "גידול בנטו בעקבות קיטום תגמולים",
+    "גידול בנטו בעקבות קיטום קה\"ל מעל לתקרה",
+    "הפרשות עובד קה\"ל מעל תקרה",
+    "הפרשות עובד תגמולים",
+  ]);
+
+  const employeeSummaryRows = pickSection28Rows(rows, [
+    'סה"כ גידול נטו',
+    "סה״כ גידול נטו",
+    "סך הכל גידול נטו",
+  ]);
+
+  const cardStyle = {
+    ...styles.section28Group,
+    background: "linear-gradient(180deg, #FFFFFF 0%, #FCFBF8 100%)",
+  };
+
+  return (
+    <div style={styles.section28Group}>
+      <div style={styles.section28GroupTitle}>פירוט עלויות עובד / מעסיק</div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
+        <div style={cardStyle}>
+          <div style={{ ...styles.section28GroupTitle, fontSize: 12 }}>חלק מעסיק</div>
+          {employerRows.map((row, index) => (
+            <Section28DataRow key={`${row.label}-${index}`} row={row} styles={styles} />
+          ))}
+          {employerSummaryRows.length ? (
+            <div style={{ marginTop: 10 }}>
+              {employerSummaryRows.map((row, index) => (
+                <Section28DataRow key={`${row.label}-${index}`} row={row} styles={styles} forceHighlight />
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        <div style={cardStyle}>
+          <div style={{ ...styles.section28GroupTitle, fontSize: 12 }}>חלק עובד</div>
+          {employeeRows.map((row, index) => (
+            <Section28DataRow key={`${row.label}-${index}`} row={row} styles={styles} />
+          ))}
+          {employeeSummaryRows.length ? (
+            <div style={{ marginTop: 10 }}>
+              {employeeSummaryRows.map((row, index) => (
+                <Section28DataRow key={`${row.label}-${index}`} row={row} styles={styles} forceHighlight />
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      {monthlyRow ? (
+        <div style={{ marginTop: 12 }}>
+          <Section28MonthlySavingRow row={monthlyRow} styles={styles} />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function Section28SavingSimulation({ group, styles }) {
+  const rows = Array.isArray(group?.rows) ? group.rows.filter((row) => isMeaningfulSection28Value(row.value)) : [];
+  const wanted = ["סכום צבירה ברוטו", "הפקדות נומינליות", "צבירת סכום נטו בחיסכון אישי"];
+  const selectedRows = wanted
+    .map((label) => rows.find((row) => normalizeSection28Text(row.label).includes(label)))
+    .filter(Boolean);
+
+  if (!selectedRows.length) return null;
+
+  return (
+    <div style={styles.section28Group}>
+      <div style={styles.section28GroupTitle}>סימולציה לחיסכון</div>
+      {selectedRows.map((row, index) => (
+        <Section28DataRow
+          key={`${row.label}-${index}`}
+          row={row}
+          styles={styles}
+          forceHighlight={normalizeSection28Text(row.label).includes("צבירת סכום נטו בחיסכון אישי")}
+        />
+      ))}
+    </div>
+  );
+}
+
+function Section28RetirementSimulation({ group, styles }) {
+  const rows = Array.isArray(group?.rows) ? group.rows.filter((row) => isMeaningfulSection28Value(row.value)) : [];
+  const interestRow = rows.find((row) => normalizeSection28Text(row.label).includes("ריבית שנתית"));
+  const yearsRow = rows.find((row) => normalizeSection28Text(row.label).includes("תקופת משיכה בשנים"));
+
+  const displayRows = rows
+    .filter((row) => {
+      const label = normalizeSection28Text(row.label);
+      return (
+        !label.includes("תגמול נדחה") &&
+        !label.includes("ריבית שנתית") &&
+        !label.includes("תקופת משיכה בשנים")
+      );
+    })
+    .map((row) => ({
+      ...row,
+      label: normalizeSection28Text(row.label).includes("סכום משיכה") ? "קצבה מחושבת" : row.label,
+    }));
+
+  if (!displayRows.length) return null;
+
+  const meta = [
+    interestRow ? `ריבית ${formatSection28DisplayValue(interestRow.value)}` : "",
+    yearsRow ? `${formatSection28DisplayValue(yearsRow.value)} שנים` : "",
+  ].filter(Boolean).join(" · ");
+
+  return (
+    <div style={styles.section28Group}>
+      <div style={styles.section28GroupTitle}>
+        סימולציה לגיל פרישה{meta ? ` (${meta})` : ""}
+      </div>
+      {displayRows.map((row, index) => (
+        <Section28DataRow key={`${row.label}-${index}`} row={row} styles={styles} />
+      ))}
     </div>
   );
 }
 
 function Section28Group({ group, styles }) {
-  const rows = Array.isArray(group?.rows) ? group.rows : [];
+  const rows = Array.isArray(group?.rows)
+    ? group.rows.filter((row) => isMeaningfulSection28Value(row.value))
+    : [];
+
+  if (!rows.length) return null;
 
   return (
     <div style={styles.section28Group}>
       <div style={styles.section28GroupTitle}>{group.title}</div>
 
       {rows.map((row, index) => (
-        <div
+        <Section28DataRow
           key={`${row.label}-${index}`}
-          style={{
-            ...styles.section28Row,
-            borderBottom: index === rows.length - 1 ? "none" : styles.section28Row.borderBottom,
-          }}
-        >
-          <div style={styles.section28Label}>{row.label}</div>
-          <div style={styles.section28Value}>{formatSection28DisplayValue(row.value)}</div>
-        </div>
+          row={row}
+          styles={styles}
+          isLast={index === rows.length - 1}
+          forceHighlight={isSection28ImportantRow(row.label)}
+        />
       ))}
+    </div>
+  );
+}
+
+function Section28DataRow({ row, styles, isLast = false, forceHighlight = false }) {
+  const isHighlighted = forceHighlight || isSection28ImportantRow(row.label);
+
+  const rowStyle = isHighlighted
+    ? {
+        ...styles.section28Row,
+        border: "1px solid #E2D1BF",
+        borderRadius: 14,
+        padding: "10px 12px",
+        marginTop: 8,
+        background: "linear-gradient(135deg, #FFF7E8 0%, #EEF2FA 100%)",
+        boxShadow: "0 4px 12px rgba(0,33,93,0.05)",
+      }
+    : {
+        ...styles.section28Row,
+        borderBottom: isLast ? "none" : styles.section28Row.borderBottom,
+      };
+
+  return (
+    <div style={rowStyle}>
+      <div style={{ ...styles.section28Label, color: isHighlighted ? "#00215D" : styles.section28Label.color, fontWeight: isHighlighted ? 900 : styles.section28Label.fontWeight }}>
+        {row.label}
+      </div>
+      <div style={{ ...styles.section28Value, color: isHighlighted ? "#FF2756" : styles.section28Value.color }}>
+        {formatSection28DisplayValue(row.value)}
+      </div>
+    </div>
+  );
+}
+
+function Section28MonthlySavingRow({ row, styles }) {
+  return (
+    <div
+      style={{
+        border: "1px solid #D8DEE9",
+        borderRadius: 14,
+        background: "linear-gradient(135deg, #00215D 0%, #001845 100%)",
+        color: "#fff",
+        padding: "10px 14px",
+        textAlign: "center",
+        boxShadow: "0 6px 14px rgba(0,33,93,0.10)",
+      }}
+    >
+      <div style={{ fontSize: 11.5, fontWeight: 800, color: "rgba(255,255,255,0.82)", marginBottom: 4 }}>
+        {row.label}
+      </div>
+      <div style={{ fontSize: 14, fontWeight: 900, direction: "ltr" }}>
+        {formatSection28DisplayValue(row.value)}
+      </div>
+    </div>
+  );
+}
+
+function Section28EmptyNote() {
+  return (
+    <div
+      style={{
+        border: "1px dashed #E2D1BF",
+        borderRadius: 12,
+        padding: "10px 12px",
+        color: "#627D98",
+        fontSize: 11,
+        textAlign: "center",
+        background: "#FCFBF8",
+      }}
+    >
+      אין נתון להצגה
     </div>
   );
 }
 
 function Section28ComparisonBars({ rows }) {
   const chartRows = rows.filter((row) => {
-    const label = String(row?.label || "").trim();
-    const normalizedLabel = label
-      .replace(/["״]/g, "")
-      .replace(/\s+/g, "")
-      .replace(/סהכ/g, "סהכ");
-    const isPensionRow = normalizedLabel === "קצבה";
-    const isTotalCapitalRow =
-      normalizedLabel === "סהכהון";
-    const hasValues =
-      parseSection28NumericValue(row.before) ||
-      parseSection28NumericValue(row.after);
-
-    return (isPensionRow || isTotalCapitalRow) && hasValues;
+    const label = normalizeSection28Text(row.label).replace(/סהכ/g, 'סה"כ');
+    const isWantedRow = label === "קצבה" || label.includes('סה"כ הון') || label.includes("סה״כ הון");
+    return isWantedRow && (isMeaningfulSection28Value(row.before) || isMeaningfulSection28Value(row.after));
   });
-
-  if (!chartRows.length) return null;
-
-  const formatBarValue = (value) => formatSection28DisplayValue(value);
+  const maxValue = Math.max(
+    1,
+    ...chartRows.flatMap((row) => [Math.abs(section28NumericValue(row.before)), Math.abs(section28NumericValue(row.after))])
+  );
 
   return (
     <div
@@ -3149,85 +3411,30 @@ function Section28ComparisonBars({ rows }) {
       <div style={{ color: "#00215D", fontSize: 12, fontWeight: 900, marginBottom: 10 }}>
         גרף השוואה
       </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {chartRows.map((row, index) => {
-          const before = Math.abs(parseSection28NumericValue(row.before));
-          const after = Math.abs(parseSection28NumericValue(row.after));
-          const rowMax = Math.max(before, after, 1);
-          const beforeWidth = before ? Math.max((before / rowMax) * 100, 8) : 0;
-          const afterWidth = after ? Math.max((after / rowMax) * 100, 8) : 0;
-
+          const before = Math.abs(section28NumericValue(row.before));
+          const after = Math.abs(section28NumericValue(row.after));
           return (
             <div key={`${row.label}-${index}`}>
-              <div
-                style={{
-                  color: "#00215D",
-                  fontSize: 11,
-                  fontWeight: 900,
-                  marginBottom: 7,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
+              <div style={{ color: "#627D98", fontSize: 10.5, fontWeight: 800, marginBottom: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {row.label}
               </div>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 4 }}>
                 <div>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      gap: 8,
-                      marginBottom: 3,
-                      fontSize: 10.5,
-                      fontWeight: 900,
-                      color: "#627D98",
-                    }}
-                  >
-                    <span>לפני</span>
-                    <span style={{ color: "#00215D", direction: "ltr" }}>{formatBarValue(row.before)}</span>
+                  <div style={{ color: "#00215D", fontSize: 10.5, fontWeight: 900, marginBottom: 3, direction: "ltr", textAlign: "left" }}>
+                    {formatSection28DisplayValue(row.before)}
                   </div>
-                  <div style={{ height: 8, borderRadius: 999, background: "#EAF1FB", overflow: "hidden" }}>
-                    <div
-                      style={{
-                        width: `${beforeWidth}%`,
-                        height: "100%",
-                        background: "linear-gradient(90deg, #C7D1E2, #8F63C9)",
-                        borderRadius: 999,
-                      }}
-                    />
+                  <div style={{ height: 9, borderRadius: 999, background: "#EAF1FB", overflow: "hidden" }}>
+                    <div style={{ width: `${Math.max((before / maxValue) * 100, before ? 4 : 0)}%`, height: "100%", background: "linear-gradient(90deg, #C7D1E2, #EAF1FB)", borderRadius: 999 }} />
                   </div>
                 </div>
-
                 <div>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      gap: 8,
-                      marginBottom: 3,
-                      fontSize: 10.5,
-                      fontWeight: 900,
-                      color: "#627D98",
-                    }}
-                  >
-                    <span>אחרי</span>
-                    <span style={{ color: "#FF2756", direction: "ltr" }}>{formatBarValue(row.after)}</span>
+                  <div style={{ color: "#FF2756", fontSize: 10.5, fontWeight: 900, marginBottom: 3, direction: "ltr", textAlign: "left" }}>
+                    {formatSection28DisplayValue(row.after)}
                   </div>
-                  <div style={{ height: 8, borderRadius: 999, background: "#EAF1FB", overflow: "hidden" }}>
-                    <div
-                      style={{
-                        width: `${afterWidth}%`,
-                        height: "100%",
-                        background: "linear-gradient(90deg, #FF2756, #00215D)",
-                        borderRadius: 999,
-                      }}
-                    />
+                  <div style={{ height: 9, borderRadius: 999, background: "#EAF1FB", overflow: "hidden" }}>
+                    <div style={{ width: `${Math.max((after / maxValue) * 100, after ? 4 : 0)}%`, height: "100%", background: "linear-gradient(90deg, #FF2756, #00215D)", borderRadius: 999 }} />
                   </div>
                 </div>
               </div>
@@ -3235,9 +3442,8 @@ function Section28ComparisonBars({ rows }) {
           );
         })}
       </div>
-
       <div style={{ display: "flex", gap: 12, marginTop: 12, color: "#627D98", fontSize: 10.5, fontWeight: 800 }}>
-        <span><span style={{ color: "#8F63C9" }}>■</span> לפני</span>
+        <span><span style={{ color: "#C7D1E2" }}>■</span> לפני</span>
         <span><span style={{ color: "#FF2756" }}>■</span> אחרי</span>
       </div>
     </div>
@@ -3249,14 +3455,7 @@ function Section28ComparisonTable({ rows, styles }) {
     <div style={{ marginTop: 16 }}>
       <div style={styles.section28GroupTitle}>השוואה בין תרחישים</div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1.22fr) minmax(235px, 0.78fr)",
-          gap: 12,
-          alignItems: "stretch",
-        }}
-      >
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.18fr) minmax(230px, 0.82fr)", gap: 12, alignItems: "stretch" }}>
         <div style={{ ...styles.section28TableWrap, marginTop: 0 }}>
           <table style={{ ...styles.section28Table, minWidth: "560px" }}>
             <thead>
@@ -3271,10 +3470,9 @@ function Section28ComparisonTable({ rows, styles }) {
             <tbody>
               {rows.map((row, index) => {
                 const isTotal = String(row.label || "").includes('סה"כ') ||
-                  String(row.label || "").includes("סה״כ") ||
-                  String(row.label || "").includes("הון");
+                  String(row.label || "").includes("סה״כ");
                 const cellStyle = isTotal ? styles.section28TotalTd : styles.section28Td;
-                const compactCellStyle = { ...cellStyle, fontSize: 10, padding: "8px 6px" };
+                const compactCellStyle = { ...cellStyle, fontSize: 9.5, padding: "7px 5px" };
 
                 return (
                   <tr key={`${row.label}-${index}`}>
