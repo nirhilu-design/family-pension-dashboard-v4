@@ -2993,9 +2993,7 @@ export default function ReportPage({
                 />
               </div>
 
-              <div className="print-only" style={styles.recommendationsPrintText}>
-                {recommendations}
-              </div>
+              {/* Print fallback removed to prevent duplicate recommendations box on screen. */}
             </div>
           </section>
 
@@ -3393,10 +3391,6 @@ function Section28ComparisonBars({ rows }) {
     const isWantedRow = label === "קצבה" || label.includes('סה"כ הון') || label.includes("סה״כ הון");
     return isWantedRow && (isMeaningfulSection28Value(row.before) || isMeaningfulSection28Value(row.after));
   });
-  const maxValue = Math.max(
-    1,
-    ...chartRows.flatMap((row) => [Math.abs(section28NumericValue(row.before)), Math.abs(section28NumericValue(row.after))])
-  );
 
   return (
     <div
@@ -3415,28 +3409,40 @@ function Section28ComparisonBars({ rows }) {
         {chartRows.map((row, index) => {
           const before = Math.abs(section28NumericValue(row.before));
           const after = Math.abs(section28NumericValue(row.after));
+          const rowMaxValue = Math.max(before, after, 1);
+          const isPensionRow = normalizeSection28Text(row.label) === "קצבה";
+          const beforeBar = {
+            value: before,
+            displayValue: row.before,
+            color: "#00215D",
+            fill: "linear-gradient(90deg, #C7D1E2, #EAF1FB)",
+          };
+          const afterBar = {
+            value: after,
+            displayValue: row.after,
+            color: "#FF2756",
+            fill: "linear-gradient(90deg, #FF2756, #00215D)",
+          };
+          const [topBar, bottomBar] = isPensionRow && before > after
+            ? [afterBar, beforeBar]
+            : [beforeBar, afterBar];
+
           return (
             <div key={`${row.label}-${index}`}>
               <div style={{ color: "#627D98", fontSize: 10.5, fontWeight: 800, marginBottom: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {row.label}
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 4 }}>
-                <div>
-                  <div style={{ color: "#00215D", fontSize: 10.5, fontWeight: 900, marginBottom: 3, direction: "ltr", textAlign: "left" }}>
-                    {formatSection28DisplayValue(row.before)}
+                {[topBar, bottomBar].map((bar, barIndex) => (
+                  <div key={barIndex}>
+                    <div style={{ color: bar.color, fontSize: 10.5, fontWeight: 900, marginBottom: 3, direction: "ltr", textAlign: "left" }}>
+                      {formatSection28DisplayValue(bar.displayValue)}
+                    </div>
+                    <div style={{ height: 9, borderRadius: 999, background: "#EAF1FB", overflow: "hidden" }}>
+                      <div style={{ width: `${Math.max((bar.value / rowMaxValue) * 100, bar.value ? 4 : 0)}%`, height: "100%", background: bar.fill, borderRadius: 999 }} />
+                    </div>
                   </div>
-                  <div style={{ height: 9, borderRadius: 999, background: "#EAF1FB", overflow: "hidden" }}>
-                    <div style={{ width: `${Math.max((before / maxValue) * 100, before ? 4 : 0)}%`, height: "100%", background: "linear-gradient(90deg, #C7D1E2, #EAF1FB)", borderRadius: 999 }} />
-                  </div>
-                </div>
-                <div>
-                  <div style={{ color: "#FF2756", fontSize: 10.5, fontWeight: 900, marginBottom: 3, direction: "ltr", textAlign: "left" }}>
-                    {formatSection28DisplayValue(row.after)}
-                  </div>
-                  <div style={{ height: 9, borderRadius: 999, background: "#EAF1FB", overflow: "hidden" }}>
-                    <div style={{ width: `${Math.max((after / maxValue) * 100, after ? 4 : 0)}%`, height: "100%", background: "linear-gradient(90deg, #FF2756, #00215D)", borderRadius: 999 }} />
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           );
