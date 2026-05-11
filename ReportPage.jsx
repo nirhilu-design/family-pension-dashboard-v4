@@ -4890,6 +4890,11 @@ function PrintReportA4({ reportData, recommendations = "" }) {
               <Kpi label="קצבה חודשית צפויה" value={fmtCurrency(family.monthlyPensionWithDeposits)} />
               <Kpi label="צבירה צפויה בפרישה" value={fmtCurrency(family.projectedLumpSumWithDeposits)} />
             </div>
+
+            <div className="print-grid-2" style={{ marginTop: "4mm" }}>
+              <CompareBlock title="צבירה צפויה בגיל פרישה" withValue={family.projectedLumpSumWithDeposits} withoutValue={family.projectedLumpSumWithoutDeposits} />
+              <CompareBlock title="קצבה חודשית בגיל פרישה" withValue={family.monthlyPensionWithDeposits} withoutValue={family.monthlyPensionWithoutDeposits} />
+            </div>
           </div>
 
           <div className="print-cover-pies">
@@ -4918,11 +4923,6 @@ function PrintReportA4({ reportData, recommendations = "" }) {
               <PieBreakdown title={'פירוט חו"ל / ישראל'} items={foreignExposureAllocation} />
             </div>
           </div>
-        </div>
-
-        <div className="print-grid-2" style={{ marginTop: "5mm" }}>
-          <CompareBlock title="צבירה צפויה בגיל פרישה" withValue={family.projectedLumpSumWithDeposits} withoutValue={family.projectedLumpSumWithoutDeposits} />
-          <CompareBlock title="קצבה חודשית בגיל פרישה" withValue={family.monthlyPensionWithDeposits} withoutValue={family.monthlyPensionWithoutDeposits} />
         </div>
       </section>
 
