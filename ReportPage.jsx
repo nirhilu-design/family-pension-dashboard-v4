@@ -4643,7 +4643,8 @@ function PrintReportA4({ reportData, recommendations = "" }) {
     @media print {
       @page { size: A4 portrait; margin: 0; }
       html, body { width: 210mm; margin: 0 !important; padding: 0 !important; background: #fff !important; }
-      .print-report-root { display: block !important; direction: rtl; font-family: Calibri, Arial, sans-serif; color: #102A43; }
+      .print-report-root { display: block !important; direction: rtl; font-family: Calibri, Arial, sans-serif !important; color: #102A43; }
+      .print-report-root, .print-report-root * { font-family: Calibri, Arial, sans-serif !important; }
       .print-a4-page { width: 210mm; height: 297mm; padding: 9mm 10mm; background: #fff; page-break-after: always; break-after: page; overflow: hidden; box-sizing: border-box; position: relative; }
       .print-a4-page:last-child { page-break-after: auto; break-after: auto; }
       .print-page-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 4mm; margin-bottom: 5mm; border-bottom: 1px solid #E2D1BF; }
@@ -4681,7 +4682,14 @@ function PrintReportA4({ reportData, recommendations = "" }) {
       .print-logo-box { width: 38mm; height: 16mm; border: 1px solid rgba(255,255,255,.25); border-radius: 4mm; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 2mm; background: rgba(255,255,255,.10); }
       .print-logo-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
       .print-simple-logo { color: #fff; font-size: 24px; font-weight: 300; direction: ltr; }
-      .print-half-page { min-height: 190mm; }
+      .print-half-page { min-height: auto; }
+      .print-page2-main { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4mm; }
+      .print-page2-main .print-card { min-height: auto !important; }
+      .print-page2-main .print-pie { width: 34mm !important; height: 34mm !important; }
+      .print-page2-main .print-list-row { font-size: 8.4px; padding: 1.05mm 0; }
+      .print-page2-exposure-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4mm; align-items: stretch; }
+      .print-exposure-card { min-height: 73mm; }
+      .print-exposure-card .print-pie { width: 30mm !important; height: 30mm !important; }
       .print-appendix-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 4mm; align-items: start; }
       .print-appendix-block { min-height: 215mm; }
       .print-mini-row { display: grid; grid-template-columns: minmax(0, 1fr) 30mm; gap: 2mm; padding: 1.55mm 0; border-bottom: 1px solid #EEE4D8; font-size: 8.7px; align-items: center; }
@@ -4939,24 +4947,24 @@ function PrintReportA4({ reportData, recommendations = "" }) {
 
       <section className="print-a4-page">
         <PrintHeader title="אפיקים ראשיים וחשיפות" page={2} />
-        <div className="print-grid-2">
-          <div className="print-half-page">
-            <PieBreakdown title="חלוקה עבור אפיקים ראשיים" items={mainGroups} large />
-          </div>
 
-          <div className="print-half-page">
-            <div className="print-card" style={{ minHeight: "112mm" }}>
+        <div className="print-page2-main">
+          <PieBreakdown title="חלוקה עבור אפיקים ראשיים" items={mainGroups} />
+
+          <div className="print-page2-exposure-grid">
+            <div className="print-card print-exposure-card">
               <h3 className="print-section-heading">חשיפות מרכזיות</h3>
-              <div className="print-grid-2" style={{ marginBottom: "5mm" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "4mm" }}>
                 <ExposureCard label="אחוז מניות" value={data.weightedEquityExposure} />
                 <ExposureCard label={'אחוז אחזקה בחו"ל'} value={data.weightedForeignExposure} />
               </div>
+            </div>
+
+            <div className="print-exposure-card">
               <PieBreakdown title={'פירוט חו"ל / ישראל'} items={foreignExposureAllocation} compact />
             </div>
           </div>
         </div>
-
-
       </section>
 
       {shouldShowPensionAppendixPage ? (
