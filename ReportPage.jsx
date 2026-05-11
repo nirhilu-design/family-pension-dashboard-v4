@@ -4607,8 +4607,26 @@ function PrintReportA4({ reportData, recommendations = "" }) {
   const section28Capping = data.section28Capping || null;
   const vestedBalanceTable = data.vestedBalanceTable || null;
   const recognizedPensionAdjustments = Array.isArray(data.recognizedPensionAdjustments) ? data.recognizedPensionAdjustments : [];
-  const hasSection28 = Array.isArray(section28Capping?.groups) && section28Capping.groups.length > 0;
-  const hasVested = (Array.isArray(vestedBalanceTable?.rows) && vestedBalanceTable.rows.length > 0) || recognizedPensionAdjustments.length > 0;
+  const hasSection28 = Boolean(
+    section28Capping &&
+      (
+        (Array.isArray(section28Capping?.groups) && section28Capping.groups.length > 0) ||
+        (Array.isArray(section28Capping?.comparisonRows) && section28Capping.comparisonRows.length > 0) ||
+        section28Capping?.sourceFileName
+      )
+  );
+
+  const hasVested = Boolean(
+    (vestedBalanceTable &&
+      (
+        (Array.isArray(vestedBalanceTable?.rows) && vestedBalanceTable.rows.length > 0) ||
+        vestedBalanceTable?.sourceFileName
+      )) ||
+      recognizedPensionAdjustments.length > 0
+  );
+
+  // In print mode this page must follow the same visibility logic as the on-screen REPORT:
+  // show it whenever section 28 or recognized pension data exists, even if only the source/manual rows exist.
   const shouldShowTaxAppendix = hasSection28 || hasVested;
 
   const fmtCurrency = (value) => `₪${Math.round(Number(value || 0)).toLocaleString("en-US")}`;
@@ -4821,20 +4839,24 @@ function PrintReportA4({ reportData, recommendations = "" }) {
   };
 
   const renderSection28LikeReport = () => {
-    if (!hasSection28) return null;
+    if (!section28Capping) return null;
     return (
       <div className="print-card print-section28-area">
         <h3 className="print-section-heading">קיטום על פי סעיף 28</h3>
         <div className="print-muted" style={{ marginBottom: 10 }}>
           {section28Capping?.sourceFileName ? `מקור הנתונים: ${section28Capping.sourceFileName}` : ""}
         </div>
-        <Section28CappingReport data={section28Capping} styles={section28PrintStyles} />
+        {Array.isArray(section28Capping?.groups) && section28Capping.groups.length > 0 ? (
+          <Section28CappingReport data={section28Capping} styles={section28PrintStyles} />
+        ) : (
+          <div className="print-muted">נמצאו נתוני קיטום לפי סעיף 28, אך לא נמצאו קבוצות להצגה בטבלה.</div>
+        )}
       </div>
     );
   };
 
   const renderRecognizedPension = () => {
-    if (!hasVested) return null;
+    if (!vestedBalanceTable && !recognizedPensionAdjustments.length) return null;
     const pdfRows = Array.isArray(vestedBalanceTable?.rows) ? vestedBalanceTable.rows : [];
     const pdfTotal = getPdfExemptPaymentsTotal(pdfRows);
     const manualRows = getManualRecognizedPensionRows(recognizedPensionAdjustments);
