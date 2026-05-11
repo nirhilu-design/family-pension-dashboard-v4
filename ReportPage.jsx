@@ -4604,14 +4604,14 @@ function PrintReportA4({ reportData, recommendations = "" }) {
   const loans = data.loans || { hasData: false, details: [] };
   const loanDetails = Array.isArray(loans.details) ? loans.details : [];
   const section28Capping = data.section28Capping || null;
-  const section28Groups = Array.isArray(section28Capping?.groups) ? section28Capping.groups : [];
   const vestedBalanceTable = data.vestedBalanceTable || null;
-  const vestedRows = Array.isArray(vestedBalanceTable?.rows) ? vestedBalanceTable.rows : [];
   const recognizedPensionAdjustments = Array.isArray(data.recognizedPensionAdjustments) ? data.recognizedPensionAdjustments : [];
-  const manualRecognizedRows = getManualRecognizedPensionRows(recognizedPensionAdjustments);
-  const hasSection28Capping = section28Groups.length > 0;
-  const hasRecognizedPension = vestedRows.length > 0 || manualRecognizedRows.length > 0;
-  const shouldShowPensionAppendixPage = hasSection28Capping || hasRecognizedPension;
+
+  const hasSection28Capping = Array.isArray(section28Capping?.groups) && section28Capping.groups.length > 0;
+  const hasVestedBalanceTable =
+    (Array.isArray(vestedBalanceTable?.rows) && vestedBalanceTable.rows.length > 0) ||
+    recognizedPensionAdjustments.length > 0;
+  const hasTaxAppendixPage = hasSection28Capping || hasVestedBalanceTable;
 
   const fmtCurrency = (value) => `₪${Math.round(Number(value || 0)).toLocaleString("en-US")}`;
   const fmtPercent = (value) => `${Math.round(Number(value || 0))}%`;
@@ -4626,17 +4626,20 @@ function PrintReportA4({ reportData, recommendations = "" }) {
   const totalLoansAmount = loanDetails.reduce((sum, loan) => sum + Number(loan.amount || 0), 0);
   const totalLoansBalance = loanDetails.reduce((sum, loan) => sum + Number(loan.balance || 0), 0);
   const loanRatioToAssets = Number(family.totalAssets || 0) > 0 ? (totalLoansAmount / Number(family.totalAssets || 0)) * 100 : 0;
-  const pdfRecognizedTotal = getPdfExemptPaymentsTotal(vestedRows);
-  const manualRecognizedTotal = manualRecognizedRows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
 
   const memberPages = [];
   for (let i = 0; i < members.length; i += 2) memberPages.push(members.slice(i, i + 2));
 
-  const appendixPageNumber = 3;
-  const firstMemberPageNumber = shouldShowPensionAppendixPage ? 4 : 3;
-  const loansPageNumber = firstMemberPageNumber + memberPages.length;
+  const taxAppendixPageNumber = 3;
+  const membersStartPage = hasTaxAppendixPage ? 4 : 3;
+  const loansPageNumber = membersStartPage + memberPages.length;
 
   const colors = ["#00215D", "#FF2756", "#1F77B4", "#43B5D9", "#8F63C9", "#F0B43C", "#58BF78", "#A8B0BA"];
+
+  const cleanItems = (items) => (Array.isArray(items) ? items : [])
+    .map((item) => ({ name: item.name || "ללא שם", value: Number(item.value || item.percent || 0) }))
+    .filter((item) => item.value > 0)
+    .sort((a, b) => b.value - a.value);
 
   const css = `
     @media screen { .print-report-root { display: none; } }
@@ -4644,93 +4647,112 @@ function PrintReportA4({ reportData, recommendations = "" }) {
       @page { size: A4 portrait; margin: 0; }
       html, body { width: 210mm; margin: 0 !important; padding: 0 !important; background: #fff !important; }
       .print-report-root { display: block !important; direction: rtl; font-family: Calibri, Arial, sans-serif; color: #102A43; }
-      .print-a4-page { width: 210mm; height: 297mm; padding: 9mm 10mm; background: #fff; page-break-after: always; break-after: page; overflow: hidden; box-sizing: border-box; position: relative; }
+      .print-a4-page { width: 210mm; height: 297mm; padding: 9mm; background: #fff; page-break-after: always; break-after: page; overflow: hidden; box-sizing: border-box; position: relative; }
       .print-a4-page:last-child { page-break-after: auto; break-after: auto; }
-      .print-page-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 4mm; margin-bottom: 5mm; border-bottom: 1px solid #E2D1BF; }
-      .print-logo-text { color: #00215D; font-size: 22px; font-weight: 300; direction: ltr; }
-      .print-page-title { color: #00215D; font-size: 18px; font-weight: 900; margin: 0; }
-      .print-muted { color: #627D98; font-size: 10.5px; line-height: 1.55; }
+      .print-page-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 4mm; margin-bottom: 5mm; border-bottom: 1.4px solid #00215D; }
+      .print-brand { display: flex; align-items: center; gap: 3mm; direction: ltr; }
+      .print-logo-text { color: #00215D; font-size: 18px; font-weight: 900; direction: ltr; line-height: 1; }
+      .print-logo-sub { color: #8AA0B8; font-size: 7px; letter-spacing: .5px; direction: ltr; margin-top: 1mm; }
+      .print-page-title { color: #00215D; font-size: 15px; font-weight: 900; margin: 0; }
+      .print-muted { color: #8AA0B8; font-size: 9.5px; line-height: 1.55; }
       .print-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4mm; }
-      .print-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4mm; }
+      .print-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3mm; }
       .print-grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3mm; }
-      .print-card { border: 1px solid #E2D1BF; border-radius: 5mm; padding: 4mm; background: #FFFFFF; break-inside: avoid; page-break-inside: avoid; }
-      .print-card-soft { background: #FCFBF8; border: 1px solid #EEE4D8; border-radius: 4mm; padding: 3.5mm; }
-      .print-kpi-label { color: #627D98; font-size: 10.5px; font-weight: 800; margin-bottom: 2mm; }
-      .print-kpi-value { color: #00215D; font-size: 19px; font-weight: 900; line-height: 1.1; direction: ltr; text-align: right; }
-      .print-section-heading { color: #00215D; font-size: 13px; font-weight: 900; margin: 0 0 3mm; }
-      .print-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 8.5px; }
-      .print-table th { background: #00215D; color: white; padding: 1.8mm; border-left: 1px solid rgba(255,255,255,.22); font-weight: 900; }
-      .print-table td { padding: 1.8mm; border: 1px solid #EEE4D8; vertical-align: top; word-break: break-word; }
-      .print-bar-track { height: 6mm; background: #EAF1FB; border-radius: 999px; overflow: hidden; }
+      .print-card { border: 1px solid #D8DEE9; border-radius: 3mm; padding: 3.5mm; background: #FFFFFF; break-inside: avoid; page-break-inside: avoid; }
+      .print-card-soft { background: #FCFBF8; border: 1px solid #EEE4D8; border-radius: 3mm; padding: 3mm; }
+      .print-card-gold { background: #FFF7E8; border-color: #D6A13A; }
+      .print-kpi-label { color: #8AA0B8; font-size: 9.5px; font-weight: 800; margin-bottom: 1.5mm; text-align: center; }
+      .print-kpi-value { color: #00215D; font-size: 16px; font-weight: 900; line-height: 1.1; direction: ltr; text-align: center; }
+      .print-kpi-note { color: #8AA0B8; font-size: 8.5px; text-align: center; margin-top: 1.5mm; }
+      .print-section-heading { color: #00215D; font-size: 12px; font-weight: 900; margin: 0 0 3mm; }
+      .print-banner { background: linear-gradient(135deg, #00215D, #001845); color: white; border-radius: 3mm; padding: 7mm; min-height: 25mm; display: grid; grid-template-columns: 1fr auto; align-items: center; margin-bottom: 7mm; }
+      .print-banner-title { font-size: 20px; font-weight: 900; margin: 0 0 2mm; color: white; }
+      .print-banner-text { color: rgba(255,255,255,.82); font-size: 10.5px; line-height: 1.65; max-width: 128mm; }
+      .print-pill { display: inline-flex; align-items: center; justify-content: center; background: #D6A13A; color: white; border-radius: 999px; padding: 2mm 5mm; font-size: 9px; font-weight: 900; white-space: nowrap; }
+      .print-donut-card { min-height: 88mm; }
+      .print-donut-layout { display: grid; grid-template-columns: 1fr 42mm; gap: 4mm; align-items: center; }
+      .print-donut { width: 42mm; height: 42mm; border-radius: 50%; position: relative; box-shadow: inset 0 0 0 2px rgba(255,255,255,.95), 0 4px 10px rgba(0,33,93,.12); }
+      .print-donut-hole { position: absolute; inset: 12mm; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-align: center; flex-direction: column; }
+      .print-donut-percent { color: #00215D; font-size: 17px; font-weight: 900; direction: ltr; line-height: 1; }
+      .print-donut-label { color: #8AA0B8; font-size: 8.5px; margin-top: 1mm; max-width: 18mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .print-list-row { display: grid; grid-template-columns: 15mm minmax(0, 1fr) 26mm; gap: 2mm; align-items: center; border-bottom: 1px solid #EEE4D8; padding: 2mm 0; font-size: 8.8px; }
+      .print-swatch { width: 2.6mm; height: 2.6mm; border-radius: 50%; display: inline-block; margin-left: 2mm; }
+      .print-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 8.2px; }
+      .print-table th { background: #00215D; color: white; padding: 1.7mm; border-left: 1px solid rgba(255,255,255,.22); font-weight: 900; line-height: 1.25; }
+      .print-table td { padding: 1.7mm; border: 1px solid #EEE4D8; vertical-align: top; line-height: 1.25; word-break: break-word; }
+      .print-table-total td, .print-highlight-row td { background: #EEF2FA; color: #00215D; font-weight: 900; }
+      .print-highlight-row td:last-child { color: #FF2756; }
+      .print-bar-track { height: 5mm; background: #EAF1FB; border-radius: 999px; overflow: hidden; }
       .print-bar-fill { height: 100%; background: linear-gradient(90deg, #FF2756, #00215D); border-radius: 999px; }
-      .print-footer { position: absolute; bottom: 6mm; right: 10mm; left: 10mm; display: flex; justify-content: space-between; color: #8AA0B8; font-size: 9px; border-top: 1px solid #EEE4D8; padding-top: 3mm; }
-      .print-list-row { display: grid; grid-template-columns: 20mm minmax(0, 1fr) 28mm; gap: 2mm; align-items: center; border-bottom: 1px solid #EEE4D8; padding: 1.7mm 0; font-size: 9.2px; }
-      .print-swatch { width: 3mm; height: 3mm; border-radius: 50%; display: inline-block; margin-left: 2mm; }
-      .print-pie { width: 42mm; height: 42mm; border-radius: 50%; position: relative; box-shadow: inset 0 0 0 2px rgba(255,255,255,.95), inset 0 -5px 9px rgba(0,0,0,.12), 0 5px 12px rgba(0,33,93,.10); flex: 0 0 auto; }
-      .print-pie::after { content: ""; position: absolute; inset: 30%; border-radius: 50%; background: #fff; box-shadow: inset 0 4px 8px rgba(0,33,93,.06); }
-      .print-cover-top { background: linear-gradient(135deg, #00215D, #001845); color: #fff; border-radius: 8mm; padding: 8mm; height: 85mm; box-sizing: border-box; }
-      .print-cover-title { font-size: 28px; line-height: 1.18; margin: 8mm 0 4mm; font-weight: 900; text-align: center; }
-      .print-cover-subtitle { max-width: 158mm; margin: 0 auto; color: rgba(255,255,255,.86); text-align: center; font-size: 12px; line-height: 1.8; }
-      .print-cover-body { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; margin-top: 6mm; height: 169mm; }
-      .print-cover-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; align-content: start; }
-      .print-cover-pies { display: grid; grid-template-rows: 1fr 1fr; gap: 4mm; }
-      .print-logo-box { width: 38mm; height: 16mm; border: 1px solid rgba(255,255,255,.25); border-radius: 4mm; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 2mm; background: rgba(255,255,255,.10); }
-      .print-logo-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
-      .print-simple-logo { color: #fff; font-size: 24px; font-weight: 300; direction: ltr; }
-      .print-half-page { height: 123mm; }
-      .print-appendix-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; align-items: start; }
-      .print-appendix-block { min-height: 215mm; }
-      .print-mini-row { display: grid; grid-template-columns: minmax(0, 1fr) 32mm; gap: 2mm; padding: 1.7mm 0; border-bottom: 1px solid #EEE4D8; font-size: 9px; align-items: center; }
-      .print-mini-value { color: #00215D; font-weight: 900; direction: ltr; text-align: left; white-space: nowrap; }
+      .print-footer { position: absolute; bottom: 5mm; right: 9mm; left: 9mm; display: flex; justify-content: space-between; color: #8AA0B8; font-size: 8.5px; border-top: 1px solid #EEE4D8; padding-top: 2.5mm; }
+      .print-stack { display: flex; flex-direction: column; gap: 4mm; }
+      .print-two-halves { display: grid; grid-template-rows: 1fr 1fr; gap: 4mm; height: 245mm; }
+      .print-section-28-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3mm; }
+      .print-section-28-box { border: 1px solid #EEE4D8; border-radius: 3mm; padding: 3mm; background: #FCFBF8; break-inside: avoid; }
+      .print-section-28-title { color: #00215D; font-size: 10px; font-weight: 900; margin-bottom: 2mm; padding-bottom: 1.5mm; border-bottom: 1px solid #EEE4D8; }
+      .print-appendix-scroll { max-height: 108mm; overflow: hidden; }
     }
   `;
+
+  const LogoMark = ({ light = false }) => (
+    <div style={{ width: 22, height: 22, borderRadius: "50%", background: light ? "rgba(255,255,255,.13)" : "#00215D", position: "relative", border: light ? "1px solid rgba(255,255,255,.25)" : "none" }}>
+      <span style={{ position: "absolute", width: 11, height: 4, borderRadius: 99, background: "#FF2756", top: 7, left: 7, transform: "rotate(-35deg)" }} />
+      <span style={{ position: "absolute", width: 11, height: 4, borderRadius: 99, background: "#fff", top: 12, left: 5, transform: "rotate(-35deg)" }} />
+    </div>
+  );
+
+  const ZviranBrand = () => (
+    <div className="print-brand">
+      <LogoMark />
+      <div>
+        <div className="print-logo-text">Zviran</div>
+        <div className="print-logo-sub">TOTAL REWARDS EXPERTS</div>
+      </div>
+    </div>
+  );
 
   const PrintHeader = ({ title, page }) => (
     <>
       <div className="print-page-header">
-        <h2 className="print-page-title">{title}</h2>
-        <div className="print-logo-text">zviran</div>
+        <div>
+          <h2 className="print-page-title">{title}</h2>
+          <div className="print-muted">תאריך עדכון: {family.lastUpdated || "—"}</div>
+        </div>
+        <ZviranBrand />
       </div>
       <div className="print-footer"><span>Zviran · Total Rewards Experts</span><span>עמוד {page}</span></div>
     </>
   );
 
-  const Kpi = ({ label, value, note }) => (
-    <div className="print-card">
+  const Kpi = ({ label, value, note, gold = false }) => (
+    <div className={`print-card ${gold ? "print-card-gold" : ""}`}>
       <div className="print-kpi-label">{label}</div>
       <div className="print-kpi-value">{value}</div>
-      {note ? <div className="print-muted" style={{ marginTop: 6 }}>{note}</div> : null}
+      {note ? <div className="print-kpi-note">{note}</div> : null}
     </div>
   );
 
-  const getPieData = (items) => {
-    const clean = (Array.isArray(items) ? items : [])
-      .map((item) => ({ name: item.name || "ללא שם", value: Number(item.value || 0) }))
-      .filter((item) => item.value > 0)
-      .sort((a, b) => b.value - a.value);
+  const DonutBreakdown = ({ title, items, centerLabel }) => {
+    const clean = cleanItems(items);
     const total = clean.reduce((sum, item) => sum + item.value, 0) || 1;
     let current = 0;
     const segments = clean.map((item, index) => {
-      const percent = (item.value / total) * 100;
-      const start = current;
-      const end = current + percent;
-      current = end;
-      return { ...item, percent, start, end, color: colors[index % colors.length] };
+      const pct = (item.value / total) * 100;
+      const seg = { ...item, pct, start: current, end: current + pct, color: colors[index % colors.length] };
+      current += pct;
+      return seg;
     });
-    const gradient = segments.length ? segments.map((seg) => `${seg.color} ${seg.start}% ${seg.end}%`).join(", ") : "#D7DEE7 0% 100%";
-    return { clean, segments, total, gradient };
-  };
+    const gradient = segments.length ? segments.map((seg) => `${seg.color} ${seg.start}% ${seg.end}%`).join(", ") : "#D8DEE9 0% 100%";
+    const leading = segments[0];
 
-  const PieBreakdown = ({ title, items, large = false }) => {
-    const { segments, total, gradient } = getPieData(items);
     return (
-      <div className="print-card" style={{ minHeight: large ? "112mm" : "auto" }}>
+      <div className="print-card print-donut-card">
         <h3 className="print-section-heading">{title}</h3>
-        <div style={{ display: "grid", gridTemplateColumns: large ? "1fr 58mm" : "1fr 45mm", gap: "4mm", alignItems: "center" }}>
+        <div className="print-donut-layout">
           <div>
-            {segments.slice(0, large ? 10 : 6).map((item, index) => (
+            {segments.slice(0, 7).map((item, index) => (
               <div className="print-list-row" key={`${title}-${item.name}-${index}`}>
-                <div style={{ direction: "ltr", color: "#00215D", fontWeight: 900 }}>{Math.round(item.percent)}%</div>
+                <div style={{ direction: "ltr", color: "#00215D", fontWeight: 900 }}>{Math.round(item.pct)}%</div>
                 <div style={{ minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={item.name}>
                   <span className="print-swatch" style={{ background: item.color }} />{item.name}
                 </div>
@@ -4739,25 +4761,16 @@ function PrintReportA4({ reportData, recommendations = "" }) {
             ))}
             {!segments.length ? <div className="print-muted">אין נתונים להצגה</div> : null}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "3mm" }}>
-            <div className="print-pie" style={{ width: large ? "56mm" : "42mm", height: large ? "56mm" : "42mm", background: `conic-gradient(${gradient})` }} />
-            <div style={{ color: "#627D98", fontSize: 9.5, fontWeight: 800 }}>סה״כ</div>
-            <div style={{ color: "#00215D", fontSize: large ? 16 : 13, fontWeight: 900, direction: "ltr" }}>{fmtCurrency(total)}</div>
+          <div className="print-donut" style={{ background: `conic-gradient(${gradient})` }}>
+            <div className="print-donut-hole">
+              <div className="print-donut-percent">{leading ? `${Math.round(leading.pct)}%` : "—"}</div>
+              <div className="print-donut-label">{centerLabel || leading?.name || ""}</div>
+            </div>
           </div>
         </div>
       </div>
     );
   };
-
-  const ExposureCard = ({ label, value }) => (
-    <div className="print-card-soft">
-      <div className="print-kpi-label">{label}</div>
-      <div className="print-kpi-value">{fmtPercent(value)}</div>
-      <div className="print-bar-track" style={{ marginTop: "3mm" }}>
-        <div className="print-bar-fill" style={{ width: `${Math.max(Math.min(Number(value || 0), 100), 0)}%` }} />
-      </div>
-    </div>
-  );
 
   const CompareBlock = ({ title, withValue, withoutValue, withLabel = "עם הפקדות", withoutLabel = "ללא הפקדות" }) => {
     const maxValue = Math.max(Number(withValue || 0), Number(withoutValue || 0), 1);
@@ -4768,8 +4781,8 @@ function PrintReportA4({ reportData, recommendations = "" }) {
           { label: withLabel, value: Number(withValue || 0) },
           { label: withoutLabel, value: Number(withoutValue || 0) },
         ].map((row) => (
-          <div key={row.label} style={{ marginBottom: 12 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5, fontSize: 10.5, fontWeight: 800 }}>
+          <div key={row.label} style={{ marginBottom: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5, fontSize: 9.5, fontWeight: 800 }}>
               <span>{row.label}</span><span style={{ direction: "ltr" }}>{fmtCurrency(row.value)}</span>
             </div>
             <div className="print-bar-track"><div className="print-bar-fill" style={{ width: `${Math.max((row.value / maxValue) * 100, row.value ? 5 : 0)}%` }} /></div>
@@ -4779,158 +4792,216 @@ function PrintReportA4({ reportData, recommendations = "" }) {
     );
   };
 
-  const Section28PrintSummary = () => {
-    if (!hasSection28Capping) {
-      return <div className="print-muted">לא קיימים נתוני סעיף 28 בדוח.</div>;
-    }
+  const ExposureBlock = () => (
+    <div className="print-card" style={{ height: "100%" }}>
+      <h3 className="print-section-heading">חשיפות מרכזיות</h3>
+      <div className="print-grid-2" style={{ marginBottom: "4mm" }}>
+        <Kpi label="חשיפה מנייתית" value={fmtPercent(data.weightedEquityExposure)} note="חשיפה משוקללת לכלל הנכסים" />
+        <Kpi label={'אחזקה / חשיפה לחו"ל'} value={fmtPercent(data.weightedForeignExposure)} note="על בסיס נתוני Exposures" />
+      </div>
+      <DonutBreakdown title={'פירוט חו"ל / ישראל'} items={foreignExposureAllocation} centerLabel="חשיפה" />
+    </div>
+  );
+
+  const Section28Print = () => {
+    const groups = Array.isArray(section28Capping?.groups) ? section28Capping.groups : [];
+    const visibleGroups = groups.filter((group) => !normalizeSection28Text(group?.title).includes("נתוני בסיס"));
+    const comparisonRows = Array.isArray(section28Capping?.comparisonRows) ? section28Capping.comparisonRows : [];
+
+    if (!visibleGroups.length && !comparisonRows.length) return null;
 
     return (
-      <div>
-        {section28Groups.slice(0, 4).map((group, groupIndex) => {
-          const rows = Array.isArray(group?.rows) ? group.rows.filter((row) => isMeaningfulSection28Value(row.value)).slice(0, 7) : [];
-          return (
-            <div className="print-card-soft" style={{ marginBottom: "3mm" }} key={group.id || group.title || groupIndex}>
-              <div style={{ color: "#00215D", fontWeight: 900, fontSize: 10.5, marginBottom: "1.5mm" }}>{group.title || "סעיף 28"}</div>
-              {rows.map((row, index) => (
-                <div className="print-mini-row" key={`${row.label}-${index}`}>
-                  <div style={{ minWidth: 0 }}>{row.label}</div>
-                  <div className="print-mini-value">{formatSection28DisplayValue(row.value)}</div>
-                </div>
-              ))}
-              {!rows.length ? <div className="print-muted">אין נתון להצגה</div> : null}
+      <div className="print-card">
+        <h3 className="print-section-heading">קיטום על פי סעיף 28</h3>
+        {section28Capping?.sourceFileName ? <div className="print-muted" style={{ marginBottom: 8 }}>מקור הנתונים: {section28Capping.sourceFileName}</div> : null}
+        <div className="print-appendix-scroll">
+          {visibleGroups.length ? (
+            <div className="print-section-28-grid">
+              {visibleGroups.slice(0, 4).map((group) => {
+                const rows = Array.isArray(group?.rows) ? group.rows.filter((row) => isMeaningfulSection28Value(row.value)).slice(0, 8) : [];
+                if (!rows.length) return null;
+                return (
+                  <div className="print-section-28-box" key={group.id || group.title}>
+                    <div className="print-section-28-title">{group.title}</div>
+                    <table className="print-table">
+                      <tbody>
+                        {rows.map((row, index) => {
+                          const isHighlighted = isSection28ImportantRow(row.label) || isSection28MonthlySavingRow(row.label);
+                          return (
+                            <tr className={isHighlighted ? "print-highlight-row" : ""} key={`${group.title}-${row.label}-${index}`}>
+                              <td>{row.label}</td>
+                              <td style={{ direction: "ltr", textAlign: "left", fontWeight: isHighlighted ? 900 : 700 }}>{formatSection28DisplayValue(row.value)}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })}
             </div>
-          );
-        })}
+          ) : null}
+
+          {comparisonRows.length ? (
+            <div style={{ marginTop: "4mm" }}>
+              <div className="print-section-28-title">השוואה בין תרחישים</div>
+              <table className="print-table">
+                <thead>
+                  <tr><th>סעיף</th><th>לפני קיטום</th><th>אחרי קיטום</th><th>פער</th></tr>
+                </thead>
+                <tbody>
+                  {comparisonRows.slice(0, 8).map((row, index) => {
+                    const isTotal = String(row.label || "").includes('סה"כ') || String(row.label || "").includes("סה״כ");
+                    return (
+                      <tr className={isTotal ? "print-highlight-row" : ""} key={`${row.label}-${index}`}>
+                        <td>{row.label}</td>
+                        <td>{formatSection28DisplayValue(row.before)}</td>
+                        <td>{formatSection28DisplayValue(row.after)}</td>
+                        <td>{formatSection28DisplayValue(row.gap)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+        </div>
       </div>
     );
   };
 
-  const RecognizedPensionPrintSummary = () => (
-    <div>
-      {vestedRows.length ? (
-        <div className="print-card-soft" style={{ marginBottom: "3mm" }}>
-          <div style={{ color: "#00215D", fontWeight: 900, fontSize: 10.5, marginBottom: "2mm" }}>טבלת חישוב מתוך PDF</div>
-          <Kpi label="סה״כ תשלומים פטורים" value={formatReportNumber(pdfRecognizedTotal)} />
-          <table className="print-table" style={{ marginTop: "3mm" }}>
-            <thead><tr><th>שם הקופה</th><th>תשלומים פטורים</th><th>קצבה מוכרת</th></tr></thead>
-            <tbody>{vestedRows.slice(0, 6).map((row, index) => <tr key={row.id || index}><td>{row.fundName || "—"}</td><td>{row.exemptPayments || "—"}</td><td>{row.pension || "—"}</td></tr>)}</tbody>
-          </table>
-        </div>
-      ) : null}
+  const VestedPrint = () => {
+    const pdfRows = Array.isArray(vestedBalanceTable?.rows) ? vestedBalanceTable.rows : [];
+    const manualRows = getManualRecognizedPensionRows(recognizedPensionAdjustments);
+    if (!pdfRows.length && !manualRows.length) return null;
+    const pdfTotal = getPdfExemptPaymentsTotal(pdfRows);
+    const manualTotal = manualRows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
+    const gap = pdfTotal - manualTotal;
 
-      {manualRecognizedRows.length ? (
-        <div className="print-card-soft" style={{ marginBottom: "3mm" }}>
-          <div style={{ color: "#00215D", fontWeight: 900, fontSize: 10.5, marginBottom: "2mm" }}>קצבה מוכרת שהוזנה ידנית</div>
-          <Kpi label="סה״כ קצבה מוכרת" value={formatReportNumber(manualRecognizedTotal)} />
-          <table className="print-table" style={{ marginTop: "3mm" }}>
-            <thead><tr><th>חברת ביטוח</th><th>סכום</th></tr></thead>
-            <tbody>{manualRecognizedRows.slice(0, 7).map((row) => <tr key={row.id}><td>{row.companyName}</td><td>{formatReportNumber(row.amount)}</td></tr>)}</tbody>
-          </table>
-        </div>
-      ) : null}
+    return (
+      <div className="print-card">
+        <h3 className="print-section-heading">צבירה / קצבה מוכרת</h3>
+        {vestedBalanceTable?.sourceFileName ? <div className="print-muted" style={{ marginBottom: 8 }}>מקור הנתונים: {vestedBalanceTable.sourceFileName}</div> : null}
+        <div className="print-appendix-scroll">
+          {pdfRows.length ? (
+            <table className="print-table" style={{ marginBottom: "4mm" }}>
+              <thead>
+                <tr><th>שם הקופה</th><th>תגמולים עד 2011</th><th>תגמולים מ־2012</th><th>פיצויים מ־2017</th><th>תשלומים פטורים</th><th>קצבה</th></tr>
+              </thead>
+              <tbody>
+                {pdfRows.slice(0, 8).map((row, index) => {
+                  const isTotal = isVestedTotalRow(row);
+                  return (
+                    <tr className={isTotal ? "print-highlight-row" : ""} key={row.id || index}>
+                      <td>{row.fundName || "—"}</td>
+                      <td>{row.rewardsUntil2011 || "—"}</td>
+                      <td>{row.rewardsFrom2012 || "—"}</td>
+                      <td>{row.severanceFrom2017 || "—"}</td>
+                      <td>{row.exemptPayments || "—"}</td>
+                      <td>{row.pension || "—"}</td>
+                    </tr>
+                  );
+                })}
+                <tr className="print-highlight-row"><td>סה״כ תשלומים פטורים</td><td colSpan="5">{formatReportNumber(pdfTotal)}</td></tr>
+              </tbody>
+            </table>
+          ) : null}
 
-      {pdfRecognizedTotal > 0 && manualRecognizedTotal > 0 ? (
-        <div className="print-card-soft">
-          <div style={{ color: "#627D98", fontSize: 10.5, marginBottom: "1mm" }}>פער הצבירה לחיסכון במס</div>
-          <div style={{ color: "#00215D", fontSize: 18, fontWeight: 900, direction: "ltr" }}>{formatReportNumber(pdfRecognizedTotal - manualRecognizedTotal)}</div>
-        </div>
-      ) : null}
+          {manualRows.length ? (
+            <table className="print-table" style={{ marginBottom: "4mm" }}>
+              <thead><tr><th>חברת ביטוח</th><th>קצבה מוכרת שהוזנה</th></tr></thead>
+              <tbody>
+                {manualRows.map((row) => <tr key={row.id}><td>{row.companyName}</td><td>{formatReportNumber(row.amount)}</td></tr>)}
+                <tr className="print-highlight-row"><td>סה״כ קצבה מוכרת</td><td>{formatReportNumber(manualTotal)}</td></tr>
+              </tbody>
+            </table>
+          ) : null}
 
-      {!vestedRows.length && !manualRecognizedRows.length ? <div className="print-muted">לא קיימים נתוני קצבה מוכרת בדוח.</div> : null}
-    </div>
-  );
+          {pdfTotal > 0 && manualTotal > 0 ? (
+            <div className="print-card-soft" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontWeight: 900 }}>
+              <span>פער הצבירה לחיסכון במס</span>
+              <span style={{ direction: "ltr", color: gap >= 0 ? "#00215D" : "#B42318", fontSize: 14 }}>{formatReportNumber(gap)}</span>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="print-report-root" aria-hidden="true">
       <style>{css}</style>
 
       <section className="print-a4-page">
-        <div className="print-cover-top">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8mm" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "4mm", direction: "ltr" }}>
-              <ZviranLogo light />
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: "4mm" }}>
-              {data?.clientLogo ? (
-                <div className="print-logo-box">
-                  <img src={data.clientLogo} alt="לוגו חברה" />
-                </div>
-              ) : null}
-              <div style={{ color: "rgba(255,255,255,.78)", fontSize: 12, whiteSpace: "nowrap" }}>תאריך עדכון: {family.lastUpdated || "—"}</div>
-            </div>
+        <div className="print-page-header">
+          <div>
+            <h2 className="print-page-title">דוח פנסיוני משפחתי מאוחד</h2>
+            <div className="print-muted">תאריך עדכון: {family.lastUpdated || "—"}</div>
           </div>
-
-          <h1 className="print-cover-title">דוח פנסיוני משפחתי מאוחד</h1>
-          <div className="print-cover-subtitle">
-            אנו מבקשים להציג לך את הנכסים שנצברו במבט משפחתי מרוכז לעיונכם, כולל תמונת מצב של חסכונות, הפקדות, גופים מנהלים, אפיקי השקעה ונתונים מרכזיים נוספים.
+          <div style={{ display: "flex", alignItems: "center", gap: "6mm" }}>
+            {data.clientLogo ? (
+              <div style={{ width: "38mm", height: "15mm", border: "1px solid #D8DEE9", borderRadius: "3mm", display: "flex", alignItems: "center", justifyContent: "center", padding: "2mm", overflow: "hidden" }}>
+                <img src={data.clientLogo} alt="לוגו חברה" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+              </div>
+            ) : null}
+            <ZviranBrand />
           </div>
         </div>
 
-        <div className="print-cover-body">
+        <div className="print-banner">
           <div>
-            <h3 className="print-section-heading">נתונים מרכזיים</h3>
-            <div className="print-cover-kpis">
-              <Kpi label="סך נכסים" value={fmtCurrency(family.totalAssets)} />
-              <Kpi label="הפקדה חודשית" value={fmtCurrency(family.monthlyDeposits)} />
-              <Kpi label="קצבה חודשית צפויה" value={fmtCurrency(family.monthlyPensionWithDeposits)} />
-              <Kpi label="צבירה צפויה בפרישה" value={fmtCurrency(family.projectedLumpSumWithDeposits)} />
-            </div>
+            <h1 className="print-banner-title">משפחת {family.clientName || family.name || "[שם הלקוח]"}</h1>
+            <div className="print-banner-text">אנו מבקשים להציג לך את הנכסים שנצברו במבט משפחתי לעיונכם, כולל תמונת מצב עדכנית של הנכסים, תחזיות הפרישה, פיזור ההשקעות והכיסויים המרכזיים.</div>
           </div>
+          <div className="print-pill">סודי ללקוח בלבד</div>
+        </div>
 
-          <div className="print-cover-pies">
-            <PieBreakdown title="חלוקה לפי מוצרים" items={products} />
-            <PieBreakdown title="חלוקה לפי גופים מנהלים" items={managers} />
-          </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "2mm", marginBottom: "3mm" }}>
+          <span style={{ width: 2, height: 15, background: "#D6A13A", display: "inline-block" }} />
+          <h3 className="print-section-heading" style={{ margin: 0 }}>נתונים מרכזיים</h3>
+        </div>
+
+        <div className="print-grid-4" style={{ marginBottom: "5mm" }}>
+          <Kpi gold label="סך נכסים" value={fmtCurrency(family.totalAssets)} note="נכסים פנסיוניים כלל משפחתיים" />
+          <Kpi label="הפקדה חודשית" value={fmtCurrency(family.monthlyDeposits)} note="סך ההפקדות השוטפות" />
+          <Kpi label="קצבה חודשית צפויה" value={fmtCurrency(family.monthlyPensionWithDeposits)} note="עם המשך הפקדות" />
+          <Kpi label="צבירה צפויה בפרישה" value={fmtCurrency(family.projectedLumpSumWithDeposits)} note="ערך מהוון לגיל פרישה" />
+        </div>
+
+        <div className="print-grid-2" style={{ marginBottom: "4mm" }}>
+          <CompareBlock title="צבירה לפרישה" withValue={family.projectedLumpSumWithDeposits} withoutValue={family.projectedLumpSumWithoutDeposits} />
+          <CompareBlock title="קצבה לפרישה" withValue={family.monthlyPensionWithDeposits} withoutValue={family.monthlyPensionWithoutDeposits} />
+        </div>
+
+        <div className="print-grid-2">
+          <DonutBreakdown title="חלוקה לפי מוצרים" items={products} />
+          <DonutBreakdown title="חלוקה לפי גופים מנהלים" items={managers} />
         </div>
 
         <div className="print-footer"><span>Zviran · Total Rewards Experts</span><span>עמוד 1</span></div>
       </section>
 
       <section className="print-a4-page">
-        <PrintHeader title="אפיקים ראשיים וחשיפות" page={2} />
-        <div className="print-grid-2">
-          <div className="print-half-page">
-            <PieBreakdown title="חלוקה עבור אפיקים ראשיים" items={mainGroups} large />
-          </div>
-
-          <div className="print-half-page">
-            <div className="print-card" style={{ minHeight: "112mm" }}>
-              <h3 className="print-section-heading">חשיפות מרכזיות</h3>
-              <div className="print-grid-2" style={{ marginBottom: "5mm" }}>
-                <ExposureCard label="אחוז מניות" value={data.weightedEquityExposure} />
-                <ExposureCard label={'אחוז אחזקה בחו"ל'} value={data.weightedForeignExposure} />
-              </div>
-              <PieBreakdown title={'פירוט חו"ל / ישראל'} items={foreignExposureAllocation} />
-            </div>
-          </div>
-        </div>
-
-        <div className="print-grid-2" style={{ marginTop: "5mm" }}>
-          <CompareBlock title="צבירה צפויה בגיל פרישה" withValue={family.projectedLumpSumWithDeposits} withoutValue={family.projectedLumpSumWithoutDeposits} />
-          <CompareBlock title="קצבה חודשית בגיל פרישה" withValue={family.monthlyPensionWithDeposits} withoutValue={family.monthlyPensionWithoutDeposits} />
+        <PrintHeader title="אפיקים וחשיפות" page={2} />
+        <div className="print-two-halves">
+          <DonutBreakdown title="חלוקה עבור אפיקים ראשיים" items={mainGroups} centerLabel="אפיק מרכזי" />
+          <ExposureBlock />
         </div>
       </section>
 
-      {shouldShowPensionAppendixPage ? (
+      {hasTaxAppendixPage ? (
         <section className="print-a4-page">
-          <PrintHeader title="סעיף 28 וקצבה מוכרת" page={appendixPageNumber} />
-          <div className="print-appendix-grid">
-            <div className="print-card print-appendix-block">
-              <h3 className="print-section-heading">קיטום על פי סעיף 28</h3>
-              <Section28PrintSummary />
-            </div>
-            <div className="print-card print-appendix-block">
-              <h3 className="print-section-heading">צבירה מוכרת / קצבה מוכרת</h3>
-              <RecognizedPensionPrintSummary />
-            </div>
+          <PrintHeader title="נספחי מס וקצבה מוכרת" page={taxAppendixPageNumber} />
+          <div className="print-stack">
+            {hasSection28Capping ? <Section28Print /> : null}
+            {hasVestedBalanceTable ? <VestedPrint /> : null}
           </div>
         </section>
       ) : null}
 
       {memberPages.map((pageMembers, pageIndex) => (
         <section className="print-a4-page" key={`members-page-${pageIndex}`}>
-          <PrintHeader title="פירוט לפי בני משפחה" page={firstMemberPageNumber + pageIndex} />
+          <PrintHeader title="פירוט לפי בני משפחה" page={membersStartPage + pageIndex} />
           <div className="print-grid-2">
             {pageMembers.map((member, index) => (
               <div className="print-card" key={member.id || member.name || index}>
@@ -4974,7 +5045,7 @@ function PrintReportA4({ reportData, recommendations = "" }) {
               <Kpi label="יחס הלוואות לנכסים" value={`${loanRatioToAssets.toFixed(1)}%`} />
             </div>
             <h3 className="print-section-heading">המלצות</h3>
-            <div className="print-card-soft" style={{ whiteSpace: "pre-wrap", fontSize: 10.5, lineHeight: 1.75, minHeight: "54mm" }}>{recommendations || "—"}</div>
+            <div className="print-card-soft" style={{ whiteSpace: "pre-wrap", fontSize: 10.5, lineHeight: 1.75, minHeight: "48mm" }}>{recommendations || "—"}</div>
           </div>
         </div>
       </section>
