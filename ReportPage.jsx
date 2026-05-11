@@ -4609,7 +4609,7 @@ function PrintReportA4({ reportData, recommendations = "" }) {
   const vestedRows = Array.isArray(vestedBalanceTable?.rows) ? vestedBalanceTable.rows : [];
   const recognizedPensionAdjustments = Array.isArray(data.recognizedPensionAdjustments) ? data.recognizedPensionAdjustments : [];
   const manualRecognizedRows = getManualRecognizedPensionRows(recognizedPensionAdjustments);
-  const hasSection28Capping = Boolean(section28Capping && (section28Groups.length > 0 || section28Capping.sourceFileName || section28Capping.sourceFile || section28Capping.fileName));
+  const hasSection28Capping = section28Groups.length > 0;
   const hasRecognizedPension = vestedRows.length > 0 || manualRecognizedRows.length > 0;
   const shouldShowPensionAppendixPage = hasSection28Capping || hasRecognizedPension;
 
@@ -4643,8 +4643,7 @@ function PrintReportA4({ reportData, recommendations = "" }) {
     @media print {
       @page { size: A4 portrait; margin: 0; }
       html, body { width: 210mm; margin: 0 !important; padding: 0 !important; background: #fff !important; }
-      .print-report-root { display: block !important; direction: rtl; font-family: Calibri, Arial, sans-serif !important; color: #102A43; }
-      .print-report-root, .print-report-root * { font-family: Calibri, Arial, sans-serif !important; }
+      .print-report-root { display: block !important; direction: rtl; font-family: Calibri, Arial, sans-serif; color: #102A43; }
       .print-a4-page { width: 210mm; height: 297mm; padding: 9mm 10mm; background: #fff; page-break-after: always; break-after: page; overflow: hidden; box-sizing: border-box; position: relative; }
       .print-a4-page:last-child { page-break-after: auto; break-after: auto; }
       .print-page-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 4mm; margin-bottom: 5mm; border-bottom: 1px solid #E2D1BF; }
@@ -4665,36 +4664,25 @@ function PrintReportA4({ reportData, recommendations = "" }) {
       .print-bar-track { height: 6mm; background: #EAF1FB; border-radius: 999px; overflow: hidden; }
       .print-bar-fill { height: 100%; background: linear-gradient(90deg, #FF2756, #00215D); border-radius: 999px; }
       .print-footer { position: absolute; bottom: 6mm; right: 10mm; left: 10mm; display: flex; justify-content: space-between; color: #8AA0B8; font-size: 9px; border-top: 1px solid #EEE4D8; padding-top: 3mm; }
-      .print-list-row { display: grid; grid-template-columns: 15mm minmax(0, 1fr) 24mm; gap: 2mm; align-items: center; border-bottom: 1px solid #EEE4D8; padding: 1.35mm 0; font-size: 8.7px; }
+      .print-list-row { display: grid; grid-template-columns: minmax(0, 1fr) 28mm; gap: 2mm; align-items: center; border-bottom: 1px solid #EEE4D8; padding: 1.7mm 0; font-size: 9.2px; }
+      .print-list-label { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #00215D; font-weight: 900; }
+      .print-list-name { color: #102A43; font-weight: 800; margin-right: 1.5mm; }
       .print-swatch { width: 3mm; height: 3mm; border-radius: 50%; display: inline-block; margin-left: 2mm; }
       .print-pie { width: 42mm; height: 42mm; border-radius: 50%; position: relative; box-shadow: inset 0 0 0 2px rgba(255,255,255,.95), inset 0 -5px 9px rgba(0,0,0,.12), 0 5px 12px rgba(0,33,93,.10); flex: 0 0 auto; }
       .print-pie::after { content: ""; position: absolute; inset: 30%; border-radius: 50%; background: #fff; box-shadow: inset 0 4px 8px rgba(0,33,93,.06); }
-      .print-cover-top { background: linear-gradient(135deg, #00215D, #001845); color: #fff; border-radius: 7mm; padding: 6mm 8mm; height: 55mm; box-sizing: border-box; }
-      .print-cover-title { font-size: 23px; line-height: 1.18; margin: 5mm 0 2.5mm; font-weight: 900; text-align: center; }
-      .print-cover-subtitle { max-width: 166mm; margin: 0 auto; color: rgba(255,255,255,.86); text-align: center; font-size: 10.5px; line-height: 1.6; }
-      .print-page1-content { margin-top: 5mm; }
-      .print-kpi-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3mm; margin-bottom: 4mm; }
-      .print-retirement-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4mm; margin-bottom: 4mm; }
-      .print-pie-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4mm; align-items: stretch; }
-      .print-cover-body { display: block; margin-top: 5mm; }
-      .print-cover-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3mm; align-content: start; }
-      .print-cover-pies { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4mm; }
+      .print-cover-top { background: linear-gradient(135deg, #00215D, #001845); color: #fff; border-radius: 8mm; padding: 8mm; height: 85mm; box-sizing: border-box; }
+      .print-cover-title { font-size: 28px; line-height: 1.18; margin: 8mm 0 4mm; font-weight: 900; text-align: center; }
+      .print-cover-subtitle { max-width: 158mm; margin: 0 auto; color: rgba(255,255,255,.86); text-align: center; font-size: 12px; line-height: 1.8; }
+      .print-cover-body { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; margin-top: 6mm; height: 169mm; }
+      .print-cover-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; align-content: start; }
+      .print-cover-pies { display: grid; grid-template-rows: 1fr 1fr; gap: 4mm; }
       .print-logo-box { width: 38mm; height: 16mm; border: 1px solid rgba(255,255,255,.25); border-radius: 4mm; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 2mm; background: rgba(255,255,255,.10); }
       .print-logo-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
       .print-simple-logo { color: #fff; font-size: 24px; font-weight: 300; direction: ltr; }
-      .print-half-page { min-height: auto; }
-      .print-page2-main { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4mm; }
-      .print-page2-main .print-card { min-height: auto !important; }
-      .print-page2-main .print-pie { width: 34mm !important; height: 34mm !important; }
-      .print-page2-main .print-list-row { font-size: 8.4px; padding: 1.05mm 0; }
-      .print-page2-exposure-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4mm; align-items: stretch; }
-      .print-exposure-card { min-height: 73mm; }
-      .print-exposure-card .print-pie { width: 30mm !important; height: 30mm !important; }
-      .print-appendix-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 4mm; align-items: start; }
+      .print-half-page { height: 123mm; }
+      .print-appendix-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; align-items: start; }
       .print-appendix-block { min-height: 215mm; }
-      .print-mini-row { display: grid; grid-template-columns: minmax(0, 1fr) 30mm; gap: 2mm; padding: 1.55mm 0; border-bottom: 1px solid #EEE4D8; font-size: 8.7px; align-items: center; }
-      .print-mini-row.important { background: #EEF2FA; border: 1px solid #D8DEE9; border-radius: 3mm; padding: 1.7mm 2mm; margin: 1mm 0; font-weight: 900; color: #00215D; }
-      .print-mini-row.important .print-mini-value { color: #FF2756; }
+      .print-mini-row { display: grid; grid-template-columns: minmax(0, 1fr) 32mm; gap: 2mm; padding: 1.7mm 0; border-bottom: 1px solid #EEE4D8; font-size: 9px; align-items: center; }
       .print-mini-value { color: #00215D; font-weight: 900; direction: ltr; text-align: left; white-space: nowrap; }
     }
   `;
@@ -4719,7 +4707,10 @@ function PrintReportA4({ reportData, recommendations = "" }) {
 
   const getPieData = (items) => {
     const clean = (Array.isArray(items) ? items : [])
-      .map((item) => ({ name: item.name || "ללא שם", value: Number(item.value || 0) }))
+      .map((item) => ({
+        name: item.name || item.label || item.title || "ללא שם",
+        value: Number(item.value ?? item.percent ?? item.percentage ?? 0),
+      }))
       .filter((item) => item.value > 0)
       .sort((a, b) => b.value - a.value);
     const total = clean.reduce((sum, item) => sum + item.value, 0) || 1;
@@ -4735,29 +4726,31 @@ function PrintReportA4({ reportData, recommendations = "" }) {
     return { clean, segments, total, gradient };
   };
 
-  const PieBreakdown = ({ title, items, large = false, compact = false }) => {
+  const PieBreakdown = ({ title, items, large = false, valueMode = "currency" }) => {
     const { segments, total, gradient } = getPieData(items);
-    const pieSize = large ? "44mm" : compact ? "32mm" : "38mm";
+    const displayValue = (value) => valueMode === "percent" ? `${Math.round(Number(value || 0))}%` : fmtCurrency(value);
+    const totalDisplay = valueMode === "percent" ? "100%" : fmtCurrency(total);
     return (
-      <div className="print-card" style={{ minHeight: large ? "188mm" : compact ? "58mm" : "78mm" }}>
+      <div className="print-card" style={{ minHeight: large ? "112mm" : "auto" }}>
         <h3 className="print-section-heading">{title}</h3>
-        <div style={{ display: "grid", gridTemplateColumns: `${pieSize} minmax(0, 1fr)`, gap: "4mm", alignItems: "center" }}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "2mm", minWidth: 0 }}>
-            <div className="print-pie" style={{ width: pieSize, height: pieSize, background: `conic-gradient(${gradient})` }} />
-            <div style={{ color: "#627D98", fontSize: 8.5, fontWeight: 800 }}>סה״כ</div>
-            <div style={{ color: "#00215D", fontSize: large ? 13 : 11.5, fontWeight: 900, direction: "ltr" }}>{fmtCurrency(total)}</div>
-          </div>
-          <div style={{ minWidth: 0 }}>
+        <div style={{ display: "grid", gridTemplateColumns: large ? "1fr 58mm" : "1fr 45mm", gap: "4mm", alignItems: "center" }}>
+          <div>
             {segments.slice(0, large ? 10 : 6).map((item, index) => (
               <div className="print-list-row" key={`${title}-${item.name}-${index}`}>
-                <div style={{ direction: "ltr", color: "#00215D", fontWeight: 900 }}>{Math.round(item.percent)}%</div>
-                <div style={{ minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={item.name}>
-                  <span className="print-swatch" style={{ background: item.color }} />{item.name}
+                <div className="print-list-label" title={`${Math.round(item.percent)}% ${item.name}`}>
+                  <span className="print-swatch" style={{ background: item.color }} />
+                  <span>{Math.round(item.percent)}%</span>
+                  <span className="print-list-name">{item.name}</span>
                 </div>
-                <div style={{ direction: "ltr", textAlign: "left", fontWeight: 800 }}>{fmtCurrency(item.value)}</div>
+                <div style={{ direction: "ltr", textAlign: "left", fontWeight: 800 }}>{displayValue(item.value)}</div>
               </div>
             ))}
             {!segments.length ? <div className="print-muted">אין נתונים להצגה</div> : null}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "3mm" }}>
+            <div className="print-pie" style={{ width: large ? "56mm" : "42mm", height: large ? "56mm" : "42mm", background: `conic-gradient(${gradient})` }} />
+            <div style={{ color: "#627D98", fontSize: 9.5, fontWeight: 800 }}>סה״כ</div>
+            <div style={{ color: "#00215D", fontSize: large ? 16 : 13, fontWeight: 900, direction: "ltr" }}>{totalDisplay}</div>
           </div>
         </div>
       </div>
@@ -4799,63 +4792,23 @@ function PrintReportA4({ reportData, recommendations = "" }) {
       return <div className="print-muted">לא קיימים נתוני סעיף 28 בדוח.</div>;
     }
 
-    const costGroup = getSection28Group(section28Groups, "employer-cost", "עלויות");
-    const savingGroup = getSection28Group(section28Groups, "saving-simulation", "סימולציה לחיסכון");
-    const retirementGroup = getSection28Group(section28Groups, "retirement", "סימולציה לגיל פרישה");
-    const costRows = Array.isArray(costGroup?.rows) ? costGroup.rows.filter((row) => isMeaningfulSection28Value(row.value)) : [];
-
-    const employerRows = [
-      ...pickSection28Rows(costRows, ["השתלמות מעל תקרה", "פיצויים מעל לתקרה", "תגמולים מעל לתקרה"]),
-      ...pickSection28Rows(costRows, ["סכום קיטום מעל לסעיף 28 ברוטו", "סכום נטו לאחר ניכוי מס שולי"]),
-    ];
-
-    const employeeRows = [
-      ...pickSection28Rows(costRows, [
-        "גידול בנטו בעקבות קיטום בפיצויים",
-        "גידול בנטו בעקבות קיטום תגמולים",
-        "גידול בנטו בעקבות קיטום קה\"ל מעל לתקרה",
-        "הפרשות עובד קה\"ל מעל תקרה",
-        "הפרשות עובד תגמולים",
-      ]),
-      ...pickSection28Rows(costRows, ['סה"כ גידול נטו', "סה״כ גידול נטו", "סך הכל גידול נטו", "סכום חודשי נטו שמועבר לחיסכון אישי"]),
-    ];
-
-    const renderRows = (rows) => rows.length ? rows.map((row, index) => {
-      const important = normalizeSection28Text(row.label).includes("סכום");
-      return (
-        <div className={`print-mini-row${important ? " important" : ""}`} key={`${row.label}-${index}`}>
-          <div style={{ minWidth: 0 }}>{row.label}</div>
-          <div className="print-mini-value">{formatSection28DisplayValue(row.value)}</div>
-        </div>
-      );
-    }) : <div className="print-muted">אין נתון להצגה</div>;
-
-    const renderGroup = (title, group, limit = 8) => {
-      const rows = Array.isArray(group?.rows)
-        ? group.rows.filter((row) => isMeaningfulSection28Value(row.value)).slice(0, limit)
-        : [];
-      return (
-        <div className="print-card-soft" style={{ marginBottom: "3mm" }}>
-          <div style={{ color: "#00215D", fontWeight: 900, fontSize: 10.5, marginBottom: "1.5mm" }}>{title}</div>
-          {renderRows(rows)}
-        </div>
-      );
-    };
-
     return (
       <div>
-        <div className="print-card-soft" style={{ marginBottom: "3mm" }}>
-          <div style={{ color: "#00215D", fontWeight: 900, fontSize: 10.5, marginBottom: "1.5mm" }}>צד מעסיק</div>
-          {renderRows(employerRows)}
-        </div>
-
-        <div className="print-card-soft" style={{ marginBottom: "3mm" }}>
-          <div style={{ color: "#00215D", fontWeight: 900, fontSize: 10.5, marginBottom: "1.5mm" }}>צד עובד</div>
-          {renderRows(employeeRows)}
-        </div>
-
-        {savingGroup ? renderGroup("סימולציה לחיסכון", savingGroup, 6) : null}
-        {retirementGroup ? renderGroup("סימולציה לגיל פרישה", retirementGroup, 4) : null}
+        {section28Groups.slice(0, 4).map((group, groupIndex) => {
+          const rows = Array.isArray(group?.rows) ? group.rows.filter((row) => isMeaningfulSection28Value(row.value)).slice(0, 7) : [];
+          return (
+            <div className="print-card-soft" style={{ marginBottom: "3mm" }} key={group.id || group.title || groupIndex}>
+              <div style={{ color: "#00215D", fontWeight: 900, fontSize: 10.5, marginBottom: "1.5mm" }}>{group.title || "סעיף 28"}</div>
+              {rows.map((row, index) => (
+                <div className="print-mini-row" key={`${row.label}-${index}`}>
+                  <div style={{ minWidth: 0 }}>{row.label}</div>
+                  <div className="print-mini-value">{formatSection28DisplayValue(row.value)}</div>
+                </div>
+              ))}
+              {!rows.length ? <div className="print-muted">אין נתון להצגה</div> : null}
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -4922,21 +4875,18 @@ function PrintReportA4({ reportData, recommendations = "" }) {
           </div>
         </div>
 
-        <div className="print-page1-content">
-          <h3 className="print-section-heading">נתונים מרכזיים</h3>
-          <div className="print-kpi-row">
-            <Kpi label="סך נכסים" value={fmtCurrency(family.totalAssets)} />
-            <Kpi label="הפקדה חודשית" value={fmtCurrency(family.monthlyDeposits)} />
-            <Kpi label="קצבה חודשית צפויה" value={fmtCurrency(family.monthlyPensionWithDeposits)} />
-            <Kpi label="צבירה צפויה בפרישה" value={fmtCurrency(family.projectedLumpSumWithDeposits)} />
+        <div className="print-cover-body">
+          <div>
+            <h3 className="print-section-heading">נתונים מרכזיים</h3>
+            <div className="print-cover-kpis">
+              <Kpi label="סך נכסים" value={fmtCurrency(family.totalAssets)} />
+              <Kpi label="הפקדה חודשית" value={fmtCurrency(family.monthlyDeposits)} />
+              <Kpi label="קצבה חודשית צפויה" value={fmtCurrency(family.monthlyPensionWithDeposits)} />
+              <Kpi label="צבירה צפויה בפרישה" value={fmtCurrency(family.projectedLumpSumWithDeposits)} />
+            </div>
           </div>
 
-          <div className="print-retirement-row">
-            <CompareBlock title="צבירה צפויה בגיל פרישה" withValue={family.projectedLumpSumWithDeposits} withoutValue={family.projectedLumpSumWithoutDeposits} />
-            <CompareBlock title="קצבה חודשית בגיל פרישה" withValue={family.monthlyPensionWithDeposits} withoutValue={family.monthlyPensionWithoutDeposits} />
-          </div>
-
-          <div className="print-pie-row">
+          <div className="print-cover-pies">
             <PieBreakdown title="חלוקה לפי מוצרים" items={products} />
             <PieBreakdown title="חלוקה לפי גופים מנהלים" items={managers} />
           </div>
@@ -4947,23 +4897,26 @@ function PrintReportA4({ reportData, recommendations = "" }) {
 
       <section className="print-a4-page">
         <PrintHeader title="אפיקים ראשיים וחשיפות" page={2} />
+        <div className="print-grid-2">
+          <div className="print-half-page">
+            <PieBreakdown title="חלוקה עבור אפיקים ראשיים" items={mainGroups} large />
+          </div>
 
-        <div className="print-page2-main">
-          <PieBreakdown title="חלוקה עבור אפיקים ראשיים" items={mainGroups} />
-
-          <div className="print-page2-exposure-grid">
-            <div className="print-card print-exposure-card">
+          <div className="print-half-page">
+            <div className="print-card" style={{ minHeight: "112mm" }}>
               <h3 className="print-section-heading">חשיפות מרכזיות</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "4mm" }}>
+              <div className="print-grid-2" style={{ marginBottom: "5mm" }}>
                 <ExposureCard label="אחוז מניות" value={data.weightedEquityExposure} />
                 <ExposureCard label={'אחוז אחזקה בחו"ל'} value={data.weightedForeignExposure} />
               </div>
-            </div>
-
-            <div className="print-exposure-card">
-              <PieBreakdown title={'פירוט חו"ל / ישראל'} items={foreignExposureAllocation} compact />
+              <PieBreakdown title={'פירוט חו"ל / ישראל'} items={foreignExposureAllocation} valueMode="percent" />
             </div>
           </div>
+        </div>
+
+        <div className="print-grid-2" style={{ marginTop: "5mm" }}>
+          <CompareBlock title="צבירה צפויה בגיל פרישה" withValue={family.projectedLumpSumWithDeposits} withoutValue={family.projectedLumpSumWithoutDeposits} />
+          <CompareBlock title="קצבה חודשית בגיל פרישה" withValue={family.monthlyPensionWithDeposits} withoutValue={family.monthlyPensionWithoutDeposits} />
         </div>
       </section>
 
