@@ -4678,8 +4678,14 @@ function PrintReportA4({ reportData, recommendations = "" }) {
       .print-cover-pies .print-card { min-height: 62mm !important; }
       .print-page-2-main { margin-bottom: 5mm; }
       .print-page-2-main .print-card { min-height: 116mm !important; }
-      .print-page-2-exposures { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4mm; align-items: stretch; }
+      .print-page-2-exposures { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); gap: 4mm; align-items: stretch; }
       .print-page-2-exposures .print-card { min-height: 64mm !important; }
+      .print-page-2-exposures .print-pie-card { min-height: 66mm !important; }
+      .print-exposure-stack { border: 1px solid #E2D1BF; border-radius: 5mm; padding: 4mm; background: #FFFFFF; min-height: 66mm; display: flex; flex-direction: column; gap: 4mm; box-sizing: border-box; }
+      .print-exposure-card { background: #FCFBF8; border: 1px solid #EEE4D8; border-radius: 4mm; padding: 4mm; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+      .print-exposure-row { display: flex; justify-content: space-between; align-items: baseline; gap: 3mm; margin-bottom: 3mm; }
+      .print-exposure-legend { display: flex; gap: 4mm; align-items: center; flex-wrap: wrap; color: #627D98; font-size: 9px; font-weight: 800; margin-top: 2.5mm; }
+      .print-exposure-dot { width: 3mm; height: 3mm; border-radius: 50%; display: inline-block; margin-left: 1mm; vertical-align: middle; }
       .print-logo-box { width: 38mm; height: 16mm; border: 1px solid rgba(255,255,255,.25); border-radius: 4mm; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 2mm; background: rgba(255,255,255,.10); }
       .print-logo-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
       .print-simple-logo { color: #fff; font-size: 24px; font-weight: 300; direction: ltr; }
@@ -4727,10 +4733,10 @@ function PrintReportA4({ reportData, recommendations = "" }) {
     return { clean, segments, total, gradient };
   };
 
-  const PieBreakdown = ({ title, items, large = false }) => {
+  const PieBreakdown = ({ title, items, large = false, compactClassName = "" }) => {
     const { segments, gradient } = getPieData(items);
     return (
-      <div className="print-card" style={{ minHeight: large ? "112mm" : "auto" }}>
+      <div className={`print-card ${compactClassName}`} style={{ minHeight: large ? "112mm" : "auto" }}>
         <h3 className="print-section-heading">{title}</h3>
         <div style={{ display: "grid", gridTemplateColumns: large ? "1fr 58mm" : "1fr 45mm", gap: "4mm", alignItems: "center" }}>
           <div>
@@ -4769,15 +4775,27 @@ function PrintReportA4({ reportData, recommendations = "" }) {
     );
   };
 
-  const ExposureCard = ({ label, value }) => (
-    <div className="print-card-soft">
-      <div className="print-kpi-label">{label}</div>
-      <div className="print-kpi-value">{fmtPercent(value)}</div>
-      <div className="print-bar-track" style={{ marginTop: "3mm" }}>
-        <div className="print-bar-fill" style={{ width: `${Math.max(Math.min(Number(value || 0), 100), 0)}%` }} />
+  const ExposureCard = ({ label, value }) => {
+    const safeValue = Math.max(Math.min(Number(value || 0), 100), 0);
+
+    return (
+      <div className="print-exposure-card">
+        <div className="print-exposure-row">
+          <div className="print-kpi-label" style={{ marginBottom: 0 }}>{label}</div>
+          <div className="print-kpi-value">{fmtPercent(value)}</div>
+        </div>
+
+        <div className="print-bar-track">
+          <div className="print-bar-fill" style={{ width: `${safeValue}%` }} />
+        </div>
+
+        <div className="print-exposure-legend">
+          <span><span className="print-exposure-dot" style={{ background: "linear-gradient(90deg, #FF2756, #00215D)" }} />שיעור החשיפה</span>
+          <span><span className="print-exposure-dot" style={{ background: "#EAF1FB" }} />יתרה עד 100%</span>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const CompareBlock = ({ title, withValue, withoutValue, withLabel = "עם הפקדות", withoutLabel = "ללא הפקדות" }) => {
     const maxValue = Math.max(Number(withValue || 0), Number(withoutValue || 0), 1);
@@ -4920,9 +4938,12 @@ function PrintReportA4({ reportData, recommendations = "" }) {
         </div>
 
         <div className="print-page-2-exposures">
-          <ExposureCard label="אחוז מניות" value={data.weightedEquityExposure} />
-          <ExposureCard label={'אחוז אחזקה בחו"ל'} value={data.weightedForeignExposure} />
-          <PieBreakdown title={'פירוט חו"ל / ישראל'} items={foreignExposureAllocation} />
+          <PieBreakdown title={'פירוט חו"ל / ישראל'} items={foreignExposureAllocation} compactClassName="print-pie-card" />
+
+          <div className="print-exposure-stack">
+            <ExposureCard label="אחוז מניות" value={data.weightedEquityExposure} />
+            <ExposureCard label={'אחוז אחזקה בחו"ל'} value={data.weightedForeignExposure} />
+          </div>
         </div>
       </section>
 
