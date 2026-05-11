@@ -4671,9 +4671,15 @@ function PrintReportA4({ reportData, recommendations = "" }) {
       .print-cover-top { background: linear-gradient(135deg, #00215D, #001845); color: #fff; border-radius: 8mm; padding: 8mm; height: 85mm; box-sizing: border-box; }
       .print-cover-title { font-size: 28px; line-height: 1.18; margin: 8mm 0 4mm; font-weight: 900; text-align: center; }
       .print-cover-subtitle { max-width: 158mm; margin: 0 auto; color: rgba(255,255,255,.86); text-align: center; font-size: 12px; line-height: 1.8; }
-      .print-cover-body { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; margin-top: 6mm; height: 169mm; }
-      .print-cover-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; align-content: start; }
-      .print-cover-pies { display: grid; grid-template-rows: 1fr 1fr; gap: 4mm; }
+      .print-cover-body { display: flex; flex-direction: column; gap: 4mm; margin-top: 5mm; height: 170mm; }
+      .print-cover-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3mm; align-content: start; }
+      .print-cover-bars { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4mm; }
+      .print-cover-pies { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4mm; }
+      .print-cover-pies .print-card { min-height: 62mm !important; }
+      .print-page-2-main { margin-bottom: 5mm; }
+      .print-page-2-main .print-card { min-height: 116mm !important; }
+      .print-page-2-exposures { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4mm; align-items: stretch; }
+      .print-page-2-exposures .print-card { min-height: 64mm !important; }
       .print-logo-box { width: 38mm; height: 16mm; border: 1px solid rgba(255,255,255,.25); border-radius: 4mm; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 2mm; background: rgba(255,255,255,.10); }
       .print-logo-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
       .print-simple-logo { color: #fff; font-size: 24px; font-weight: 300; direction: ltr; }
@@ -4890,11 +4896,11 @@ function PrintReportA4({ reportData, recommendations = "" }) {
               <Kpi label="קצבה חודשית צפויה" value={fmtCurrency(family.monthlyPensionWithDeposits)} />
               <Kpi label="צבירה צפויה בפרישה" value={fmtCurrency(family.projectedLumpSumWithDeposits)} />
             </div>
+          </div>
 
-            <div className="print-grid-2" style={{ marginTop: "4mm" }}>
-              <CompareBlock title="צבירה צפויה בגיל פרישה" withValue={family.projectedLumpSumWithDeposits} withoutValue={family.projectedLumpSumWithoutDeposits} />
-              <CompareBlock title="קצבה חודשית בגיל פרישה" withValue={family.monthlyPensionWithDeposits} withoutValue={family.monthlyPensionWithoutDeposits} />
-            </div>
+          <div className="print-cover-bars">
+            <CompareBlock title="צבירה צפויה בגיל פרישה" withValue={family.projectedLumpSumWithDeposits} withoutValue={family.projectedLumpSumWithoutDeposits} />
+            <CompareBlock title="קצבה חודשית בגיל פרישה" withValue={family.monthlyPensionWithDeposits} withoutValue={family.monthlyPensionWithoutDeposits} />
           </div>
 
           <div className="print-cover-pies">
@@ -4908,21 +4914,15 @@ function PrintReportA4({ reportData, recommendations = "" }) {
 
       <section className="print-a4-page">
         <PrintHeader title="אפיקים ראשיים וחשיפות" page={2} />
-        <div className="print-grid-2">
-          <div className="print-half-page">
-            <PieBreakdown title="חלוקה עבור אפיקים ראשיים" items={mainGroups} large />
-          </div>
 
-          <div className="print-half-page">
-            <div className="print-card" style={{ minHeight: "112mm" }}>
-              <h3 className="print-section-heading">חשיפות מרכזיות</h3>
-              <div className="print-grid-2" style={{ marginBottom: "5mm" }}>
-                <ExposureCard label="אחוז מניות" value={data.weightedEquityExposure} />
-                <ExposureCard label={'אחוז אחזקה בחו"ל'} value={data.weightedForeignExposure} />
-              </div>
-              <PieBreakdown title={'פירוט חו"ל / ישראל'} items={foreignExposureAllocation} />
-            </div>
-          </div>
+        <div className="print-page-2-main">
+          <PieBreakdown title="חלוקה עבור אפיקים ראשיים" items={mainGroups} large />
+        </div>
+
+        <div className="print-page-2-exposures">
+          <ExposureCard label="אחוז מניות" value={data.weightedEquityExposure} />
+          <ExposureCard label={'אחוז אחזקה בחו"ל'} value={data.weightedForeignExposure} />
+          <PieBreakdown title={'פירוט חו"ל / ישראל'} items={foreignExposureAllocation} />
         </div>
       </section>
 
